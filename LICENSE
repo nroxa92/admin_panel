@@ -1,91 +1,94 @@
-PROPRIETARY SOFTWARE LICENSE
+VLASNIČKA LICENCA SOFTVERA
 =============================
 
-Copyright (c) 2024-2026 nroxa92. All Rights Reserved.
+Autorsko pravo (c) 2025-2026 nroxa92. Sva prava pridržana.
 
-NOTICE: THIS IS NOT OPEN SOURCE SOFTWARE
+NAPOMENA: OVO NIJE SOFTVER OTVORENOG KODA (OPEN SOURCE)
 
-This software, including all source code, documentation, assets, and associated 
-files contained in this repository ("Software"), is the exclusive intellectual 
-property of the copyright holder. This Software is made publicly visible on 
-GitHub SOLELY for portfolio demonstration purposes.
-
-================================================================================
-                              STRICT PROHIBITIONS
-================================================================================
-
-BY ACCESSING THIS REPOSITORY, YOU ACKNOWLEDGE AND AGREE THAT THE FOLLOWING 
-ACTIVITIES ARE STRICTLY PROHIBITED WITHOUT PRIOR WRITTEN AUTHORIZATION:
-
-1. COPYING & REPRODUCTION
-   - Downloading, cloning, forking, or copying any portion of this codebase
-   - Taking screenshots or recordings of the source code
-   - Reproducing any part of this Software in any form or medium
-
-2. MODIFICATION & DERIVATIVE WORKS
-   - Modifying, adapting, or altering the source code
-   - Creating derivative works based on this Software
-   - Translating or converting the code to other programming languages
-
-3. DISTRIBUTION & SHARING
-   - Redistributing the Software in any form
-   - Sharing code snippets, files, or documentation
-   - Publishing or posting any portion elsewhere
-
-4. COMMERCIAL & PERSONAL USE
-   - Using this Software for any commercial purpose
-   - Using this Software for personal projects
-   - Incorporating any code into other applications
-   - Using algorithms, architectures, or implementations from this project
-
-5. REVERSE ENGINEERING
-   - Decompiling or disassembling the Software
-   - Attempting to derive source code from compiled versions
-   - Analyzing the code to replicate functionality
+Ovaj softver, uključujući sav izvorni kod, dokumentaciju, resurse i povezane 
+datoteke sadržane u ovom repozitoriju ("Softver"), isključivo je intelektualno 
+vlasništvo nositelja autorskog prava. Ovaj Softver je javno vidljiv na 
+GitHubu ISKLJUČIVO u svrhu demonstracije portfelja.
 
 ================================================================================
-                              LEGAL CONSEQUENCES
+                              STROGE ZABRANE
 ================================================================================
 
-UNAUTHORIZED USE OF THIS SOFTWARE CONSTITUTES:
+PRISTUPANJEM OVOM REPOZITORIJU POTVRĐUJETE I SLAŽETE SE DA SU SLJEDEĆE 
+AKTIVNOSTI STROGO ZABRANJENE BEZ PRETHODNOG PISANOG ODOBRENJA:
 
-• Copyright Infringement under international copyright laws including:
-  - The Berne Convention for the Protection of Literary and Artistic Works
-  - WIPO Copyright Treaty
-  - Digital Millennium Copyright Act (DMCA)
-  - EU Copyright Directive
+1. KOPIRANJE I REPRODUKCIJA
+   - Preuzimanje, kloniranje, forkanje ili kopiranje bilo kojeg dijela ove baze koda
+   - Uzimanje snimaka zaslona ili snimanje izvornog koda
+   - Reproduciranje bilo kojeg dijela ovog Softvera u bilo kojem obliku ili mediju
 
-• Potential Criminal Offense punishable by:
-  - Fines up to $150,000 USD per infringement (US jurisdiction)
-  - Imprisonment in severe cases
-  - Civil litigation for damages and lost profits
+2. IZMJENE I IZVEDENA DJELA
+   - Mijenjanje, prilagođavanje ili preinaka izvornog koda
+   - Stvaranje izvedenih djela temeljenih na ovom Softveru
+   - Prevođenje ili pretvaranje koda u druge programske jezike
 
-THE COPYRIGHT HOLDER ACTIVELY MONITORS FOR UNAUTHORIZED USE AND WILL PURSUE 
-ALL AVAILABLE LEGAL REMEDIES AGAINST INFRINGERS, INCLUDING BUT NOT LIMITED TO:
+3. DISTRIBUCIJA I DIJELJENJE
+   - Redistribucija Softvera u bilo kojem obliku
+   - Dijeljenje isječaka koda, datoteka ili dokumentacije
+   - Objavljivanje ili postavljanje bilo kojeg dijela drugdje
 
-  → DMCA Takedown Notices
-  → Cease and Desist Orders  
-  → Civil Lawsuits for Damages
-  → Criminal Prosecution where applicable
-  → Recovery of Legal Fees and Costs
+4. KOMERCIJALNA I OSOBNA UPOTREBA
+   - Korištenje ovog Softvera u bilo koju komercijalnu svrhu
+   - Korištenje ovog Softvera za osobne projekte
+   - Uključivanje bilo kojeg koda u druge aplikacije
+   - Korištenje algoritama, arhitektura ili implementacija iz ovog projekta
+
+5. OBRNUTI INŽENJERING (REVERSE ENGINEERING)
+   - Dekompilacija ili rastavljanje (disassembliranje) Softvera
+   - Pokušaj izvođenja izvornog koda iz kompiliranih verzija
+   - Analiziranje koda radi repliciranja funkcionalnosti
 
 ================================================================================
-                              NO WARRANTY
+                              PRAVNE POSLJEDICE
 ================================================================================
 
-THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-IMPLIED. THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR 
-OTHER LIABILITY ARISING FROM ACCESS TO OR VIEWING OF THIS SOFTWARE.
+NEOVLAŠTENO KORIŠTENJE OVOG SOFTVERA PREDSTAVLJA:
+
+• Kršenje autorskih prava prema međunarodnim zakonima o autorskim pravima uključujući:
+  - Bernsku konvenciju za zaštitu književnih i umjetničkih djela
+  - WIPO ugovor o autorskom pravu
+  - Zakon o autorskim pravima u digitalnom tisućljeću (DMCA)
+  - Direktivu EU o autorskim pravima
+
+• Potencijalno kazneno djelo kažnjivo:
+  - Novčanim kaznama do 150.000 USD po kršenju (nadležnost SAD-a)
+  - Zatvorskom kaznom u teškim slučajevima
+  - Građanskom parnicom za naknadu štete i izgubljene dobiti
+
+NOSITELJ AUTORSKOG PRAVA AKTIVNO NADZIRE NEOVLAŠTENU UPOTREBU I PODUZET ĆE 
+SVE DOSTUPNE PRAVNE LIJEKOVE PROTIV PREKRŠITELJA, UKLJUČUJUĆI ALI NE 
+OGRANIČAVAJUĆI SE NA:
+
+  → DMCA zahtjeve za uklanjanje sadržaja
+  → Naloge za prestanak i odustajanje (Cease and Desist)
+  → Građanske tužbe za naknadu štete
+  → Kazneni progon gdje je primjenjivo
+  → Naplatu pravnih troškova i naknada
 
 ================================================================================
-                              CONTACT
+                              BEZ JAMSTVA
 ================================================================================
 
-For licensing inquiries or permission requests:
+OVAJ SOFTVER SE DAJE "KAKAV JEST" BEZ JAMSTVA BILO KOJE VRSTE, IZRIČITOG ILI 
+IMPLICIRANOG. NOSITELJ AUTORSKOG PRAVA NEĆE BITI ODGOVORAN ZA BILO KAKAV 
+ZAHTJEV, ŠTETU ILI DRUGU ODGOVORNOST KOJA PROIZLAZI IZ PRISTUPA ILI 
+PREGLEDAVANJA OVOG SOFTVERA.
+
+================================================================================
+                              KONTAKT
+================================================================================
+
+Za upite o licenciranju ili zahtjeve za dopuštenje:
 GitHub: @nroxa92
+EMail: nevenroksa@gmail.com
 
-Unauthorized use will be prosecuted to the fullest extent of the law.
+Neovlaštena upotreba bit će procesuirana u najvećoj mjeri dopuštenoj zakonom.
 
 ================================================================================
 
-Last Updated: January 2026
+Zadnje ažurirano: Siječanj 2026.
