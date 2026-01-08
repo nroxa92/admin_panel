@@ -51,6 +51,8 @@ class VillaSettings {
   final Map<String, String> welcomeMessageTranslations;
   final Map<String, String> houseRulesTranslations;
   final List<String> cleanerChecklist;
+  final int welcomeMessageDuration; // Seconds (10-30)
+  final int houseRulesDuration; // Seconds (20-60)
 
   // ========================================
   // KONFIGURACIJA
@@ -96,6 +98,8 @@ class VillaSettings {
     this.welcomeMessageTranslations = const {'en': 'Welcome to our Villa!'},
     this.houseRulesTranslations = const {'en': 'No smoking.'},
     this.cleanerChecklist = const ['Check bedsheets', 'Clean bathroom'],
+    this.welcomeMessageDuration = 15,
+    this.houseRulesDuration = 30,
     // Konfiguracija
     this.checkInTime = '16:00',
     this.checkOutTime = '10:00',
@@ -158,6 +162,8 @@ class VillaSettings {
       welcomeMessageTranslations: _parseWelcomeTranslations(data),
       houseRulesTranslations: _parseRules(data),
       cleanerChecklist: _parseChecklist(data),
+      welcomeMessageDuration: _parseInt(data['welcomeMessageDuration'], 15),
+      houseRulesDuration: _parseInt(data['houseRulesDuration'], 30),
       // Konfiguracija
       checkInTime: data['checkInTime']?.toString() ??
           data['check_in_time']?.toString() ??
@@ -212,6 +218,8 @@ class VillaSettings {
       'welcomeMessageTranslations': welcomeMessageTranslations,
       'houseRulesTranslations': houseRulesTranslations,
       'cleanerChecklist': cleanerChecklist,
+      'welcomeMessageDuration': welcomeMessageDuration,
+      'houseRulesDuration': houseRulesDuration,
       // Konfiguracija
       'checkInTime': checkInTime,
       'checkOutTime': checkOutTime,
@@ -295,5 +303,15 @@ class VillaSettings {
       } catch (_) {}
     }
     return ['Check bedsheets', 'Clean bathroom'];
+  }
+
+  static int _parseInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      return int.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
   }
 }

@@ -36,6 +36,11 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
   final Map<String, TextEditingController> _houseRulesControllers = {};
   String _selectedRulesLang = 'en';
 
+  // TIMERI ZA TABLET (sekunde)
+  double _welcomeMessageDuration = 15;
+  double _houseRulesDuration = 30;
+  bool _isSavingTimers = false;
+
   // 3. CLEANER CHECKLIST (12 predlošaka)
   final List<TextEditingController> _checklistControllers = [];
 
@@ -173,6 +178,10 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
           _emergencyWhatsappController.text = settings.emergencyWhatsapp;
           _emergencyViberController.text = settings.emergencyViber;
           _emergencyEmailController.text = settings.emergencyEmail;
+
+          // Load Timers
+          _welcomeMessageDuration = settings.welcomeMessageDuration.toDouble();
+          _houseRulesDuration = settings.houseRulesDuration.toDouble();
         });
       }
     } catch (e) {
@@ -678,6 +687,70 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
   }
 
   // =============================================================================
+  // TIMERS - SAVE (za tablet screensaver)
+  // =============================================================================
+  Future<void> _saveTimers() async {
+    setState(() => _isSavingTimers = true);
+    try {
+      final currentSettings = await _settingsService.getSettingsStream().first;
+
+      final newSettings = VillaSettings(
+        ownerId: currentSettings.ownerId,
+        ownerFirstName: currentSettings.ownerFirstName,
+        ownerLastName: currentSettings.ownerLastName,
+        contactEmail: currentSettings.contactEmail,
+        contactPhone: currentSettings.contactPhone,
+        companyName: currentSettings.companyName,
+        emergencyCall: currentSettings.emergencyCall,
+        emergencySms: currentSettings.emergencySms,
+        emergencyWhatsapp: currentSettings.emergencyWhatsapp,
+        emergencyViber: currentSettings.emergencyViber,
+        emergencyEmail: currentSettings.emergencyEmail,
+        categories: currentSettings.categories,
+        cleanerPin: currentSettings.cleanerPin,
+        hardResetPin: currentSettings.hardResetPin,
+        themeColor: currentSettings.themeColor,
+        themeMode: currentSettings.themeMode,
+        appLanguage: currentSettings.appLanguage,
+        checkInTime: currentSettings.checkInTime,
+        checkOutTime: currentSettings.checkOutTime,
+        wifiSsid: currentSettings.wifiSsid,
+        wifiPass: currentSettings.wifiPass,
+        houseRulesTranslations: currentSettings.houseRulesTranslations,
+        welcomeMessageTranslations: currentSettings.welcomeMessageTranslations,
+        cleanerChecklist: currentSettings.cleanerChecklist,
+        welcomeMessageDuration: _welcomeMessageDuration.toInt(),
+        houseRulesDuration: _houseRulesDuration.toInt(),
+        aiConcierge: currentSettings.aiConcierge,
+        aiHousekeeper: currentSettings.aiHousekeeper,
+        aiTech: currentSettings.aiTech,
+        aiGuide: currentSettings.aiGuide,
+        welcomeMessage: currentSettings.welcomeMessage,
+      );
+
+      await _settingsService.saveSettings(newSettings);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("✅ Timers saved!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error saving timers: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingTimers = false);
+    }
+  }
+
+  // =============================================================================
   // CLEANER CHECKLIST - SAVE
   // =============================================================================
   Future<void> _saveChecklist() async {
@@ -1030,6 +1103,136 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 50),
+
+          // ===== SECTION 2.5: TABLET TIMERS =====
+          _buildSectionHeader(context, "⏱️ TABLET DISPLAY TIMERS", textColor),
+          const SizedBox(height: 10),
+          Text(
+            "How long each screen shows on the tablet before moving to next",
+            style: TextStyle(
+              fontSize: 13,
+              color: textColor.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Welcome Message Timer
+          Row(
+            children: [
+              SizedBox(
+                width: 180,
+                child: Text(
+                  "Welcome Message:",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  value: _welcomeMessageDuration,
+                  min: 10,
+                  max: 30,
+                  divisions: 20,
+                  activeColor: primaryColor,
+                  inactiveColor: primaryColor.withValues(alpha: 0.3),
+                  label: "${_welcomeMessageDuration.toInt()} sec",
+                  onChanged: (value) {
+                    setState(() => _welcomeMessageDuration = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 60,
+                child: Text(
+                  "${_welcomeMessageDuration.toInt()} sec",
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // House Rules Timer
+          Row(
+            children: [
+              SizedBox(
+                width: 180,
+                child: Text(
+                  "House Rules:",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  value: _houseRulesDuration,
+                  min: 20,
+                  max: 60,
+                  divisions: 40,
+                  activeColor: primaryColor,
+                  inactiveColor: primaryColor.withValues(alpha: 0.3),
+                  label: "${_houseRulesDuration.toInt()} sec",
+                  onChanged: (value) {
+                    setState(() => _houseRulesDuration = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 60,
+                child: Text(
+                  "${_houseRulesDuration.toInt()} sec",
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          // Save Timers Button
+          Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: isMobile ? double.infinity : 180,
+              height: 36,
+              child: ElevatedButton(
+                onPressed: _isSavingTimers ? null : _saveTimers,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                ),
+                child: _isSavingTimers
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        "SAVE TIMERS",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
           ),
           const SizedBox(height: 50),
 

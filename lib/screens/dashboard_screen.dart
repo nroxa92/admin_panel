@@ -1254,6 +1254,39 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                       style: TextStyle(color: textColor, fontSize: 13),
                     ),
                   )),
+
+            // CLEANING STATUS (based on checkouts)
+            if (checkOuts.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.cleaning_services,
+                      color: Colors.orange, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    "${t('needs_cleaning')}: ${checkOuts.length}",
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              ...checkOuts.map((b) => Padding(
+                    padding: const EdgeInsets.only(left: 24, top: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.circle,
+                            color: Colors.orange.shade300, size: 8),
+                        const SizedBox(width: 6),
+                        Text(
+                          getUnitName(b.unitId),
+                          style: TextStyle(color: textColor, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
           ],
         ),
       ),
