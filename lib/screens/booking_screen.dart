@@ -314,10 +314,17 @@ class _BookingScreenState extends State<BookingScreen> {
       List<Booking> bookings, List<Unit> units, bool isMobile) {
     final t = provider.translate;
 
-    // Collect all categories for show/hide all
+    // Collect all categories from BOTH units AND settings
     final allCategories = <String>{};
     for (var unit in units) {
       allCategories.add(unit.category ?? '');
+    }
+    // Add categories from settings (newly created zones)
+    final settings = provider.settings;
+    for (var cat in settings.categories) {
+      if (cat.isNotEmpty) {
+        allCategories.add(cat);
+      }
     }
 
     return Container(
@@ -382,22 +389,6 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text("90 ${t('period_days')}",
-                        style: TextStyle(color: textColor)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: '180',
-                height: 40,
-                child: Row(
-                  children: [
-                    Icon(
-                      _selectedPeriod == '180' ? Icons.check : null,
-                      color: provider.primaryColor,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text("180 ${t('period_days')}",
                         style: TextStyle(color: textColor)),
                   ],
                 ),

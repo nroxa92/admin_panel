@@ -648,10 +648,17 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
 
                       final units = _sortUnits(snapshot.data!, bookings);
 
-                      // Collect all categories for visibility dropdown
+                      // Collect all categories from BOTH units AND settings
                       final allCategories = <String>{};
                       for (var unit in units) {
                         allCategories.add(unit.category ?? '');
+                      }
+                      // Add categories from settings (newly created zones)
+                      final settings = context.read<AppProvider>().settings;
+                      for (var cat in settings.categories) {
+                        if (cat.isNotEmpty) {
+                          allCategories.add(cat);
+                        }
                       }
 
                       if (units.isEmpty) {
@@ -669,29 +676,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                           .where((b) => _isSameDay(b.endDate, today))
                           .toList();
 
-                      // Turnovers today
-                      final turnovers = <Map<String, dynamic>>[];
-                      for (var unit in units) {
-                        final unitBookings = bookings
-                            .where((b) => b.unitId == unit.id)
-                            .toList()
-                          ..sort((a, b) => a.startDate.compareTo(b.startDate));
-
-                        for (int i = 0; i < unitBookings.length - 1; i++) {
-                          if (_isSameDay(
-                                  _stripTime(unitBookings[i].endDate), today) &&
-                              _isSameDay(
-                                  _stripTime(unitBookings[i + 1].startDate),
-                                  today)) {
-                            turnovers.add({
-                              'unit': unit,
-                              'checkout': unitBookings[i],
-                              'checkin': unitBookings[i + 1],
-                            });
-                          }
-                        }
-                      }
-
                       // TOMORROW
                       final tomorrow = today.add(const Duration(days: 1));
                       final checkInsTomorrow = bookings
@@ -700,29 +684,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                       final checkOutsTomorrow = bookings
                           .where((b) => _isSameDay(b.endDate, tomorrow))
                           .toList();
-
-                      // Turnovers Tomorrow
-                      final turnoversTomorrow = <Map<String, dynamic>>[];
-                      for (var unit in units) {
-                        final unitBookings = bookings
-                            .where((b) => b.unitId == unit.id)
-                            .toList()
-                          ..sort((a, b) => a.startDate.compareTo(b.startDate));
-
-                        for (int i = 0; i < unitBookings.length - 1; i++) {
-                          if (_isSameDay(_stripTime(unitBookings[i].endDate),
-                                  tomorrow) &&
-                              _isSameDay(
-                                  _stripTime(unitBookings[i + 1].startDate),
-                                  tomorrow)) {
-                            turnoversTomorrow.add({
-                              'unit': unit,
-                              'checkout': unitBookings[i],
-                              'checkin': unitBookings[i + 1],
-                            });
-                          }
-                        }
-                      }
 
                       return ListView(
                         children: [
@@ -748,7 +709,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                     today,
                                     checkInsToday,
                                     checkOutsToday,
-                                    turnovers,
                                     units,
                                     isDark,
                                     primaryColor,
@@ -763,7 +723,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                     tomorrow,
                                     checkInsTomorrow,
                                     checkOutsTomorrow,
-                                    turnoversTomorrow,
                                     units,
                                     isDark,
                                     primaryColor,
@@ -781,7 +740,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                   today,
                                   checkInsToday,
                                   checkOutsToday,
-                                  turnovers,
                                   units,
                                   isDark,
                                   primaryColor,
@@ -794,7 +752,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                   tomorrow,
                                   checkInsTomorrow,
                                   checkOutsTomorrow,
-                                  turnoversTomorrow,
                                   units,
                                   isDark,
                                   primaryColor,
@@ -1126,7 +1083,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
       // Category Header
       widgets.add(
         Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 8),
+          padding: const EdgeInsets.only(top: 5, bottom: 4),
           child: Row(
             children: [
               Icon(
@@ -1166,7 +1123,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
         for (var unit in categoryUnits) {
           widgets.add(
             Padding(
-              padding: const EdgeInsets.only(bottom: 10, left: 28),
+              padding: const EdgeInsets.only(bottom: 6, left: 28),
               child: UnitListItem(unit: unit),
             ),
           );
@@ -1186,7 +1143,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
     DateTime date,
     List<Booking> checkIns,
     List<Booking> checkOuts,
-    List<Map<String, dynamic>> turnovers,
     List<Unit> units,
     bool isDark,
     Color primaryColor,
@@ -1298,42 +1254,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                       style: TextStyle(color: textColor, fontSize: 13),
                     ),
                   )),
-            const SizedBox(height: 12),
-
-            // TURNOVERS
-            Row(
-              children: [
-                const Icon(Icons.sync, color: Colors.orange, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  "${t('turnovers')}: ${turnovers.length}",
-                  style: TextStyle(
-                    color: textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            if (turnovers.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 24, top: 4),
-                child: Text(t('no_activity'),
-                    style:
-                        TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-              )
-            else
-              ...turnovers.map((to) {
-                final unit = to['unit'] as Unit;
-                final checkout = to['checkout'] as Booking;
-                final checkin = to['checkin'] as Booking;
-                return Padding(
-                  padding: const EdgeInsets.only(left: 24, top: 4),
-                  child: Text(
-                    '${unit.name}: ${checkout.guestName} → ${checkin.guestName}',
-                    style: TextStyle(color: textColor, fontSize: 13),
-                  ),
-                );
-              }),
           ],
         ),
       ),
