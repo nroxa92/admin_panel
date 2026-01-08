@@ -6,32 +6,11 @@ Backend infrastruktura je izgrađena na **Firebase** ekosustavu uključujući Cl
 
 ---
 
-## 📊 Status Projekta
-
-| Komponenta | Status | Napredak |
-|------------|--------|----------|
-| Web Admin Panel | 🟢 Production Ready | 95% |
-| Tablet App | 🟡 U razvoju | 30% |
-| Cloud Functions | 🟢 Aktivno | 7 funkcija |
-| PDF Generator | 🟢 Kompletno | 10 tipova |
-| Translations | 🟢 Kompletno | 11 jezika |
-
----
-
-## 🎯 Svrha Projekta
-
-Cilj **VillaOS** sustava je automatizirati i pojednostaviti svakodnevne operacije upravljanja smještajnim jedinicama:
-
-- **Za vlasnike**: Centralizirani pregled svih jedinica, rezervacija i gostiju kroz intuitivni web panel
-- **Za goste**: Digitalna knjiga s pravilima, WiFi podacima i kontakt informacijama putem tablet uređaja u apartmanu
-- **Za čistačice**: Jednostavan check-in sustav s PIN kodom i checklistom zadataka
-
----
 # 📊 VillaOS Admin Panel - Kompletna Analiza Projekta
 
 **Datum analize:** Januar 2026  
 **GitHub:** https://github.com/nroxa92/admin_panel  
-**Ukupno linija koda:** ~14,500+
+**Ukupno linija koda:** ~18,000+
 
 ---
 
@@ -51,7 +30,7 @@ admin_panel/
 │   └── villa_admin.iml             # IntelliJ config
 │
 ├── 📁 lib/                         # FLUTTER SOURCE CODE
-│   ├── main.dart             (617) # Entry point + AuthWrapper + Navigation
+│   ├── main.dart             (628) # Entry point + AuthWrapper + Super Admin routing
 │   ├── firebase_options.dart  (22) # Firebase config (auto-generated)
 │   │
 │   ├── 📁 config/
@@ -75,6 +54,7 @@ admin_panel/
 │   │   ├── gallery_screen.dart     (789) # 🖼️ Galerija (placeholder)
 │   │   ├── login_screen.dart       (133) # 🔐 Login
 │   │   ├── settings_screen.dart   (1395) # ⚙️ Postavke
+│   │   ├── super_admin_screen.dart(1881) # 👑 Super Admin Dashboard (NOVO!)
 │   │   └── tenant_setup_screen.dart(414) # 🆕 Onboarding
 │   │
 │   ├── 📁 services/
@@ -91,7 +71,7 @@ admin_panel/
 │
 ├── 📁 functions/                   # CLOUD FUNCTIONS (Node.js)
 │   ├── .gitignore
-│   ├── index.js              (681) # 7 Cloud Functions
+│   ├── index.js              (681) # 9 Cloud Functions
 │   ├── package.json
 │   └── package-lock.json
 │
@@ -118,21 +98,33 @@ admin_panel/
 
 ## 🔷 ENTRY POINT
 
-### `lib/main.dart` (617 linija)
-**Svrha:** Ulazna točka aplikacije
+### `lib/main.dart` (628 linija)
+**Svrha:** Ulazna točka aplikacije + Super Admin routing
 
 **Sadržaj:**
 - `main()` - Firebase inicijalizacija
 - `AdminApp` - MaterialApp wrapper
-- `AuthWrapper` - Stream koji prati auth state
+- `superAdminEmail` - Konstanta za Super Admin email
+- `AuthWrapper` - Stream koji prati auth state + **Super Admin check**
 - `MainLayout` - Scaffold s navigation drawer
 - `NavDrawer` - Bočna navigacija (Dashboard, Calendar, Settings...)
 - GoRouter setup za URL-based navigation
 
+**Super Admin Logika:**
+```dart
+const String superAdminEmail = 'nevenroksa@gmail.com';
+
+// U AuthWrapper:
+if (userEmail == superAdminEmail) {
+  return const SuperAdminScreen();  // 👑 Super Admin vidi SAMO svoj dashboard
+}
+// Inače normalni flow...
+```
+
 **Ključne klase:**
 ```dart
 AdminApp → MaterialApp
-AuthWrapper → StreamBuilder<User?>
+AuthWrapper → StreamBuilder<User?> + Super Admin routing
 MainLayout → Scaffold + Drawer
 NavDrawer → ListView s navigation items
 ```
@@ -292,6 +284,66 @@ _language: String
 ---
 
 ## 🔷 SCREENS
+
+### 👑 `lib/screens/super_admin_screen.dart` (1881 linija) - **NOVO!**
+**Svrha:** Super Admin Dashboard - SAMO za `nevenroksa@gmail.com`
+
+**Pristup:**
+- Login s `nevenroksa@gmail.com` → Super Admin Dashboard
+- Login s bilo kojim drugim emailom → Regular Dashboard
+- Super Admin **NE VIDI** regular dashboard module
+
+**4 Taba:**
+
+#### **Tab 1: OWNERS** 👥
+| Funkcionalnost | Opis |
+|----------------|------|
+| 🔍 Search | Pretraživanje po imenu, email, tenant ID |
+| 📊 Stats | Total Owners, Active, Pending, Units, Bookings |
+| 🏷️ Filter | All / Active / Pending / Suspended |
+| ➕ Create Owner | Tenant ID, Email, Password (generator), Display Name |
+| 👁️ View Details | Svi podaci + statistika |
+| 🔑 Reset Password | Novo generiranje lozinke |
+| ⏸️ Toggle Status | Active ↔ Suspended |
+| 🗑️ Delete Owner | Double confirmation (upiši tenant ID) |
+
+#### **Tab 2: TABLETS** 📱
+| Funkcionalnost | Opis |
+|----------------|------|
+| 📊 Stats | Total, Online, Offline, Current APK |
+| 🟢 Online Status | Heartbeat unutar 5 minuta = Online |
+| 📂 Groups | default, beta, test, production |
+| 🔄 Change Group | Premjesti tablet u drugu grupu |
+| Grid prikaz | Kartica za svaki tablet |
+
+#### **Tab 3: ACTIVITY LOG** 📝
+| Akcija | Ikona | Boja |
+|--------|-------|------|
+| CREATE_OWNER | person_add | Green |
+| DELETE_OWNER | person_remove | Red |
+| SUSPEND_OWNER | block | Orange |
+| ACTIVATE_OWNER | check_circle | Green |
+| RESET_PASSWORD | key | Blue |
+| PUSH_APK_UPDATE | system_update | Purple |
+
+#### **Tab 4: APK UPDATES** 🚀
+| Funkcionalnost | Opis |
+|----------------|------|
+| Current Version | Prikaz trenutne verzije |
+| Push Update | Nova verzija + URL + Target Group |
+| Force Update | Checkbox za auto-install |
+| Tablets by Group | Pregled koliko tableta po grupi |
+| Affected Count | Broj tableta koji će primiti update |
+
+**Firestore kolekcije korištene:**
+```
+/tenant_links/{tenantId}     - Owner podaci
+/tablets/{deviceId}          - Registrirani tableti
+/admin_logs/{logId}          - Activity log
+/app_config/tablet_app       - APK verzija config
+```
+
+---
 
 ### `lib/screens/dashboard_screen.dart` (1295 linija)
 **Svrha:** Live Monitor - pregled svih jedinica
@@ -535,20 +587,78 @@ onQuickCreate(unitId, date)
 ### `functions/index.js` (681 linija)
 **Svrha:** Backend logic (Node.js 18)
 
-**Funkcije (7):**
+**Funkcije (9):**
 
-| Funkcija | Opis |
-|----------|------|
-| `createOwner` | Super Admin kreira novog vlasnika |
-| `activateTenant` | Aktivira tenant nakon email verifikacije |
-| `translateText` | AI prijevod pomoću Gemini API |
-| `translateBatch` | Batch prijevod više tekstova |
-| `processSignature` | Obradi potpis (resize, compress) |
-| `sendNotification` | Push notifikacije |
-| `cleanupOldData` | Scheduled cleanup |
+| Funkcija | Opis | Pristup |
+|----------|------|---------|
+| `createOwner` | Kreira novog vlasnika | Super Admin only |
+| `deleteOwner` | Briše vlasnika | Super Admin only |
+| `resetOwnerPassword` | Resetira lozinku | Super Admin only |
+| `toggleOwnerStatus` | Active/Suspended toggle | Super Admin only |
+| `linkTenantId` | Aktivira tenant account | Public |
+| `translateText` | AI prijevod (Gemini) | Authenticated |
+| `translateBatch` | Batch prijevod | Authenticated |
+| `registerTablet` | Registrira novi tablet | Authenticated |
+| `tabletHeartbeat` | Tablet ping (online status) | Authenticated |
+
+**Super Admin Check:**
+```javascript
+if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+  throw new HttpsError('permission-denied', 'Super Admin only');
+}
+```
 
 **Region:** `europe-west3`  
 **Secrets:** `GEMINI_API_KEY`
+
+---
+
+## 🔷 FIRESTORE SCHEMA
+
+### Postojeće kolekcije:
+```
+/settings/{tenantId}           - Owner postavke (30+ polja)
+/units/{unitId}                - Smještajne jedinice
+/bookings/{bookingId}          - Rezervacije
+/bookings/{id}/guests/{guestId} - Skenirani gosti (subcollection)
+/signatures/{signatureId}      - Potpisi pravila
+/cleaning_logs/{logId}         - Zapisnici čišćenja
+/tenant_links/{tenantId}       - Owner<->Firebase UID link
+```
+
+### 👑 NOVE kolekcije (Super Admin):
+```
+/tablets/{deviceId}
+├── deviceId: String
+├── unitId: String
+├── ownerId: String
+├── ownerName: String
+├── unitName: String
+├── appVersion: String           # "1.0.0"
+├── lastHeartbeat: Timestamp     # Zadnji ping
+├── group: String                # "default" | "beta" | "test" | "production"
+├── model: String                # "Samsung Tab A8"
+├── osVersion: String            # "Android 13"
+├── pendingUpdate: Boolean
+├── pendingVersion: String
+├── pendingApkUrl: String
+└── forceUpdate: Boolean
+
+/admin_logs/{logId}
+├── action: String               # "CREATE_OWNER", "DELETE_OWNER", etc.
+├── targetId: String             # Tenant ID
+├── targetEmail: String
+├── details: String
+├── timestamp: Timestamp
+└── performedBy: String          # "Super Admin"
+
+/app_config/tablet_app
+├── currentVersion: String       # "1.0.0"
+├── apkUrl: String               # Download URL
+├── updatedAt: Timestamp
+├── targetGroup: String          # "all" | "beta" | etc.
+└── forceUpdate: Boolean
+```
 
 ---
 
@@ -589,15 +699,57 @@ onQuickCreate(unitId, date)
 
 | Kategorija | Fajlova | Linija |
 |------------|---------|--------|
-| **Screens** | 8 | 7,450 |
+| **Screens** | 9 | 9,331 |
 | **Widgets** | 2 | 2,781 |
 | **Services** | 6 | 1,858 |
 | **Models** | 4 | 658 |
 | **Config** | 2 | 1,902 |
 | **Providers** | 1 | 123 |
-| **Main** | 2 | 639 |
+| **Main** | 2 | 650 |
 | **Functions** | 1 | 681 |
-| **UKUPNO** | **26** | **~16,000** |
+| **UKUPNO** | **27** | **~18,000** |
+
+---
+
+# 🔐 SIGURNOSNI MODEL
+
+## User Roles:
+
+| Role | Email | Pristup |
+|------|-------|---------|
+| **Super Admin** | `nevenroksa@gmail.com` | Super Admin Dashboard SAMO |
+| **Owner** | Bilo koji drugi | Regular Dashboard (tenant-isolated) |
+| **Cleaner** | N/A (tablet app) | PIN-based pristup |
+
+## Auth Flow:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    LOGIN                            │
+└─────────────────────────────────────────────────────┘
+                        │
+                        ▼
+           ┌────────────────────────┐
+           │  email == superAdmin?  │
+           └────────────────────────┘
+                  │           │
+                 YES          NO
+                  │           │
+                  ▼           ▼
+    ┌──────────────────┐  ┌─────────────────────┐
+    │ SuperAdminScreen │  │ Check Custom Claims │
+    │   (Owners,       │  │   role == 'admin'?  │
+    │   Tablets,       │  └─────────────────────┘
+    │   APK Updates)   │         │         │
+    └──────────────────┘        YES        NO
+                                 │         │
+                                 ▼         ▼
+                      ┌──────────────┐ ┌──────────────┐
+                      │  Dashboard   │ │ TenantSetup  │
+                      │  (tenant     │ │ (Onboarding) │
+                      │   isolated)  │ └──────────────┘
+                      └──────────────┘
+```
 
 ---
 
@@ -611,27 +763,51 @@ onQuickCreate(unitId, date)
 | **Navigation** | ✅ GoRouter | URL-based, refresh-safe |
 | **Translations** | ✅ 100% | 11 jezika, 130+ ključeva |
 | **Error Handling** | ✅ Dobro | Try-catch, mounted checks |
-| **Firebase Security** | ✅ Rules | Tenant isolation |
+| **Firebase Security** | ✅ Rules | Tenant isolation + Super Admin |
 | **PDF Generation** | ✅ 10 tipova | Kompletno |
+| **Super Admin** | ✅ Kompletno | Owner CRUD, Tablets, APK Updates |
 | **Responsive** | ⚠️ Djelomično | Web-first, mobile OK |
+| **Deprecation Warnings** | ✅ 0 | Flutter 3.32+ kompatibilno |
 
 ---
 
-# ⚠️ ZA ČIŠĆENJE (opcionalno)
+# 📱 TABLET APP INTEGRACIJA
 
-Ovi folderi **NE TREBAJU** biti na GitHubu:
-- `.dart_tool/` (cache)
-- `.firebase/` (cache)
-- `.idea/` (IDE config)
-- `build/` (compiled output)
+## Potrebne Cloud Functions za Tablet:
 
-**Preporuka:** Dodaj `.gitignore` i ukloni ih.
+| Funkcija | Status | Opis |
+|----------|--------|------|
+| `registerTablet` | ✅ Postoji | Registrira tablet u `/tablets` |
+| `tabletHeartbeat` | ✅ Postoji | Ping svakih 60s za online status |
+
+## Tablet → Firestore komunikacija:
+
+```
+TABLET STARTUP:
+1. Call registerTablet(deviceId, unitId)
+2. Read /settings/{tenantId}
+3. Read /units/{unitId}
+
+HEARTBEAT (every 60s):
+1. Call tabletHeartbeat(deviceId)
+2. Check pendingUpdate flag
+3. If true → download new APK
+
+GUEST SCAN:
+1. Write to /bookings/{id}/guests
+2. Update booking.is_scanned = true
+
+SIGNATURE:
+1. Upload to Storage
+2. Write to /signatures
 
 ---
 
 # 🎯 ZAKLJUČAK
 
 **VillaOS Admin Panel** je production-ready web aplikacija s:
+
+### Core Features:
 - ✅ Kompletnim CRUD operacijama
 - ✅ Multi-tenant arhitekturom
 - ✅ 11-jezičnom podrškom
@@ -640,11 +816,23 @@ Ovi folderi **NE TREBAJU** biti na GitHubu:
 - ✅ Drag & drop kalendar
 - ✅ Cloud Functions backend
 
-**Spremno za:** Produkcijsko korištenje + Tablet app integraciju
+### 👑 Super Admin Features (NOVO):
+- ✅ Owner Management (Create, Edit, Delete, Suspend)
+- ✅ Tablet Monitoring (Online/Offline status)
+- ✅ Tablet Groups (beta, test, production)
+- ✅ Mass APK Updates po grupama
+- ✅ Force Update opcija
+- ✅ Activity Log (sve akcije zapisane)
+
+**Spremno za:** 
+- ✅ Produkcijsko korištenje
+- ✅ Tablet app integraciju
+- ✅ Multi-owner SaaS deployment
 
 ---
 
-
+*Analiza generirana: Januar 2026* 
+---
 
 ## ⛔️ Licenca i Autorska Prava
 
