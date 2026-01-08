@@ -1,5 +1,7 @@
 // =====================================================
 // VillaOS Cloud Functions - COMPLETE (10 FUNCTIONS)
+// Version: 3.0 - Super Admin Email: master@admin.com
+// Date: 2025-01-09
 // =====================================================
 
 const {onCall} = require('firebase-functions/v2/https');
@@ -19,7 +21,7 @@ exports.createOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
     // SIGURNOST: Samo Super Admin
-    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -159,10 +161,15 @@ exports.linkTenantId = onCall(
         throw new Error('Your account has been suspended. Contact admin.');
       }
 
-      console.log('🔑 Setting custom claims...');
-      await admin.auth().setCustomUserClaims(firebaseUid, {tenantId: tenantId});
+      // 4. Set custom claims
+      console.log('🔐 Setting custom claims...');
+      await admin.auth().setCustomUserClaims(firebaseUid, {
+        ownerId: tenantId,
+        role: 'owner',
+      });
 
-      console.log('📝 Updating tenant_links...');
+      // 5. Update tenant_links
+      console.log('💾 Updating tenant_links...');
       await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
@@ -171,27 +178,27 @@ exports.linkTenantId = onCall(
           status: 'active',
         });
 
-      console.log('✅ linkTenantId completed successfully');
+      console.log('✅ Linking successful!');
 
       return {
         success: true,
         tenantId: String(tenantId),
-        message: 'Tenant ID linked successfully',
+        message: 'Account activated successfully!',
       };
     } catch (error) {
-      console.error('❌ Error in linkTenantId:', error);
+      console.error('❌ Error during linking:', error);
       throw new Error(error.message || 'Failed to link tenant ID');
     }
   }
 );
 
 // =====================================================
-// FUNKCIJA 3: Lista Vlasnika
+// FUNKCIJA 3: Lista Vlasnika (Super Admin)
 // =====================================================
 exports.listOwners = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -204,6 +211,7 @@ exports.listOwners = onCall(
           tenantId: String(doc.id),
           email: String(data.email || ''),
           displayName: String(data.displayName || ''),
+          firebaseUid: String(data.firebaseUid || ''),
           status: String(data.status || 'pending'),
           createdAt: data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toISOString() : null,
           linkedAt: data.linkedAt && data.linkedAt.toDate ? data.linkedAt.toDate().toISOString() : null,
@@ -224,7 +232,7 @@ exports.listOwners = onCall(
 exports.deleteOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -271,7 +279,7 @@ exports.deleteOwner = onCall(
 exports.resetOwnerPassword = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -323,7 +331,7 @@ exports.resetOwnerPassword = onCall(
 exports.toggleOwnerStatus = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -353,7 +361,7 @@ exports.toggleOwnerStatus = onCall(
 
       return {
         success: true,
-        message: `Owner ${status === 'active' ? 'activated' : 'suspended'}`,
+        message: `Owner ${status === 'active' ? 'activated' : 'suspended'} successfully`,
         tenantId: String(tenantId),
         status: String(status),
       };
@@ -450,7 +458,7 @@ exports.registerTablet = onCall(
   async (request) => {
     console.log('📱 registerTablet called');
 
-    const {tenantId, unitId, deviceId, model, osVersion, appVersion} = request.data;
+    const {tenantId, unitId} = request.data;
 
     if (!tenantId || !unitId) {
       console.error('❌ Missing required fields');
@@ -470,52 +478,121 @@ exports.registerTablet = onCall(
 
       if (!unitDoc.exists) {
         console.error(`❌ Unit "${unitId}" not found`);
-        throw new Error(`Unit "${unitId}" not found.`);
+        throw new Error(`Unit "${unitId}" not found. Check Web Panel.`);
       }
 
       const unitData = unitDoc.data();
       
       if (unitData.ownerId !== tenantId) {
-        console.error(`❌ Unit does not belong to tenant ${tenantId}`);
-        throw new Error('Unit does not belong to this tenant.');
+        console.error(`❌ Unit "${unitId}" does not belong to tenant "${tenantId}"`);
+        throw new Error('Unit does not belong to this tenant. Check credentials.');
       }
 
-      // 2. Kreiraj ili updatiraj tablet dokument
-      const tabletDocId = deviceId || `${tenantId}_${unitId}`;
+      console.log('✅ Unit ownership verified');
+
+      // 2. PROVJERI DA TENANT POSTOJI I AKTIVAN JE
+      console.log('🔍 Checking tenant status...');
       
-      await admin.firestore().collection('tablets').doc(tabletDocId).set({
-        deviceId: tabletDocId,
-        tenantId: tenantId,
+      const tenantDoc = await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .get();
+
+      if (!tenantDoc.exists) {
+        console.error(`❌ Tenant "${tenantId}" not found`);
+        throw new Error(`Tenant "${tenantId}" not found. Contact admin.`);
+      }
+
+      const tenantData = tenantDoc.data();
+      
+      if (tenantData.status === 'suspended') {
+        console.error('❌ Tenant account suspended');
+        throw new Error('Owner account is suspended. Contact admin.');
+      }
+
+      console.log('✅ Tenant verified');
+
+      // 3. PROVJERI DA LI VEĆ POSTOJI TABLET ZA OVAJ UNIT
+      const existingTablets = await admin.firestore()
+        .collection('tablets')
+        .where('unitId', '==', unitId)
+        .where('status', '==', 'active')
+        .get();
+
+      if (!existingTablets.empty) {
+        console.log('⚠️ Active tablet already exists for this unit, deactivating old...');
+        const batch = admin.firestore().batch();
+        existingTablets.docs.forEach(doc => {
+          batch.update(doc.ref, {status: 'replaced', replacedAt: admin.firestore.FieldValue.serverTimestamp()});
+        });
+        await batch.commit();
+      }
+
+      // 4. KREIRAJ ANONYMOUS AUTH USER ZA TABLET
+      console.log('👤 Creating tablet auth user...');
+      
+      const tabletDisplayName = `Tablet_${unitId}_${Date.now()}`;
+      
+      const userRecord = await admin.auth().createUser({
+        displayName: tabletDisplayName,
+      });
+
+      console.log(`✅ Auth user created: ${userRecord.uid}`);
+
+      // 5. POSTAVI CUSTOM CLAIMS
+      console.log('🔐 Setting custom claims...');
+      
+      await admin.auth().setCustomUserClaims(userRecord.uid, {
         ownerId: tenantId,
         unitId: unitId,
-        unitName: unitData.name || unitId,
-        ownerName: tenantId,
-        model: model || 'Unknown',
-        osVersion: osVersion || 'Unknown',
-        appVersion: appVersion || '1.0.0',
+        role: 'tablet',
+      });
+
+      console.log('✅ Custom claims set');
+
+      // 6. KREIRAJ TABLET DOKUMENT
+      console.log('📝 Creating tablet document...');
+      
+      const tabletRef = admin.firestore().collection('tablets').doc();
+      
+      await tabletRef.set({
+        tabletId: tabletRef.id,
+        firebaseUid: userRecord.uid,
+        ownerId: tenantId,
+        unitId: unitId,
+        unitName: unitData.name || 'Unknown',
+        ownerName: tenantData.displayName || tenantId,
         status: 'active',
         registeredAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastHeartbeat: admin.firestore.FieldValue.serverTimestamp(),
+        lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
+        appVersion: '1.0.0',
         pendingUpdate: false,
         pendingVersion: '',
         pendingApkUrl: '',
         forceUpdate: false,
-      }, {merge: true});
-
-      // 3. Kreiraj custom token za tablet
-      const customToken = await admin.auth().createCustomToken(tabletDocId, {
-        role: 'tablet',
-        tenantId: tenantId,
-        unitId: unitId,
+        updateStatus: '',
+        updateError: '',
       });
 
-      console.log('✅ Tablet registered successfully');
+      console.log(`✅ Tablet document created: ${tabletRef.id}`);
+
+      // 7. GENERIRAJ CUSTOM TOKEN
+      console.log('🎟️ Generating custom token...');
+      
+      const customToken = await admin.auth().createCustomToken(userRecord.uid, {
+        ownerId: tenantId,
+        unitId: unitId,
+        role: 'tablet',
+      });
+
+      console.log('✅ Custom token generated');
 
       return {
         success: true,
-        tabletId: tabletDocId,
+        tabletId: tabletRef.id,
+        firebaseUid: userRecord.uid,
         customToken: customToken,
-        message: 'Tablet registered successfully',
+        message: 'Tablet registered successfully!',
       };
     } catch (error) {
       console.error('❌ Error registering tablet:', error);
@@ -535,42 +612,49 @@ exports.tabletHeartbeat = onCall(
     }
 
     const claims = request.auth.token;
-    const {deviceId, appVersion, batteryLevel, isCharging} = request.data;
+    
+    if (claims.role !== 'tablet') {
+      throw new Error('Only tablets can send heartbeat');
+    }
+
+    const {unitId} = claims;
+    const {appVersion, batteryLevel, isCharging, updateStatus, updateError} = request.data;
 
     try {
-      // Pronađi tablet dokument
-      let tabletRef;
-      
-      if (deviceId) {
-        tabletRef = admin.firestore().collection('tablets').doc(deviceId);
-      } else if (claims.unitId) {
-        const tabletsSnapshot = await admin.firestore()
-          .collection('tablets')
-          .where('unitId', '==', claims.unitId)
-          .where('status', '==', 'active')
-          .limit(1)
-          .get();
+      const tabletsSnapshot = await admin.firestore()
+        .collection('tablets')
+        .where('unitId', '==', unitId)
+        .where('status', '==', 'active')
+        .limit(1)
+        .get();
 
-        if (!tabletsSnapshot.empty) {
-          tabletRef = tabletsSnapshot.docs[0].ref;
-        }
-      }
-
-      if (tabletRef) {
+      if (!tabletsSnapshot.empty) {
+        const tabletRef = tabletsSnapshot.docs[0].ref;
+        const tabletData = tabletsSnapshot.docs[0].data();
+        
+        // Update heartbeat data
         const updateData = {
-          lastHeartbeat: admin.firestore.FieldValue.serverTimestamp(),
+          lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
         };
-
+        
         if (appVersion) updateData.appVersion = appVersion;
         if (batteryLevel !== undefined) updateData.batteryLevel = batteryLevel;
         if (isCharging !== undefined) updateData.isCharging = isCharging;
-
+        if (updateStatus) {
+          updateData.updateStatus = updateStatus;
+          if (updateStatus === 'installed') {
+            updateData.pendingUpdate = false;
+            updateData.updateInstalledAt = admin.firestore.FieldValue.serverTimestamp();
+          } else if (updateStatus === 'downloaded') {
+            updateData.updateDownloadedAt = admin.firestore.FieldValue.serverTimestamp();
+          } else if (updateStatus === 'failed' && updateError) {
+            updateData.updateError = updateError;
+          }
+        }
+        
         await tabletRef.update(updateData);
 
-        // Provjeri ima li pending update
-        const tabletDoc = await tabletRef.get();
-        const tabletData = tabletDoc.data();
-
+        // Return pending update info
         return {
           success: true,
           pendingUpdate: tabletData.pendingUpdate || false,
@@ -589,7 +673,7 @@ exports.tabletHeartbeat = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 10: Translate Notification (NOVO!)
+// FUNKCIJA 10: Translate Notification (Super Admin)
 // =====================================================
 exports.translateNotification = onCall(
   {
@@ -598,7 +682,7 @@ exports.translateNotification = onCall(
   },
   async (request) => {
     // Super Admin only
-    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
       throw new Error('Unauthorized - Super Admin only');
     }
 
