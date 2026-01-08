@@ -1,5 +1,5 @@
 // FILE: lib/screens/dashboard_screen.dart
-// STATUS: UPDATED - GoRouter navigation (URL-based, refresh stays on same page)
+// STATUS: PRODUCTION READY - All strings translated
 // SADRŽAJ:
 //   - DashboardScreen (main screen with sidebar navigation)
 //   - LiveMonitorView (today/tomorrow panels + unit list)
@@ -24,7 +24,6 @@ import 'settings_screen.dart';
 // DASHBOARD SCREEN (Main Navigation)
 // =====================================================
 class DashboardScreen extends StatefulWidget {
-  // ✅ NOVO: Prima route iz GoRouter
   final String initialRoute;
 
   const DashboardScreen({super.key, this.initialRoute = 'reception'});
@@ -34,7 +33,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // ✅ NOVO: Mapiranje route -> index
   int get _selectedIndex {
     switch (widget.initialRoute) {
       case 'reception':
@@ -48,7 +46,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Lista ekrana (Tabovi)
   final List<Widget> _screens = const [
     LiveMonitorView(),
     screens.BookingScreen(),
@@ -69,7 +66,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ✅ NOVO: Navigacija putem GoRouter
   void _navigateTo(BuildContext context, String route) {
     context.go('/$route');
   }
@@ -90,92 +86,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
               iconTheme: IconThemeData(color: primaryColor),
             )
           : null,
-      drawer: isMobile ? Drawer(child: _buildSidebar(context)) : null,
+      drawer: isMobile ? _buildDrawer(context, provider) : null,
       body: Row(
         children: [
-          if (!isMobile) _buildSidebar(context),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: _screens,
-            ),
-          ),
+          if (!isMobile) _buildSidebar(context, provider),
+          Expanded(child: _screens[_selectedIndex]),
         ],
       ),
     );
   }
 
-  Widget _buildSidebar(BuildContext context) {
-    final provider = context.watch<AppProvider>();
+  Widget _buildDrawer(BuildContext context, AppProvider provider) {
     final t = provider.translate;
-    final primaryColor = provider.primaryColor;
     final isDark = provider.backgroundColor.computeLuminance() < 0.5;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final sidebarColor = isDark
-        ? Color.alphaBlend(
-            Colors.white.withValues(alpha: 0.05), provider.backgroundColor)
-        : Color.alphaBlend(
-            Colors.black.withValues(alpha: 0.05), provider.backgroundColor);
+    final primary = provider.primaryColor;
 
-    return Container(
-      width: 250,
-      color: sidebarColor,
-      child: Column(
-        children: [
-          Container(
-            height: 100,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border(
-                  bottom:
-                      BorderSide(color: primaryColor.withValues(alpha: 0.2))),
+    return Drawer(
+      backgroundColor: provider.backgroundColor,
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            _drawerTile(context, Icons.home, t('nav_reception'), 'reception',
+                _selectedIndex == 0, primary, textColor),
+            _drawerTile(context, Icons.calendar_month, t('nav_calendar'),
+                'calendar', _selectedIndex == 1, primary, textColor),
+            _drawerTile(context, Icons.settings, t('nav_settings'), 'settings',
+                _selectedIndex == 2, primary, textColor),
+            const Spacer(),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.red.shade300),
+              title: Text(t('nav_logout'),
+                  style: TextStyle(color: Colors.red.shade300)),
+              onTap: () => FirebaseAuth.instance.signOut(),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.shield, color: primaryColor, size: 28),
-                const SizedBox(width: 10),
-                Text("VILLA OS",
-                    style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        letterSpacing: 1.5)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          // ✅ NOVO: Koristi _navigateTo umjesto setState
-          _menuItem(0, 'reception', t('nav_reception'),
-              Icons.dashboard_customize_outlined, primaryColor, textColor),
-          _menuItem(1, 'calendar', t('nav_calendar'),
-              Icons.calendar_month_outlined, primaryColor, textColor),
-          _menuItem(2, 'settings', t('nav_settings'),
-              Icons.settings_suggest_outlined, primaryColor, textColor),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: OutlinedButton.icon(
-              onPressed: () => FirebaseAuth.instance.signOut(),
-              icon: const Icon(Icons.logout, size: 18),
-              label: Text(t('nav_logout')),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red[300],
-                side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-              ),
-            ),
-          )
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
 
-  // ✅ UPDATED: Prima route string za navigaciju
-  Widget _menuItem(int index, String route, String title, IconData icon,
-      Color primary, Color textColor) {
-    final isSelected = _selectedIndex == index;
+  Widget _drawerTile(BuildContext context, IconData icon, String title,
+      String route, bool isSelected, Color primary, Color textColor) {
     return ListTile(
       leading: Icon(icon, color: isSelected ? primary : Colors.grey, size: 24),
       title: Text(title,
@@ -184,7 +138,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
       selected: isSelected,
       selectedTileColor: primary.withValues(alpha: 0.1),
-      onTap: () => _navigateTo(context, route), // ✅ GoRouter navigacija
+      onTap: () {
+        Navigator.pop(context);
+        _navigateTo(context, route);
+      },
+    );
+  }
+
+  Widget _buildSidebar(BuildContext context, AppProvider provider) {
+    final t = provider.translate;
+    final isDark = provider.backgroundColor.computeLuminance() < 0.5;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final primary = provider.primaryColor;
+
+    return Container(
+      width: 220,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+        border: Border(
+          right: BorderSide(
+            color: isDark ? Colors.white12 : Colors.black12,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 30),
+          Text(
+            'VillaOS',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: primary,
+            ),
+          ),
+          const SizedBox(height: 30),
+          _sidebarTile(context, Icons.home, t('nav_reception'), 'reception',
+              _selectedIndex == 0, primary, textColor),
+          _sidebarTile(context, Icons.calendar_month, t('nav_calendar'),
+              'calendar', _selectedIndex == 1, primary, textColor),
+          _sidebarTile(context, Icons.settings, t('nav_settings'), 'settings',
+              _selectedIndex == 2, primary, textColor),
+          const Spacer(),
+          ListTile(
+            leading: Icon(Icons.logout, color: Colors.red.shade300),
+            title: Text(t('nav_logout'),
+                style: TextStyle(color: Colors.red.shade300)),
+            onTap: () => FirebaseAuth.instance.signOut(),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _sidebarTile(BuildContext context, IconData icon, String title,
+      String route, bool isSelected, Color primary, Color textColor) {
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? primary : Colors.grey, size: 24),
+      title: Text(title,
+          style: TextStyle(
+              color: isSelected ? textColor : Colors.grey,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      selected: isSelected,
+      selectedTileColor: primary.withValues(alpha: 0.1),
+      onTap: () => _navigateTo(context, route),
     );
   }
 }
@@ -200,428 +218,10 @@ class LiveMonitorView extends StatefulWidget {
 }
 
 class _LiveMonitorViewState extends State<LiveMonitorView> {
-  String _sortBy = 'name'; // Unit sort
-  String _categorySortBy = 'name'; // Category sort
-  final Set<String> _hiddenCategories =
-      {}; // Skrivene kategorije (prazan string = "Bez kategorije")
+  String _sortBy = 'name';
+  String _categorySortBy = 'name';
+  final Set<String> _hiddenCategories = {};
 
-  void _openNewUnitDialog(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    final settings = provider.settings;
-    final primaryColor = provider.primaryColor;
-
-    // 🔍 DEBUG - provjeri categories
-    debugPrint(
-        '🔍 _openNewUnitDialog - settings.categories: ${settings.categories}');
-    debugPrint(
-        '🔍 _openNewUnitDialog - categories length: ${settings.categories.length}');
-
-    // Controllers
-    final nameCtrl = TextEditingController();
-    final addrCtrl = TextEditingController();
-    final wifiNameCtrl = TextEditingController();
-    final wifiPassCtrl = TextEditingController();
-    final reviewLinkCtrl = TextEditingController();
-    final newZoneCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    String? selectedZone;
-    String? newZoneName; // Nova zona koja je potvrđena kvačicom
-    bool isLoading = false;
-    bool isAddingNewZone = false;
-    bool isSavingZone = false; // Loading za spremanje zone
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF1E1E1E),
-            title:
-                const Text("New Unit", style: TextStyle(color: Colors.white)),
-            content: SizedBox(
-              width: 400,
-              child: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Zona dropdown/input
-                      const Text("Zona",
-                          style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      const SizedBox(height: 6),
-
-                      // Ako dodaje novu zonu - prikaži input
-                      if (isAddingNewZone)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: primaryColor),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: newZoneCtrl,
-                                  autofocus: true,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    hintText: "Naziv nove zone...",
-                                    hintStyle: TextStyle(color: Colors.white38),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              // Kvačica - spremi novu zonu u Firebase
-                              isSavingZone
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: Colors.green),
-                                    )
-                                  : IconButton(
-                                      icon: const Icon(Icons.check,
-                                          color: Colors.green, size: 20),
-                                      onPressed: () async {
-                                        final zoneName =
-                                            newZoneCtrl.text.trim();
-                                        if (zoneName.isEmpty) return;
-
-                                        setDialogState(
-                                            () => isSavingZone = true);
-
-                                        try {
-                                          // Spremi novu zonu u Firebase ODMAH
-                                          await UnitsService()
-                                              .addCategory(zoneName);
-
-                                          // Stream će automatski osvježiti settings
-
-                                          if (context.mounted) {
-                                            setDialogState(() {
-                                              newZoneName = zoneName;
-                                              isAddingNewZone = false;
-                                              isSavingZone = false;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                    'Zona "$zoneName" spremljena!'),
-                                                backgroundColor: Colors.green,
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            setDialogState(
-                                                () => isSavingZone = false);
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text('Greška: $e'),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
-                                    ),
-                              IconButton(
-                                icon: const Icon(Icons.close,
-                                    color: Colors.red, size: 20),
-                                onPressed: () {
-                                  setDialogState(() {
-                                    isAddingNewZone = false;
-                                    newZoneName = null;
-                                    newZoneCtrl.clear();
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        )
-                      // Ako je nova zona potvrđena, prikaži je kao chip
-                      else if (newZoneName != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.check_circle,
-                                  size: 18, color: Colors.green),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  "Nova zona: $newZoneName",
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close,
-                                    size: 18, color: Colors.white70),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () =>
-                                    setDialogState(() => newZoneName = null),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        // Dropdown za odabir zone
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedZone,
-                              isExpanded: true,
-                              dropdownColor: const Color(0xFF2C2C2C),
-                              hint: const Text("Bez zone",
-                                  style: TextStyle(color: Colors.white70)),
-                              style: const TextStyle(color: Colors.white),
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text("Bez zone",
-                                      style: TextStyle(color: Colors.white70)),
-                                ),
-                                ...settings.categories
-                                    .map((zone) => DropdownMenuItem<String>(
-                                          value: zone,
-                                          child: Text(zone),
-                                        )),
-                                // Divider
-                                if (settings.categories.isNotEmpty)
-                                  const DropdownMenuItem<String>(
-                                    enabled: false,
-                                    value: '__divider__',
-                                    child: Divider(color: Colors.grey),
-                                  ),
-                                // + Dodaj novu zonu
-                                const DropdownMenuItem<String>(
-                                  value: '__add_new__',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.add_circle_outline,
-                                          size: 18, color: Colors.green),
-                                      SizedBox(width: 8),
-                                      Text("+ Dodaj novu zonu",
-                                          style:
-                                              TextStyle(color: Colors.green)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                if (val == '__add_new__') {
-                                  setDialogState(() {
-                                    isAddingNewZone = true;
-                                    selectedZone = null;
-                                  });
-                                } else if (val != '__divider__') {
-                                  setDialogState(() => selectedZone = val);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: nameCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        validator: (v) =>
-                            (v == null || v.isEmpty) ? "Required" : null,
-                        decoration: InputDecoration(
-                          labelText: "Unit Name *",
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          filled: true,
-                          fillColor: Colors.black26,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: addrCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        validator: (v) =>
-                            (v == null || v.isEmpty) ? "Required" : null,
-                        decoration: InputDecoration(
-                          labelText: "Address *",
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          filled: true,
-                          fillColor: Colors.black26,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: wifiNameCtrl,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: "WiFi SSID",
-                                labelStyle: const TextStyle(color: Colors.grey),
-                                filled: true,
-                                fillColor: Colors.black26,
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextFormField(
-                              controller: wifiPassCtrl,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: "WiFi Pass",
-                                labelStyle: const TextStyle(color: Colors.grey),
-                                filled: true,
-                                fillColor: Colors.black26,
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: reviewLinkCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Review Link (Optional)",
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          filled: true,
-                          fillColor: Colors.black26,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
-              ),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (!formKey.currentState!.validate()) return;
-
-                        // Provjeri ako je u modu dodavanja nove zone ali nije potvrdio
-                        if (isAddingNewZone) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text("Potvrdite novu zonu ili je otkažite"),
-                                backgroundColor: Colors.orange),
-                          );
-                          return;
-                        }
-
-                        setDialogState(() => isLoading = true);
-
-                        try {
-                          final service = UnitsService();
-
-                          // Koristi novu zonu ako je potvrđena, inače selectedZone
-                          // (zona je već spremljena u Firebase kod kvačice)
-                          String? finalZone = newZoneName ?? selectedZone;
-
-                          final unitId = await service.generateUnitId(
-                            ownerFirstName: settings.ownerFirstName,
-                            ownerLastName: settings.ownerLastName,
-                            category: finalZone,
-                            unitName: nameCtrl.text.trim(),
-                          );
-
-                          final unit = Unit(
-                            id: unitId,
-                            ownerId: '',
-                            ownerEmail: '',
-                            name: nameCtrl.text.trim(),
-                            address: addrCtrl.text.trim(),
-                            wifiSsid: wifiNameCtrl.text.trim(),
-                            wifiPass: wifiPassCtrl.text.trim(),
-                            cleanerPin: '',
-                            reviewLink: reviewLinkCtrl.text.trim(),
-                            contactOptions: {},
-                            category: finalZone,
-                          );
-
-                          await service.saveUnit(unit);
-
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Unit created: $unitId"),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text("Error: $e"),
-                                  backgroundColor: Colors.red),
-                            );
-                          }
-                        } finally {
-                          if (context.mounted) {
-                            setDialogState(() => isLoading = false);
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.black, strokeWidth: 2),
-                      )
-                    : const Text("CREATE",
-                        style: TextStyle(
-                            color: Colors.black, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  // Helper: Toggle visibility kategorije
   void _toggleCategoryVisibility(String category) {
     setState(() {
       if (_hiddenCategories.contains(category)) {
@@ -632,66 +232,338 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
     });
   }
 
-  // Helper: Dohvati datum najstarijeg unita u listi
-  DateTime _getOldestUnitDate(List<Unit> units) {
-    if (units.isEmpty) return DateTime(2000);
-    DateTime oldest = units.first.createdAt ?? DateTime(2000);
-    for (var unit in units) {
-      final created = unit.createdAt ?? DateTime(2000);
-      if (created.isBefore(oldest)) {
-        oldest = created;
-      }
-    }
-    return oldest;
+  void _openNewUnitDialog(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    final t = provider.translate;
+    final primaryColor = provider.primaryColor;
+    final unitsService = UnitsService();
+
+    final nameCtrl = TextEditingController();
+    final addrCtrl = TextEditingController();
+    final wifiNameCtrl = TextEditingController();
+    final wifiPassCtrl = TextEditingController();
+    final reviewLinkCtrl = TextEditingController();
+    final newZoneCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    String? selectedZone;
+    String? newZoneValue;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StreamBuilder<List<Unit>>(
+        // Dohvati sve units da dobijemo postojeće zone
+        stream: unitsService.getUnitsStream(),
+        builder: (context, unitSnapshot) {
+          // Kombiniraj zone iz units + settings
+          final Set<String> allZones = {};
+
+          // 1. Dodaj zone iz postojećih units
+          if (unitSnapshot.hasData) {
+            for (var unit in unitSnapshot.data!) {
+              if (unit.category != null && unit.category!.isNotEmpty) {
+                allZones.add(unit.category!);
+              }
+            }
+          }
+
+          // 2. Dodaj zone iz settings
+          for (var cat in provider.settings.categories) {
+            if (cat.isNotEmpty) {
+              allZones.add(cat);
+            }
+          }
+
+          // Sortiraj abecedno
+          final sortedZones = allZones.toList()..sort();
+
+          return StatefulBuilder(builder: (context, setDialogState) {
+            final isDark = provider.backgroundColor.computeLuminance() < 0.5;
+            final textColor = isDark ? Colors.white : Colors.black87;
+
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              title: Text(t('dialog_new_unit'),
+                  style: TextStyle(color: textColor)),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: SizedBox(
+                    width: 400,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // SECTION: Identification
+                        Text(t('section_identification'),
+                            style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: nameCtrl,
+                          decoration: InputDecoration(
+                            labelText: "${t('label_name')} *",
+                            labelStyle: TextStyle(color: Colors.grey.shade400),
+                            border: const OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: textColor),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? t('msg_error') : null,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: addrCtrl,
+                          decoration: InputDecoration(
+                            labelText: t('label_address'),
+                            labelStyle: TextStyle(color: Colors.grey.shade400),
+                            border: const OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: textColor),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Zone dropdown - DINAMIČKI IZ UNITS + SETTINGS
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                initialValue: selectedZone,
+                                decoration: InputDecoration(
+                                  labelText: t('sort_zones'),
+                                  labelStyle:
+                                      TextStyle(color: Colors.grey.shade400),
+                                  border: const OutlineInputBorder(),
+                                ),
+                                dropdownColor: isDark
+                                    ? const Color(0xFF2C2C2C)
+                                    : Colors.white,
+                                style: TextStyle(color: textColor),
+                                items: [
+                                  // Opcija "Bez zone"
+                                  DropdownMenuItem<String>(
+                                    value: null,
+                                    child: Text(t('zone_none'),
+                                        style: TextStyle(color: textColor)),
+                                  ),
+                                  // Postojeće zone
+                                  ...sortedZones.map((cat) => DropdownMenuItem(
+                                      value: cat,
+                                      child: Text(cat,
+                                          style: TextStyle(color: textColor)))),
+                                  // Opcija "Nova zona"
+                                  DropdownMenuItem<String>(
+                                    value: '__new__',
+                                    child: Text("+ ${t('new_zone')}",
+                                        style: TextStyle(color: primaryColor)),
+                                  ),
+                                ],
+                                onChanged: (val) {
+                                  setDialogState(() {
+                                    if (val == '__new__') {
+                                      selectedZone = null;
+                                      newZoneValue = '';
+                                    } else {
+                                      selectedZone = val;
+                                      newZoneValue = null;
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // New zone text field
+                        if (newZoneValue != null) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: newZoneCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: t('new_zone'),
+                                    labelStyle:
+                                        TextStyle(color: Colors.grey.shade400),
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                  style: TextStyle(color: textColor),
+                                  onChanged: (v) =>
+                                      setDialogState(() => newZoneValue = v),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.close, color: Colors.red),
+                                onPressed: () =>
+                                    setDialogState(() => newZoneValue = null),
+                              ),
+                            ],
+                          ),
+                          Text(t('msg_confirm_zone'),
+                              style: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 11)),
+                        ],
+
+                        const SizedBox(height: 20),
+
+                        // SECTION: Connectivity
+                        Text(t('section_connectivity'),
+                            style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: wifiNameCtrl,
+                          decoration: InputDecoration(
+                            labelText: t('label_wifi_ssid'),
+                            labelStyle: TextStyle(color: Colors.grey.shade400),
+                            border: const OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: textColor),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: wifiPassCtrl,
+                          decoration: InputDecoration(
+                            labelText: t('label_wifi_pass'),
+                            labelStyle: TextStyle(color: Colors.grey.shade400),
+                            border: const OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: textColor),
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: reviewLinkCtrl,
+                          decoration: InputDecoration(
+                            labelText: t('label_review_link'),
+                            labelStyle: TextStyle(color: Colors.grey.shade400),
+                            border: const OutlineInputBorder(),
+                          ),
+                          style: TextStyle(color: textColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(t('btn_cancel')),
+                ),
+                ElevatedButton(
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+
+                    final finalZone = newZoneValue?.trim().isNotEmpty == true
+                        ? newZoneValue!.trim()
+                        : selectedZone;
+
+                    // Ako je nova zona, spremi je u settings
+                    if (newZoneValue?.trim().isNotEmpty == true) {
+                      await unitsService.addCategory(newZoneValue!.trim());
+                    }
+
+                    // Generate unit ID
+                    final settings = provider.settings;
+                    final unitId = await unitsService.generateUnitId(
+                      ownerFirstName: settings.ownerFirstName,
+                      ownerLastName: settings.ownerLastName,
+                      category: finalZone,
+                      unitName: nameCtrl.text.trim(),
+                    );
+
+                    final newUnit = Unit(
+                      id: unitId,
+                      ownerId: '',
+                      ownerEmail: '',
+                      name: nameCtrl.text.trim(),
+                      address: addrCtrl.text.trim(),
+                      category: finalZone,
+                      wifiSsid: wifiNameCtrl.text.trim(),
+                      wifiPass: wifiPassCtrl.text.trim(),
+                      cleanerPin: '',
+                      reviewLink: reviewLinkCtrl.text.trim(),
+                      contactOptions: {},
+                    );
+
+                    await unitsService.saveUnit(newUnit);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: Text(t('btn_save'),
+                      style: const TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          });
+        },
+      ),
+    );
   }
 
-  // Vraća mapu: categoryKey -> List<Unit> (sortirano)
+  // Helper functions
+  DateTime _stripTime(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  // Sort units
+  List<Unit> _sortUnits(List<Unit> units, List<Booking> bookings) {
+    final List<Unit> unitsCopy = List.from(units);
+    final categoryGroups = _groupAndSortUnits(unitsCopy, bookings);
+    final sortedKeys = _getSortedCategoryKeys(categoryGroups);
+
+    final List<Unit> result = [];
+    for (var key in sortedKeys) {
+      result.addAll(categoryGroups[key]!);
+    }
+    return result;
+  }
+
   Map<String, List<Unit>> _groupAndSortUnits(
       List<Unit> units, List<Booking> bookings) {
-    // =========================================
-    // KORAK 1: Grupiraj jedinice po kategorijama
-    // =========================================
-    final Map<String, List<Unit>> categoryGroups = {};
+    final Map<String, List<Unit>> groups = {};
 
     for (var unit in units) {
-      final catKey = unit.category ?? ''; // Prazan string = "Bez kategorije"
-      categoryGroups.putIfAbsent(catKey, () => []);
-      categoryGroups[catKey]!.add(unit);
+      final key = unit.category ?? '';
+      groups.putIfAbsent(key, () => []);
+      groups[key]!.add(unit);
     }
 
-    // =========================================
-    // KORAK 2: Sortiraj jedinice unutar svake kategorije
-    // =========================================
-    for (var catKey in categoryGroups.keys) {
-      final catUnits = categoryGroups[catKey]!;
-
+    // Sort units within each group
+    for (var key in groups.keys) {
+      final list = groups[key]!;
       switch (_sortBy) {
         case 'name':
-          catUnits.sort((a, b) => a.name.compareTo(b.name));
+          list.sort((a, b) => a.name.compareTo(b.name));
           break;
         case 'busy':
-          catUnits.sort((a, b) {
-            int daysA = _countBookedDays(a.id, bookings);
-            int daysB = _countBookedDays(b.id, bookings);
-            return daysB.compareTo(daysA);
-          });
+          final counts = <String, int>{};
+          for (var u in list) {
+            counts[u.id] = bookings.where((b) => b.unitId == u.id).length;
+          }
+          list.sort((a, b) => (counts[b.id] ?? 0).compareTo(counts[a.id] ?? 0));
           break;
         case 'created':
-          catUnits.sort((a, b) => (a.createdAt ?? DateTime(2000))
+          list.sort((a, b) => (a.createdAt ?? DateTime(2000))
               .compareTo(b.createdAt ?? DateTime(2000)));
           break;
       }
     }
 
-    return categoryGroups;
+    return groups;
   }
 
-  // Vraća sortiranu listu kategorija
-  List<String> _getSortedCategoryKeys(Map<String, List<Unit>> categoryGroups) {
-    final categoryKeys = categoryGroups.keys.toList();
+  List<String> _getSortedCategoryKeys(Map<String, List<Unit>> groups) {
+    final keys = groups.keys.toList();
 
-    // "Bez kategorije" (prazan string) uvijek PRVA
-    categoryKeys.sort((a, b) {
+    keys.sort((a, b) {
       if (a.isEmpty) return -1;
       if (b.isEmpty) return 1;
 
@@ -699,68 +571,49 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
         case 'name':
           return a.compareTo(b);
         case 'created':
-          final aOldest = _getOldestUnitDate(categoryGroups[a]!);
-          final bOldest = _getOldestUnitDate(categoryGroups[b]!);
+          final aOldest = _getOldestDate(groups[a]!);
+          final bOldest = _getOldestDate(groups[b]!);
           return aOldest.compareTo(bOldest);
         default:
           return a.compareTo(b);
       }
     });
 
-    return categoryKeys;
+    return keys;
   }
 
-  // Stara metoda - zadržana za kompatibilnost
-  List<Unit> _sortUnits(List<Unit> units, List<Booking> bookings) {
-    final groups = _groupAndSortUnits(units, bookings);
-    final sortedKeys = _getSortedCategoryKeys(groups);
-
-    final List<Unit> result = [];
-    for (var key in sortedKeys) {
-      result.addAll(groups[key]!);
+  DateTime _getOldestDate(List<Unit> units) {
+    if (units.isEmpty) return DateTime(2000);
+    DateTime oldest = units.first.createdAt ?? DateTime(2000);
+    for (var u in units) {
+      final d = u.createdAt ?? DateTime(2000);
+      if (d.isBefore(oldest)) oldest = d;
     }
-    return result;
+    return oldest;
   }
-
-  int _countBookedDays(String unitId, List<Booking> bookings) {
-    int count = 0;
-    final now = DateTime.now();
-    final end = now.add(const Duration(days: 30));
-    for (var b in bookings) {
-      if (b.unitId == unitId) {
-        if (b.startDate.isBefore(end) && b.endDate.isAfter(now)) {
-          count += b.endDate.difference(b.startDate).inDays;
-        }
-      }
-    }
-    return count;
-  }
-
-  DateTime _stripTime(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   Widget build(BuildContext context) {
-    final unitsService = UnitsService();
-    final bookingService = BookingService();
     final provider = context.watch<AppProvider>();
     final t = provider.translate;
     final primaryColor = provider.primaryColor;
-    final textColor =
-        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white;
+    final textColor = provider.backgroundColor.computeLuminance() < 0.5
+        ? Colors.white
+        : Colors.black87;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 800;
     final isMobile = screenWidth < 1000;
     final isDark = provider.backgroundColor.computeLuminance() < 0.5;
+
+    final unitsService = UnitsService();
+    final bookingService = BookingService();
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Hide title on mobile (AppBar already shows it)
+          // Hide title on mobile
           if (!isMobile) ...[
             Text(
               t('nav_reception'),
@@ -773,199 +626,6 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
             const SizedBox(height: 20),
           ],
 
-          // Toolbar: Sort + New Unit button
-          Wrap(
-            spacing: 15,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              // COMBINED SORT POPUP MENU (Units + Categories)
-              PopupMenuButton<String>(
-                tooltip: "Sort Options",
-                color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                offset: const Offset(0, 45),
-                onSelected: (value) {
-                  setState(() {
-                    // Unit sort options
-                    if (value == 'unit_name' ||
-                        value == 'unit_busy' ||
-                        value == 'unit_created') {
-                      _sortBy = value.replaceFirst('unit_', '');
-                    }
-                    // Category sort options
-                    if (value == 'cat_name' || value == 'cat_created') {
-                      _categorySortBy = value.replaceFirst('cat_', '');
-                    }
-                  });
-                },
-                itemBuilder: (context) => [
-                  // UNITS HEADER
-                  PopupMenuItem<String>(
-                    enabled: false,
-                    height: 30,
-                    child: Text(
-                      "UNITS",
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  // Unit: Name
-                  PopupMenuItem<String>(
-                    value: 'unit_name',
-                    height: 40,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _sortBy == 'name' ? Icons.check : null,
-                          color: primaryColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text("Name", style: TextStyle(color: textColor)),
-                      ],
-                    ),
-                  ),
-                  // Unit: Occupancy
-                  PopupMenuItem<String>(
-                    value: 'unit_busy',
-                    height: 40,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _sortBy == 'busy' ? Icons.check : null,
-                          color: primaryColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text("Occupancy", style: TextStyle(color: textColor)),
-                      ],
-                    ),
-                  ),
-                  // Unit: Created
-                  PopupMenuItem<String>(
-                    value: 'unit_created',
-                    height: 40,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _sortBy == 'created' ? Icons.check : null,
-                          color: primaryColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text("Created", style: TextStyle(color: textColor)),
-                      ],
-                    ),
-                  ),
-                  // DIVIDER
-                  const PopupMenuDivider(),
-                  // ZONES HEADER
-                  PopupMenuItem<String>(
-                    enabled: false,
-                    height: 30,
-                    child: Text(
-                      "ZONES",
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  // Cat: Name
-                  PopupMenuItem<String>(
-                    value: 'cat_name',
-                    height: 40,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _categorySortBy == 'name' ? Icons.check : null,
-                          color: primaryColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text("Name", style: TextStyle(color: textColor)),
-                      ],
-                    ),
-                  ),
-                  // Cat: Created
-                  PopupMenuItem<String>(
-                    value: 'cat_created',
-                    height: 40,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _categorySortBy == 'created' ? Icons.check : null,
-                          color: primaryColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text("Created", style: TextStyle(color: textColor)),
-                      ],
-                    ),
-                  ),
-                ],
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isDark ? Colors.white12 : Colors.black12,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Sort",
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(Icons.sort, color: primaryColor, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-
-              // NEW UNIT BUTTON
-              ElevatedButton.icon(
-                onPressed: () => _openNewUnitDialog(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: isDark ? Colors.black : Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                ),
-                icon: const Icon(Icons.add, size: 20),
-                label: Text(
-                  t('dialog_new_unit'),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 30),
-
           Expanded(
             child: StreamBuilder<List<Booking>>(
                 stream: bookingService.getBookingsStream(),
@@ -977,7 +637,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
                         return Center(
-                            child: Text("Error: ${snapshot.error}",
+                            child: Text("${t('msg_error')}: ${snapshot.error}",
                                 style: const TextStyle(color: Colors.red)));
                       }
                       if (!snapshot.hasData) {
@@ -986,16 +646,21 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                 CircularProgressIndicator(color: primaryColor));
                       }
 
-                      // SORTIRAJ JEDINICE
                       final units = _sortUnits(snapshot.data!, bookings);
+
+                      // Collect all categories for visibility dropdown
+                      final allCategories = <String>{};
+                      for (var unit in units) {
+                        allCategories.add(unit.category ?? '');
+                      }
 
                       if (units.isEmpty) {
                         return Center(
-                            child: Text("No units found.",
+                            child: Text(t('msg_no_units'),
                                 style: TextStyle(color: textColor)));
                       }
 
-                      // Filter today's bookings
+                      // TODAY
                       final today = _stripTime(DateTime.now());
                       final checkInsToday = bookings
                           .where((b) => _isSameDay(b.startDate, today))
@@ -1004,7 +669,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                           .where((b) => _isSameDay(b.endDate, today))
                           .toList();
 
-                      // Turnovers: where checkout and checkin happen same day on same unit
+                      // Turnovers today
                       final turnovers = <Map<String, dynamic>>[];
                       for (var unit in units) {
                         final unitBookings = bookings
@@ -1027,7 +692,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                         }
                       }
 
-                      // TOMORROW INFO
+                      // TOMORROW
                       final tomorrow = today.add(const Duration(days: 1));
                       final checkInsTomorrow = bookings
                           .where((b) => _isSameDay(b.startDate, tomorrow))
@@ -1061,16 +726,25 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
 
                       return ListView(
                         children: [
-                          // RESPONSIVE INFO PANELS (TODAY + TOMORROW)
+                          // TOOLBAR (inside stream for access to units/categories)
+                          _buildToolbar(
+                            context,
+                            isDark,
+                            primaryColor,
+                            textColor,
+                            allCategories,
+                          ),
+                          const SizedBox(height: 30),
+
+                          // RESPONSIVE INFO PANELS
                           if (isWideScreen)
-                            // Desktop: Side by side
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
                                   child: _buildDailyScheduleWidget(
                                     context,
-                                    'DANAS',
+                                    t('day_today'),
                                     today,
                                     checkInsToday,
                                     checkOutsToday,
@@ -1085,7 +759,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                 Expanded(
                                   child: _buildDailyScheduleWidget(
                                     context,
-                                    'SUTRA',
+                                    t('day_tomorrow'),
                                     tomorrow,
                                     checkInsTomorrow,
                                     checkOutsTomorrow,
@@ -1099,12 +773,11 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                               ],
                             )
                           else
-                            // Mobile: Stacked
                             Column(
                               children: [
                                 _buildDailyScheduleWidget(
                                   context,
-                                  'DANAS',
+                                  t('day_today'),
                                   today,
                                   checkInsToday,
                                   checkOutsToday,
@@ -1117,7 +790,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                                 const SizedBox(height: 20),
                                 _buildDailyScheduleWidget(
                                   context,
-                                  'SUTRA',
+                                  t('day_tomorrow'),
                                   tomorrow,
                                   checkInsTomorrow,
                                   checkOutsTomorrow,
@@ -1131,7 +804,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                             ),
                           const SizedBox(height: 30),
 
-                          // UNITS LIST - Grouped by Categories
+                          // UNITS LIST
                           ..._buildCategoryGroupedUnits(
                             units,
                             bookings,
@@ -1151,6 +824,285 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
   }
 
   // =====================================================
+  // TOOLBAR (extracted for cleaner code)
+  // =====================================================
+  Widget _buildToolbar(
+    BuildContext context,
+    bool isDark,
+    Color primaryColor,
+    Color textColor,
+    Set<String> allCategories,
+  ) {
+    final t = context.read<AppProvider>().translate;
+
+    return Wrap(
+      spacing: 15,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        // SORT POPUP MENU
+        PopupMenuButton<String>(
+          tooltip: t('tooltip_sort'),
+          color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          offset: const Offset(0, 45),
+          onSelected: (value) {
+            setState(() {
+              if (value == 'unit_name' ||
+                  value == 'unit_busy' ||
+                  value == 'unit_created') {
+                _sortBy = value.replaceFirst('unit_', '');
+              }
+              if (value == 'cat_name' || value == 'cat_created') {
+                _categorySortBy = value.replaceFirst('cat_', '');
+              }
+            });
+          },
+          itemBuilder: (context) => [
+            // UNITS HEADER
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 30,
+              child: Text(
+                t('sort_units'),
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'unit_name',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(
+                    _sortBy == 'name' ? Icons.check : null,
+                    color: primaryColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(t('sort_by_name'), style: TextStyle(color: textColor)),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'unit_busy',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(
+                    _sortBy == 'busy' ? Icons.check : null,
+                    color: primaryColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(t('sort_by_occupancy'),
+                      style: TextStyle(color: textColor)),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'unit_created',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(
+                    _sortBy == 'created' ? Icons.check : null,
+                    color: primaryColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(t('sort_by_created'),
+                      style: TextStyle(color: textColor)),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
+            // ZONES HEADER
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 30,
+              child: Text(
+                t('sort_zones'),
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'cat_name',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(
+                    _categorySortBy == 'name' ? Icons.check : null,
+                    color: primaryColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(t('sort_by_name'), style: TextStyle(color: textColor)),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'cat_created',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(
+                    _categorySortBy == 'created' ? Icons.check : null,
+                    color: primaryColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(t('sort_by_created'),
+                      style: TextStyle(color: textColor)),
+                ],
+              ),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
+            ),
+            child: Icon(Icons.sort, color: primaryColor, size: 20),
+          ),
+        ),
+
+        // ZONE VISIBILITY DROPDOWN
+        PopupMenuButton<String>(
+          tooltip: t('tooltip_visibility'),
+          color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          offset: const Offset(0, 45),
+          onSelected: (value) {
+            if (value == '_show_all') {
+              setState(() => _hiddenCategories.clear());
+            } else if (value == '_hide_all') {
+              setState(() => _hiddenCategories.addAll(allCategories));
+            } else {
+              _toggleCategoryVisibility(value);
+            }
+          },
+          itemBuilder: (context) {
+            final sortedCategories = allCategories.toList()
+              ..sort((a, b) {
+                if (a.isEmpty) return -1;
+                if (b.isEmpty) return 1;
+                return a.compareTo(b);
+              });
+
+            return [
+              // SHOW ALL
+              PopupMenuItem<String>(
+                value: '_show_all',
+                height: 40,
+                child: Row(
+                  children: [
+                    Icon(Icons.visibility, color: primaryColor, size: 18),
+                    const SizedBox(width: 8),
+                    Text(t('show_all'),
+                        style: TextStyle(
+                            color: textColor, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              // HIDE ALL
+              PopupMenuItem<String>(
+                value: '_hide_all',
+                height: 40,
+                child: Row(
+                  children: [
+                    const Icon(Icons.visibility_off,
+                        color: Colors.grey, size: 18),
+                    const SizedBox(width: 8),
+                    Text(t('hide_all'),
+                        style: TextStyle(
+                            color: textColor, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              // Individual categories
+              ...sortedCategories.map((cat) {
+                final isHidden = _hiddenCategories.contains(cat);
+                final displayName = cat.isEmpty ? t('zone_none') : cat;
+                return PopupMenuItem<String>(
+                  value: cat,
+                  height: 40,
+                  child: Row(
+                    children: [
+                      Icon(
+                        isHidden ? Icons.visibility_off : Icons.visibility,
+                        color: isHidden ? Colors.grey : primaryColor,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(displayName, style: TextStyle(color: textColor)),
+                    ],
+                  ),
+                );
+              }),
+            ];
+          },
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
+            ),
+            child: Icon(
+              _hiddenCategories.isEmpty
+                  ? Icons.visibility
+                  : Icons.visibility_off,
+              color: _hiddenCategories.isEmpty ? primaryColor : Colors.grey,
+              size: 20,
+            ),
+          ),
+        ),
+
+        // NEW UNIT BUTTON
+        ElevatedButton.icon(
+          onPressed: () => _openNewUnitDialog(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primaryColor,
+            foregroundColor: isDark ? Colors.black : Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            elevation: 2,
+          ),
+          icon: const Icon(Icons.add, size: 20),
+          label: Text(
+            t('dialog_new_unit'),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =====================================================
   // BUILD CATEGORY GROUPED UNITS
   // =====================================================
   List<Widget> _buildCategoryGroupedUnits(
@@ -1160,16 +1112,16 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
     Color primaryColor,
     Color textColor,
   ) {
+    final t = context.read<AppProvider>().translate;
     final List<Widget> widgets = [];
 
-    // Grupiraj i sortiraj
     final categoryGroups = _groupAndSortUnits(units, bookings);
     final sortedKeys = _getSortedCategoryKeys(categoryGroups);
 
     for (var categoryKey in sortedKeys) {
       final categoryUnits = categoryGroups[categoryKey]!;
       final isHidden = _hiddenCategories.contains(categoryKey);
-      final displayName = categoryKey.isEmpty ? 'Bez zone' : categoryKey;
+      final displayName = categoryKey.isEmpty ? t('zone_none') : categoryKey;
 
       // Category Header
       widgets.add(
@@ -1177,14 +1129,12 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
           padding: const EdgeInsets.only(top: 10, bottom: 8),
           child: Row(
             children: [
-              // Category icon
               Icon(
                 categoryKey.isEmpty ? Icons.home_outlined : Icons.apartment,
                 color: primaryColor,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              // Category name
               Expanded(
                 child: Text(
                   '$displayName (${categoryUnits.length})',
@@ -1195,14 +1145,13 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                   ),
                 ),
               ),
-              // Visibility toggle (oko)
               IconButton(
                 icon: Icon(
                   isHidden ? Icons.visibility_off : Icons.visibility,
                   color: isHidden ? Colors.grey : primaryColor,
                   size: 20,
                 ),
-                tooltip: isHidden ? 'Show category' : 'Hide category',
+                tooltip: isHidden ? t('show_category') : t('hide_category'),
                 onPressed: () => _toggleCategoryVisibility(categoryKey),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -1212,7 +1161,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
         ),
       );
 
-      // Units in category (if not hidden)
+      // Units (if not hidden)
       if (!isHidden) {
         for (var unit in categoryUnits) {
           widgets.add(
@@ -1229,11 +1178,11 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
   }
 
   // =====================================================
-  // DAILY SCHEDULE WIDGET BUILDER
+  // DAILY SCHEDULE WIDGET
   // =====================================================
   Widget _buildDailyScheduleWidget(
     BuildContext context,
-    String label, // "DANAS" or "SUTRA"
+    String label,
     DateTime date,
     List<Booking> checkIns,
     List<Booking> checkOuts,
@@ -1243,7 +1192,16 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
     Color primaryColor,
     Color textColor,
   ) {
+    final t = context.read<AppProvider>().translate;
     final dateStr = DateFormat('EEEE, dd.MM.yyyy').format(date);
+
+    String getUnitName(String unitId) {
+      try {
+        return units.firstWhere((u) => u.id == unitId).name;
+      } catch (_) {
+        return unitId;
+      }
+    }
 
     return Container(
       constraints: const BoxConstraints(minHeight: 200),
@@ -1277,167 +1235,108 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
               ],
             ),
             const SizedBox(height: 12),
-            Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
-            const SizedBox(height: 12),
+            Divider(color: isDark ? Colors.white24 : Colors.black12),
+            const SizedBox(height: 8),
 
             // CHECK-INS
-            _buildSectionRow(
-              icon: Icons.arrow_downward,
-              iconColor: Colors.blue,
-              title: 'CHECK-IN (${checkIns.length})',
-              items: checkIns,
-              units: units,
-              textColor: textColor,
-              formatter: (b, unit) =>
-                  '${b.checkInTime} - ${b.guestName} @ ${unit.name}',
-              emptyMessage: 'Nema check-inova',
+            Row(
+              children: [
+                const Icon(Icons.login, color: Colors.green, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  "${t('check_ins')}: ${checkIns.length}",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-
+            if (checkIns.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, top: 4),
+                child: Text(t('no_activity'),
+                    style:
+                        TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+              )
+            else
+              ...checkIns.map((b) => Padding(
+                    padding: const EdgeInsets.only(left: 24, top: 4),
+                    child: Text(
+                      '${getUnitName(b.unitId)} - ${b.guestName} (${b.checkInTime})',
+                      style: TextStyle(color: textColor, fontSize: 13),
+                    ),
+                  )),
             const SizedBox(height: 12),
 
             // CHECK-OUTS
-            _buildSectionRow(
-              icon: Icons.arrow_upward,
-              iconColor: Colors.red,
-              title: 'CHECK-OUT (${checkOuts.length})',
-              items: checkOuts,
-              units: units,
-              textColor: textColor,
-              formatter: (b, unit) =>
-                  '${b.checkOutTime} - ${b.guestName} @ ${unit.name}',
-              emptyMessage: 'Nema check-outova',
+            Row(
+              children: [
+                const Icon(Icons.logout, color: Colors.red, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  "${t('check_outs')}: ${checkOuts.length}",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
+            if (checkOuts.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, top: 4),
+                child: Text(t('no_activity'),
+                    style:
+                        TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+              )
+            else
+              ...checkOuts.map((b) => Padding(
+                    padding: const EdgeInsets.only(left: 24, top: 4),
+                    child: Text(
+                      '${getUnitName(b.unitId)} - ${b.guestName} (${b.checkOutTime})',
+                      style: TextStyle(color: textColor, fontSize: 13),
+                    ),
+                  )),
+            const SizedBox(height: 12),
 
-            if (turnovers.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              // TURNOVERS
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child:
-                        const Icon(Icons.sync, color: Colors.orange, size: 16),
+            // TURNOVERS
+            Row(
+              children: [
+                const Icon(Icons.sync, color: Colors.orange, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  "${t('turnovers')}: ${turnovers.length}",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'TURNOVER (${turnovers.length})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        ...turnovers.map((t) {
-                          final unit = t['unit'] as Unit;
-                          final checkout = t['checkout'] as Booking;
-                          final checkin = t['checkin'] as Booking;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              '• ${unit.name}: ${checkout.checkOutTime} out → ${checkin.checkInTime} in',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: textColor.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
+                ),
+              ],
+            ),
+            if (turnovers.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, top: 4),
+                child: Text(t('no_activity'),
+                    style:
+                        TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+              )
+            else
+              ...turnovers.map((to) {
+                final unit = to['unit'] as Unit;
+                final checkout = to['checkout'] as Booking;
+                final checkin = to['checkin'] as Booking;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 24, top: 4),
+                  child: Text(
+                    '${unit.name}: ${checkout.guestName} → ${checkin.guestName}',
+                    style: TextStyle(color: textColor, fontSize: 13),
                   ),
-                ],
-              ),
-            ],
+                );
+              }),
           ],
         ),
       ),
-    );
-  }
-
-  // Helper za section rows u Daily Schedule
-  Widget _buildSectionRow({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required List<Booking> items,
-    required List<Unit> units,
-    required Color textColor,
-    required String Function(Booking, Unit) formatter,
-    required String emptyMessage,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: iconColor,
-                ),
-              ),
-              const SizedBox(height: 4),
-              if (items.isEmpty)
-                Text(
-                  emptyMessage,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: textColor.withValues(alpha: 0.5),
-                  ),
-                )
-              else
-                ...items.map((b) {
-                  final unit = units.firstWhere(
-                    (u) => u.id == b.unitId,
-                    orElse: () => Unit(
-                      id: '',
-                      ownerId: '',
-                      ownerEmail: '',
-                      name: 'Unknown',
-                      address: '',
-                      wifiSsid: '',
-                      wifiPass: '',
-                      contactOptions: {},
-                    ),
-                  );
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(
-                      '• ${formatter(b, unit)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: textColor.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  );
-                }),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
