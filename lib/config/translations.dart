@@ -165,6 +165,34 @@ class AppTranslations {
       'msg_unit_created': 'Unit created!',
       'msg_unit_updated': 'Unit updated!',
       'msg_confirm_zone': 'Confirm new zone or cancel',
+
+      // ========================================
+      // UNIT WIDGETS & DIALOGS (NOVO!)
+      // ========================================
+      'editable_fields': 'Editable Fields:',
+      'dialog_delete_unit': 'Delete Unit',
+      'msg_unit_deleted': 'Unit deleted!',
+      'print_options': 'Print Options',
+      'label_category': 'Category',
+      'hint_no_zone': 'No zone',
+
+      // ========================================
+      // SNACKBAR MESSAGES (NOVO!)
+      // ========================================
+      'msg_emergency_saved': 'Emergency Contact saved!',
+      'msg_timers_saved': 'Timers saved!',
+      'msg_checklist_saved': 'Checklist saved!',
+      'msg_ai_saved': 'AI Context saved!',
+      'msg_house_rules_missing': 'House rules not configured.',
+      'msg_no_cleaning_logs': 'No cleaning logs found.',
+
+      // ========================================
+      // THEME LABELS (NOVO!)
+      // ========================================
+      'theme_luxury': 'Luxury Collection',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Dark Themes',
+      'theme_light': 'Light Themes',
     },
 
     // ========================================================================
@@ -316,6 +344,28 @@ class AppTranslations {
       'msg_unit_created': 'Jedinica kreirana!',
       'msg_unit_updated': 'Jedinica ažurirana!',
       'msg_confirm_zone': 'Potvrdi novu zonu ili odustani',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Polja za Uređivanje:',
+      'dialog_delete_unit': 'Obriši Jedinicu',
+      'msg_unit_deleted': 'Jedinica obrisana!',
+      'print_options': 'Opcije Ispisa',
+      'label_category': 'Kategorija',
+      'hint_no_zone': 'Bez zone',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Hitni kontakt spremljen!',
+      'msg_timers_saved': 'Tajmeri spremljeni!',
+      'msg_checklist_saved': 'Lista spremljena!',
+      'msg_ai_saved': 'AI kontekst spremljen!',
+      'msg_house_rules_missing': 'Kućna pravila nisu konfigurirana.',
+      'msg_no_cleaning_logs': 'Nema zapisa o čišćenju.',
+
+      // THEME LABELS
+      'theme_luxury': 'Luksuzna Kolekcija',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Tamne Teme',
+      'theme_light': 'Svijetle Teme',
     },
 
     // ========================================================================
@@ -445,6 +495,28 @@ class AppTranslations {
       'msg_unit_created': 'Jednotka vytvorená!',
       'msg_unit_updated': 'Jednotka aktualizovaná!',
       'msg_confirm_zone': 'Potvrďte novú zónu alebo zrušte',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Upraviteľné Polia:',
+      'dialog_delete_unit': 'Odstrániť Jednotku',
+      'msg_unit_deleted': 'Jednotka odstránená!',
+      'print_options': 'Možnosti Tlače',
+      'label_category': 'Kategória',
+      'hint_no_zone': 'Bez zóny',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Núdzový kontakt uložený!',
+      'msg_timers_saved': 'Časovače uložené!',
+      'msg_checklist_saved': 'Zoznam uložený!',
+      'msg_ai_saved': 'AI kontext uložený!',
+      'msg_house_rules_missing': 'Domáce pravidlá nie sú nakonfigurované.',
+      'msg_no_cleaning_logs': 'Žiadne záznamy o upratovaní.',
+
+      // THEME LABELS
+      'theme_luxury': 'Luxusná Kolekcia',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Tmavé Témy',
+      'theme_light': 'Svetlé Témy',
     },
 
     // ========================================================================
@@ -574,6 +646,28 @@ class AppTranslations {
       'msg_unit_created': 'Jednotka vytvořena!',
       'msg_unit_updated': 'Jednotka aktualizována!',
       'msg_confirm_zone': 'Potvrďte novou zónu nebo zrušte',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Upravitelná Pole:',
+      'dialog_delete_unit': 'Smazat Jednotku',
+      'msg_unit_deleted': 'Jednotka smazána!',
+      'print_options': 'Možnosti Tisku',
+      'label_category': 'Kategorie',
+      'hint_no_zone': 'Bez zóny',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Nouzový kontakt uložen!',
+      'msg_timers_saved': 'Časovače uloženy!',
+      'msg_checklist_saved': 'Seznam uložen!',
+      'msg_ai_saved': 'AI kontext uložen!',
+      'msg_house_rules_missing': 'Domácí pravidla nejsou nakonfigurována.',
+      'msg_no_cleaning_logs': 'Žádné záznamy o úklidu.',
+
+      // THEME LABELS
+      'theme_luxury': 'Luxusní Kolekce',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Tmavé Motivy',
+      'theme_light': 'Světlé Motivy',
     },
 
     // ========================================================================
@@ -703,6 +797,28 @@ class AppTranslations {
       'msg_unit_created': 'Einheit erstellt!',
       'msg_unit_updated': 'Einheit aktualisiert!',
       'msg_confirm_zone': 'Neue Zone bestätigen oder abbrechen',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Bearbeitbare Felder:',
+      'dialog_delete_unit': 'Einheit Löschen',
+      'msg_unit_deleted': 'Einheit gelöscht!',
+      'print_options': 'Druckoptionen',
+      'label_category': 'Kategorie',
+      'hint_no_zone': 'Keine Zone',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Notfallkontakt gespeichert!',
+      'msg_timers_saved': 'Timer gespeichert!',
+      'msg_checklist_saved': 'Checkliste gespeichert!',
+      'msg_ai_saved': 'AI Kontext gespeichert!',
+      'msg_house_rules_missing': 'Hausregeln nicht konfiguriert.',
+      'msg_no_cleaning_logs': 'Keine Reinigungsprotokolle gefunden.',
+
+      // THEME LABELS
+      'theme_luxury': 'Luxus Kollektion',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Dunkle Themen',
+      'theme_light': 'Helle Themen',
     },
 
     // ========================================================================
@@ -832,6 +948,28 @@ class AppTranslations {
       'msg_unit_created': 'Unità creata!',
       'msg_unit_updated': 'Unità aggiornata!',
       'msg_confirm_zone': 'Conferma nuova zona o annulla',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Campi Modificabili:',
+      'dialog_delete_unit': 'Elimina Unità',
+      'msg_unit_deleted': 'Unità eliminata!',
+      'print_options': 'Opzioni di Stampa',
+      'label_category': 'Categoria',
+      'hint_no_zone': 'Nessuna zona',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Contatto emergenza salvato!',
+      'msg_timers_saved': 'Timer salvati!',
+      'msg_checklist_saved': 'Lista salvata!',
+      'msg_ai_saved': 'Contesto AI salvato!',
+      'msg_house_rules_missing': 'Regole della casa non configurate.',
+      'msg_no_cleaning_logs': 'Nessun registro pulizie trovato.',
+
+      // THEME LABELS
+      'theme_luxury': 'Collezione Lusso',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Temi Scuri',
+      'theme_light': 'Temi Chiari',
     },
 
     // ========================================================================
@@ -961,6 +1099,28 @@ class AppTranslations {
       'msg_unit_created': '¡Unidad creada!',
       'msg_unit_updated': '¡Unidad actualizada!',
       'msg_confirm_zone': 'Confirme nueva zona o cancele',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Campos Editables:',
+      'dialog_delete_unit': 'Eliminar Unidad',
+      'msg_unit_deleted': '¡Unidad eliminada!',
+      'print_options': 'Opciones de Impresión',
+      'label_category': 'Categoría',
+      'hint_no_zone': 'Sin zona',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': '¡Contacto de emergencia guardado!',
+      'msg_timers_saved': '¡Temporizadores guardados!',
+      'msg_checklist_saved': '¡Lista guardada!',
+      'msg_ai_saved': '¡Contexto AI guardado!',
+      'msg_house_rules_missing': 'Reglas de la casa no configuradas.',
+      'msg_no_cleaning_logs': 'No se encontraron registros de limpieza.',
+
+      // THEME LABELS
+      'theme_luxury': 'Colección de Lujo',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Temas Oscuros',
+      'theme_light': 'Temas Claros',
     },
 
     // ========================================================================
@@ -1090,6 +1250,28 @@ class AppTranslations {
       'msg_unit_created': 'Unité créée!',
       'msg_unit_updated': 'Unité mise à jour!',
       'msg_confirm_zone': 'Confirmez nouvelle zone ou annulez',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Champs Modifiables:',
+      'dialog_delete_unit': 'Supprimer Unité',
+      'msg_unit_deleted': 'Unité supprimée!',
+      'print_options': "Options d'Impression",
+      'label_category': 'Catégorie',
+      'hint_no_zone': 'Pas de zone',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': "Contact d'urgence enregistré!",
+      'msg_timers_saved': 'Minuteries enregistrées!',
+      'msg_checklist_saved': 'Liste enregistrée!',
+      'msg_ai_saved': 'Contexte AI enregistré!',
+      'msg_house_rules_missing': 'Règles de la maison non configurées.',
+      'msg_no_cleaning_logs': 'Aucun journal de nettoyage trouvé.',
+
+      // THEME LABELS
+      'theme_luxury': 'Collection Luxe',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Thèmes Sombres',
+      'theme_light': 'Thèmes Clairs',
     },
 
     // ========================================================================
@@ -1219,6 +1401,28 @@ class AppTranslations {
       'msg_unit_created': 'Jednostka utworzona!',
       'msg_unit_updated': 'Jednostka zaktualizowana!',
       'msg_confirm_zone': 'Potwierdź nową strefę lub anuluj',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Pola Edytowalne:',
+      'dialog_delete_unit': 'Usuń Jednostkę',
+      'msg_unit_deleted': 'Jednostka usunięta!',
+      'print_options': 'Opcje Druku',
+      'label_category': 'Kategoria',
+      'hint_no_zone': 'Brak strefy',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Kontakt alarmowy zapisany!',
+      'msg_timers_saved': 'Timery zapisane!',
+      'msg_checklist_saved': 'Lista zapisana!',
+      'msg_ai_saved': 'Kontekst AI zapisany!',
+      'msg_house_rules_missing': 'Zasady domu nie skonfigurowane.',
+      'msg_no_cleaning_logs': 'Nie znaleziono dzienników sprzątania.',
+
+      // THEME LABELS
+      'theme_luxury': 'Kolekcja Luksusowa',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Ciemne Motywy',
+      'theme_light': 'Jasne Motywy',
     },
 
     // ========================================================================
@@ -1348,6 +1552,28 @@ class AppTranslations {
       'msg_unit_created': 'Egység létrehozva!',
       'msg_unit_updated': 'Egység frissítve!',
       'msg_confirm_zone': 'Erősítse meg az új zónát vagy mégse',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Szerkeszthető Mezők:',
+      'dialog_delete_unit': 'Egység Törlése',
+      'msg_unit_deleted': 'Egység törölve!',
+      'print_options': 'Nyomtatási Beállítások',
+      'label_category': 'Kategória',
+      'hint_no_zone': 'Nincs zóna',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Vészhelyzeti kapcsolat mentve!',
+      'msg_timers_saved': 'Időzítők mentve!',
+      'msg_checklist_saved': 'Lista mentve!',
+      'msg_ai_saved': 'AI kontextus mentve!',
+      'msg_house_rules_missing': 'Házi szabályok nincsenek konfigurálva.',
+      'msg_no_cleaning_logs': 'Nem találhatók takarítási naplók.',
+
+      // THEME LABELS
+      'theme_luxury': 'Luxus Kollekció',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Sötét Témák',
+      'theme_light': 'Világos Témák',
     },
 
     // ========================================================================
@@ -1477,6 +1703,28 @@ class AppTranslations {
       'msg_unit_created': 'Enota ustvarjena!',
       'msg_unit_updated': 'Enota posodobljena!',
       'msg_confirm_zone': 'Potrdite novo cono ali prekličite',
+
+      // UNIT WIDGETS & DIALOGS
+      'editable_fields': 'Urejevalska Polja:',
+      'dialog_delete_unit': 'Izbriši Enoto',
+      'msg_unit_deleted': 'Enota izbrisana!',
+      'print_options': 'Možnosti Tiskanja',
+      'label_category': 'Kategorija',
+      'hint_no_zone': 'Brez cone',
+
+      // SNACKBAR MESSAGES
+      'msg_emergency_saved': 'Nujni kontakt shranjen!',
+      'msg_timers_saved': 'Časovniki shranjeni!',
+      'msg_checklist_saved': 'Seznam shranjen!',
+      'msg_ai_saved': 'AI kontekst shranjen!',
+      'msg_house_rules_missing': 'Hišna pravila niso nastavljena.',
+      'msg_no_cleaning_logs': 'Ni dnevnikov čiščenja.',
+
+      // THEME LABELS
+      'theme_luxury': 'Luksuzna Kolekcija',
+      'theme_neon': 'Neon / Tech',
+      'theme_dark': 'Temne Teme',
+      'theme_light': 'Svetle Teme',
     },
   };
 

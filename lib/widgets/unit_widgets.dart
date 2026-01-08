@@ -38,13 +38,16 @@ class EditUnitDialog extends StatelessWidget {
     final provider = Provider.of<AppProvider>(context, listen: false);
     final primaryColor = provider.primaryColor;
 
+    final t = provider.translate;
+
     final wifiNameCtrl = TextEditingController(text: unitToEdit.wifiSsid);
     final wifiPassCtrl = TextEditingController(text: unitToEdit.wifiPass);
     final reviewLinkCtrl = TextEditingController(text: unitToEdit.reviewLink);
 
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
-      title: const Text("Edit Unit", style: TextStyle(color: Colors.white)),
+      title: Text(t('dialog_edit_unit'),
+          style: const TextStyle(color: Colors.white)),
       content: SingleChildScrollView(
         child: SizedBox(
           width: 400,
@@ -53,21 +56,22 @@ class EditUnitDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Read-only: Unit ID
-              _buildLockedField("Unit ID", unitToEdit.id),
+              _buildLockedField(t('label_id'), unitToEdit.id),
               const SizedBox(height: 10),
               // Read-only: Zona
-              _buildLockedField("Zona", unitToEdit.category ?? "Bez zone"),
+              _buildLockedField(t('label_category'),
+                  unitToEdit.category ?? t('hint_no_zone')),
               const SizedBox(height: 10),
               // Read-only: Name
-              _buildLockedField("Name", unitToEdit.name),
+              _buildLockedField(t('label_name'), unitToEdit.name),
               const SizedBox(height: 10),
               // Read-only: Address
-              _buildLockedField("Address", unitToEdit.address),
+              _buildLockedField(t('label_address'), unitToEdit.address),
               const SizedBox(height: 16),
               const Divider(color: Colors.grey),
               const SizedBox(height: 16),
-              const Text("Editable Fields:",
-                  style: TextStyle(
+              Text(t('editable_fields'),
+                  style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
                       fontWeight: FontWeight.bold)),
@@ -77,7 +81,7 @@ class EditUnitDialog extends StatelessWidget {
                 controller: wifiNameCtrl,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: "WiFi SSID",
+                  labelText: t('label_wifi_ssid'),
                   labelStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: Colors.black26,
@@ -91,7 +95,7 @@ class EditUnitDialog extends StatelessWidget {
                 controller: wifiPassCtrl,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: "WiFi Pass",
+                  labelText: t('label_wifi_pass'),
                   labelStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: Colors.black26,
@@ -105,7 +109,7 @@ class EditUnitDialog extends StatelessWidget {
                 controller: reviewLinkCtrl,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: "Review Link (Optional)",
+                  labelText: t('label_review_link'),
                   labelStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: Colors.black26,
@@ -125,23 +129,23 @@ class EditUnitDialog extends StatelessWidget {
               context: context,
               builder: (c) => AlertDialog(
                 backgroundColor: const Color(0xFF1E1E1E),
-                title: const Text("Delete Unit",
-                    style: TextStyle(color: Colors.white)),
+                title: Text(t('dialog_delete_unit'),
+                    style: const TextStyle(color: Colors.white)),
                 content: Text(
-                  "Jeste li sigurni da želite obrisati '${unitToEdit.name}'?",
+                  "${t('msg_confirm_delete')}\n${unitToEdit.name}",
                   style: const TextStyle(color: Colors.white70),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(c, false),
-                    child: const Text("Cancel"),
+                    child: Text(t('btn_cancel')),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(c, true),
                     style:
                         ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    child: const Text("DELETE",
-                        style: TextStyle(
+                    child: Text(t('btn_delete').toUpperCase(),
+                        style: const TextStyle(
                             color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -153,8 +157,8 @@ class EditUnitDialog extends StatelessWidget {
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text("Unit deleted!"),
+                    SnackBar(
+                        content: Text(t('msg_unit_deleted')),
                         backgroundColor: Colors.red),
                   );
                 }
@@ -162,20 +166,21 @@ class EditUnitDialog extends StatelessWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text("Error: $e"),
+                        content: Text("${t('msg_error')}: $e"),
                         backgroundColor: Colors.red),
                   );
                 }
               }
             }
           },
-          child: const Text("DELETE",
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          child: Text(t('btn_delete').toUpperCase(),
+              style: const TextStyle(
+                  color: Colors.red, fontWeight: FontWeight.bold)),
         ),
         // Cancel
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: Text(t('btn_cancel')),
         ),
         // SAVE
         ElevatedButton(
@@ -199,8 +204,8 @@ class EditUnitDialog extends StatelessWidget {
               if (context.mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text("Unit updated!"),
+                  SnackBar(
+                      content: Text(t('msg_unit_updated')),
                       backgroundColor: Colors.green),
                 );
               }
@@ -208,15 +213,16 @@ class EditUnitDialog extends StatelessWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text("Error: $e"), backgroundColor: Colors.red),
+                      content: Text("${t('msg_error')}: $e"),
+                      backgroundColor: Colors.red),
                 );
               }
             }
           },
           style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-          child: const Text("SAVE",
-              style:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          child: Text(t('btn_save'),
+              style: const TextStyle(
+                  color: Colors.black, fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -289,9 +295,9 @@ mixin UnitStatusMixin {
               child: Text(t('btn_cancel'))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("DELETE",
-                style:
-                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(t('btn_delete').toUpperCase(),
+                style: const TextStyle(
+                    color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -303,8 +309,8 @@ mixin UnitStatusMixin {
       }
       await UnitsService().deleteUnit(unit.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Unit deleted"), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(t('msg_unit_deleted')), backgroundColor: Colors.red));
       }
     }
   }
@@ -376,23 +382,24 @@ mixin UnitStatusMixin {
   // =====================================================
   void showPrintMenuLogic(
       BuildContext context, Unit unit, Booking? activeBooking) {
+    final t = Provider.of<AppProvider>(context, listen: false).translate;
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: Text("Print Options: ${unit.name}",
+        title: Text("${t('print_options')}: ${unit.name}",
             style: const TextStyle(color: Colors.white)),
         children: [
           // 1. eVISITOR
           SimpleDialogOption(
-            child: const PrintOptionRow(
+            child: PrintOptionRow(
                 icon: Icons.people,
-                text: "1. eVisitor List",
+                text: "1. ${t('print_evisitor')}",
                 color: Colors.blue),
             onPressed: () async {
               Navigator.pop(ctx);
               if (activeBooking == null) {
-                _snack(context, "No active booking for guest list.");
+                _snack(context, t('msg_no_booking'));
                 return;
               }
               final guests =
@@ -404,31 +411,31 @@ mixin UnitStatusMixin {
               if (guests.isNotEmpty) {
                 PdfService.printEvisitorForm(unit.name, guests);
               } else {
-                _snack(context, "No guests registered yet.");
+                _snack(context, t('msg_no_guests'));
               }
             },
           ),
 
           // 2. SIGNED HOUSE RULES
           SimpleDialogOption(
-            child: const PrintOptionRow(
+            child: PrintOptionRow(
                 icon: Icons.gavel,
-                text: "2. Signed House Rules",
+                text: "2. ${t('print_house_rules')}",
                 color: Colors.orange),
             onPressed: () async {
               Navigator.pop(ctx);
               if (activeBooking == null) {
-                _snack(context, "No active booking.");
+                _snack(context, t('msg_no_booking'));
                 return;
               }
 
               // Show loading indicator
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
@@ -436,11 +443,11 @@ mixin UnitStatusMixin {
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Text("Preparing PDF..."),
+                        const SizedBox(width: 12),
+                        Text(t('msg_preparing_pdf')),
                       ],
                     ),
-                    duration: Duration(seconds: 10),
+                    duration: const Duration(seconds: 10),
                   ),
                 );
               }
@@ -455,7 +462,7 @@ mixin UnitStatusMixin {
                 String houseRulesText =
                     settings.houseRulesTranslations[appLanguage] ??
                         settings.houseRulesTranslations['en'] ??
-                        'House rules not configured.';
+                        t('msg_house_rules_missing');
 
                 // 2. Get signature from Firestore
                 final signatureData =
@@ -521,9 +528,9 @@ mixin UnitStatusMixin {
 
           // 3. CLEANING LOG
           SimpleDialogOption(
-            child: const PrintOptionRow(
+            child: PrintOptionRow(
                 icon: Icons.cleaning_services,
-                text: "3. Last Cleaning Report",
+                text: "3. ${t('print_cleaning_log')}",
                 color: Colors.green),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -548,16 +555,16 @@ mixin UnitStatusMixin {
                   null,
                 );
               } else {
-                _snack(context, "No cleaning logs found.");
+                _snack(context, t('msg_no_cleaning_logs'));
               }
             },
           ),
 
           // 4. UNIT SCHEDULE
           SimpleDialogOption(
-            child: const PrintOptionRow(
+            child: PrintOptionRow(
                 icon: Icons.calendar_month,
-                text: "4. Unit Schedule (30 Days)",
+                text: "4. ${t('print_unit_schedule')}",
                 color: Colors.purple),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -803,7 +810,7 @@ class UnitStatusCard extends StatelessWidget with UnitStatusMixin {
                   Expanded(
                     child: Center(
                       child: activeBooking == null
-                          ? Text("NO GUESTS",
+                          ? Text(t('msg_no_guests').toUpperCase(),
                               style: TextStyle(
                                   color: Colors.grey.withValues(alpha: 0.3),
                                   fontWeight: FontWeight.bold))
@@ -1112,6 +1119,7 @@ class _UnitDialogState extends State<UnitDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+    final t = context.read<AppProvider>().translate;
 
     try {
       final service = UnitsService();
@@ -1150,7 +1158,9 @@ class _UnitDialogState extends State<UnitDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isEdit ? "Unit updated!" : "Unit created: $unitId"),
+            content: Text(isEdit
+                ? t('msg_unit_updated')
+                : "${t('msg_unit_created')}: $unitId"),
             backgroundColor: Colors.green,
           ),
         );
@@ -1158,7 +1168,9 @@ class _UnitDialogState extends State<UnitDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text("${t('msg_error')}: $e"),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1169,24 +1181,27 @@ class _UnitDialogState extends State<UnitDialog> {
   Future<void> _delete() async {
     final unit = widget.unitToEdit;
     if (unit == null) return;
+    final t = context.read<AppProvider>().translate;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text("Delete Unit", style: TextStyle(color: Colors.white)),
+        title: Text(t('dialog_delete_unit'),
+            style: const TextStyle(color: Colors.white)),
         content: Text(
-          "Are you sure you want to delete '${unit.name}'?",
+          "${t('msg_confirm_delete')}\n${unit.name}",
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancel"),
+            child: Text(t('btn_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("DELETE", style: TextStyle(color: Colors.red)),
+            child: Text(t('btn_delete').toUpperCase(),
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1199,14 +1214,17 @@ class _UnitDialogState extends State<UnitDialog> {
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text("Unit deleted"), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(t('msg_unit_deleted')),
+                backgroundColor: Colors.red),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text("${t('msg_error')}: $e"),
+                backgroundColor: Colors.red),
           );
           setState(() => _isLoading = false);
         }
@@ -1219,6 +1237,7 @@ class _UnitDialogState extends State<UnitDialog> {
     final isEdit = widget.unitToEdit != null;
     final provider = Provider.of<AppProvider>(context);
     final primaryColor = provider.primaryColor;
+    final t = provider.translate;
 
     // Load settings data
     final settings = provider.settings;
@@ -1229,7 +1248,7 @@ class _UnitDialogState extends State<UnitDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1E1E),
       title: Text(
-        isEdit ? "Edit Unit" : "New Unit",
+        isEdit ? t('dialog_edit_unit') : t('dialog_new_unit'),
         style: const TextStyle(color: Colors.white),
       ),
       content: SizedBox(
@@ -1243,13 +1262,14 @@ class _UnitDialogState extends State<UnitDialog> {
               children: [
                 // EDIT MODE - Read only fields
                 if (isEdit) ...[
-                  _staticField("Unit ID", widget.unitToEdit!.id),
+                  _staticField(t('label_id'), widget.unitToEdit!.id),
                   const SizedBox(height: 10),
-                  _staticField("Category", widget.unitToEdit!.categoryDisplay),
+                  _staticField(
+                      t('label_category'), widget.unitToEdit!.categoryDisplay),
                   const SizedBox(height: 10),
-                  _staticField("Name", widget.unitToEdit!.name),
+                  _staticField(t('label_name'), widget.unitToEdit!.name),
                   const SizedBox(height: 10),
-                  _staticField("Address", widget.unitToEdit!.address),
+                  _staticField(t('label_address'), widget.unitToEdit!.address),
                   const SizedBox(height: 20),
                   const Divider(color: Colors.grey),
                   const SizedBox(height: 10),
@@ -1258,8 +1278,8 @@ class _UnitDialogState extends State<UnitDialog> {
                 // CREATE MODE - Editable fields
                 if (!isEdit) ...[
                   // Category dropdown
-                  const Text("Category",
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(t('label_category'),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1273,14 +1293,14 @@ class _UnitDialogState extends State<UnitDialog> {
                         value: _selectedCategory,
                         isExpanded: true,
                         dropdownColor: const Color(0xFF2C2C2C),
-                        hint: const Text("Bez zone",
-                            style: TextStyle(color: Colors.white70)),
+                        hint: Text(t('hint_no_zone'),
+                            style: const TextStyle(color: Colors.white70)),
                         style: const TextStyle(color: Colors.white),
                         items: [
-                          const DropdownMenuItem<String>(
+                          DropdownMenuItem<String>(
                             value: null,
-                            child: Text("Bez zone",
-                                style: TextStyle(color: Colors.white70)),
+                            child: Text(t('hint_no_zone'),
+                                style: const TextStyle(color: Colors.white70)),
                           ),
                           ..._categories.map((cat) => DropdownMenuItem<String>(
                                 value: cat,
@@ -1293,9 +1313,9 @@ class _UnitDialogState extends State<UnitDialog> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _textField(_nameCtrl, "Unit Name *"),
+                  _textField(_nameCtrl, "${t('label_name')} *"),
                   const SizedBox(height: 10),
-                  _textField(_addrCtrl, "Address *"),
+                  _textField(_addrCtrl, "${t('label_address')} *"),
                   const SizedBox(height: 10),
                 ],
 
@@ -1303,16 +1323,17 @@ class _UnitDialogState extends State<UnitDialog> {
                 Row(
                   children: [
                     Expanded(
-                        child: _textField(_wifiNameCtrl, "WiFi SSID",
+                        child: _textField(_wifiNameCtrl, t('label_wifi_ssid'),
                             required: false)),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _textField(_wifiPassCtrl, "WiFi Pass",
+                        child: _textField(_wifiPassCtrl, t('label_wifi_pass'),
                             required: false)),
                   ],
                 ),
                 const SizedBox(height: 10),
-                _textField(_reviewLinkCtrl, "Review Link", required: false),
+                _textField(_reviewLinkCtrl, t('label_review_link'),
+                    required: false),
               ],
             ),
           ),
@@ -1322,12 +1343,13 @@ class _UnitDialogState extends State<UnitDialog> {
         if (isEdit)
           TextButton(
             onPressed: _isLoading ? null : _delete,
-            child: const Text("DELETE", style: TextStyle(color: Colors.red)),
+            child: Text(t('btn_delete').toUpperCase(),
+                style: const TextStyle(color: Colors.red)),
           ),
         const Spacer(),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: Text(t('btn_cancel')),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _save,
@@ -1340,7 +1362,7 @@ class _UnitDialogState extends State<UnitDialog> {
                       color: Colors.black, strokeWidth: 2),
                 )
               : Text(
-                  isEdit ? "SAVE" : "CREATE",
+                  t('btn_save'),
                   style: const TextStyle(
                       color: Colors.black, fontWeight: FontWeight.bold),
                 ),

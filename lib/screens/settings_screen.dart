@@ -544,7 +544,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   _buildLanguageDropdown(
                       textColor, primaryColor, cardColor, isDark),
                   const SizedBox(height: 30),
-                  Text("Luxury Collection",
+                  Text(t('theme_luxury'),
                       style: TextStyle(
                           color: textColor,
                           fontWeight: FontWeight.bold,
@@ -557,7 +557,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           .map((e) => _buildColorCircle(e.key, e.value, isDark))
                           .toList()),
                   const SizedBox(height: 20),
-                  Text("Neon / Tech",
+                  Text(t('theme_neon'),
                       style: TextStyle(
                           color: textColor,
                           fontWeight: FontWeight.bold,
@@ -575,7 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           color: textColor.withValues(alpha: 0.7),
                           fontSize: 13)),
                   const SizedBox(height: 10),
-                  Text("Dark Themes",
+                  Text(t('theme_dark'),
                       style: TextStyle(
                           color: textColor,
                           fontWeight: FontWeight.bold,
@@ -590,7 +590,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         "Slate Grey", primaryColor, isDark),
                   ]),
                   const SizedBox(height: 15),
-                  Text("Light Themes",
+                  Text(t('theme_light'),
                       style: TextStyle(
                           color: textColor,
                           fontWeight: FontWeight.bold,
@@ -1174,6 +1174,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildLanguageDropdown(
       Color textColor, Color primaryColor, Color cardColor, bool isDark) {
+    final t = context.read<AppProvider>().translate;
     final languages = {
       'en': 'English',
       'hr': 'Hrvatski',
@@ -1191,7 +1192,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Language",
+        Text(t('label_language'),
             style: TextStyle(
                 color: textColor.withValues(alpha: 0.7),
                 fontSize: 13,
