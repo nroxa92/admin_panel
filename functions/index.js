@@ -1,5 +1,5 @@
 // =====================================================
-// VillaOS Cloud Functions - JAVASCRIPT (NO TYPESCRIPT)
+// VillaOS Cloud Functions - COMPLETE (10 FUNCTIONS)
 // =====================================================
 
 const {onCall} = require('firebase-functions/v2/https');
@@ -18,86 +18,86 @@ admin.initializeApp();
 exports.createOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
-  // SIGURNOST: Samo Super Admin
-  if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
-    throw new Error('Unauthorized - Super Admin only');
-  }
-
-  const {email, password, tenantId, displayName} = request.data;
-
-  // Validacija
-  if (!email || !password || !tenantId) {
-    throw new Error('Missing required fields: email, password, tenantId');
-  }
-
-  // Provjeri format tenant ID (6-12 znakova, A-Z i 0-9)
-  if (!/^[A-Z0-9]{6,12}$/.test(tenantId)) {
-    throw new Error('Invalid tenant ID format (use 6-12 uppercase letters/numbers)');
-  }
-
-  try {
-    // 1. Provjeri da tenant ID nije zauzet
-    const existingTenant = await admin.firestore()
-      .collection('tenant_links')
-      .doc(tenantId)
-      .get();
-
-    if (existingTenant.exists) {
-      throw new Error(`Tenant ID "${tenantId}" already exists`);
+    // SIGURNOST: Samo Super Admin
+    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+      throw new Error('Unauthorized - Super Admin only');
     }
 
-    // 2. Kreiraj Firebase Auth user (BEZ claims - čeka linking!)
-    const userRecord = await admin.auth().createUser({
-      email: email,
-      password: password,
-      emailVerified: true, // Automatski verified (admin kreirao)
-    });
+    const {email, password, tenantId, displayName} = request.data;
 
-    // 3. Kreiraj tenant_links dokument
-    await admin.firestore().collection('tenant_links').doc(tenantId).set({
-      tenantId: tenantId,
-      firebaseUid: userRecord.uid,
-      email: email,
-      displayName: displayName || email.split('@')[0],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      linkedAt: null,
-      status: 'pending',
-    });
+    // Validacija
+    if (!email || !password || !tenantId) {
+      throw new Error('Missing required fields: email, password, tenantId');
+    }
 
-    // 4. Kreiraj settings dokument sa default postavkama
-    await admin.firestore().collection('settings').doc(tenantId).set({
-      ownerId: tenantId,
-      cleanerPin: '0000',
-      hardResetPin: '1234',
-      themeColor: 'gold',
-      themeMode: 'dark1',
-      appLanguage: 'en',
-      houseRulesTranslations: {'en': 'No smoking.'},
-      cleanerChecklist: ['Check bedsheets', 'Clean bathroom'],
-      aiConcierge: '',
-      aiHousekeeper: '',
-      aiTech: '',
-      aiGuide: '',
-      welcomeMessage: 'Welcome to our Villa!',
-      checkInTime: '15:00',
-      checkOutTime: '10:00',
-      wifiSsid: '',
-      wifiPass: '',
-    });
+    // Provjeri format tenant ID (6-12 znakova, A-Z i 0-9)
+    if (!/^[A-Z0-9]{6,12}$/.test(tenantId)) {
+      throw new Error('Invalid tenant ID format (use 6-12 uppercase letters/numbers)');
+    }
 
-    // ✅ Vrati samo primitive types
-    return {
-      success: true,
-      tenantId: String(tenantId),
-      firebaseUid: String(userRecord.uid),
-      email: String(email),
-      message: 'Owner created. They must login and enter tenant ID to activate.',
-    };
-  } catch (error) {
-    console.error('❌ Error creating owner:', error);
-    throw new Error(error.message || 'Failed to create owner');
+    try {
+      // 1. Provjeri da tenant ID nije zauzet
+      const existingTenant = await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .get();
+
+      if (existingTenant.exists) {
+        throw new Error(`Tenant ID "${tenantId}" already exists`);
+      }
+
+      // 2. Kreiraj Firebase Auth user (BEZ claims - čeka linking!)
+      const userRecord = await admin.auth().createUser({
+        email: email,
+        password: password,
+        emailVerified: true,
+      });
+
+      // 3. Kreiraj tenant_links dokument
+      await admin.firestore().collection('tenant_links').doc(tenantId).set({
+        tenantId: tenantId,
+        firebaseUid: userRecord.uid,
+        email: email,
+        displayName: displayName || email.split('@')[0],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        linkedAt: null,
+        status: 'pending',
+      });
+
+      // 4. Kreiraj settings dokument sa default postavkama
+      await admin.firestore().collection('settings').doc(tenantId).set({
+        ownerId: tenantId,
+        cleanerPin: '0000',
+        hardResetPin: '1234',
+        themeColor: 'gold',
+        themeMode: 'dark1',
+        appLanguage: 'en',
+        houseRulesTranslations: {'en': 'No smoking.'},
+        cleanerChecklist: ['Check bedsheets', 'Clean bathroom'],
+        aiConcierge: '',
+        aiHousekeeper: '',
+        aiTech: '',
+        aiGuide: '',
+        welcomeMessage: 'Welcome to our Villa!',
+        checkInTime: '15:00',
+        checkOutTime: '10:00',
+        wifiSsid: '',
+        wifiPass: '',
+      });
+
+      return {
+        success: true,
+        tenantId: String(tenantId),
+        firebaseUid: String(userRecord.uid),
+        email: String(email),
+        message: 'Owner created. They must login and enter tenant ID to activate.',
+      };
+    } catch (error) {
+      console.error('❌ Error creating owner:', error);
+      throw new Error(error.message || 'Failed to create owner');
+    }
   }
-});
+);
 
 // =====================================================
 // FUNKCIJA 2: Linkanje Tenant ID
@@ -105,128 +105,118 @@ exports.createOwner = onCall(
 exports.linkTenantId = onCall(
   {region: 'europe-west3'},
   async (request) => {
-  console.log('🔵 linkTenantId called');
+    console.log('🔵 linkTenantId called');
 
-  // Auth check
-  if (!request.auth) {
-    console.error('❌ No auth context');
-    throw new Error('Unauthorized - must be logged in');
-  }
-
-  const {tenantId} = request.data;
-  const firebaseUid = request.auth.uid;
-  const userEmail = request.auth.token.email;
-
-  console.log(`📧 Email: ${userEmail}, UID: ${firebaseUid}, TenantID: ${tenantId}`);
-
-  // Validacija
-  if (!tenantId) {
-    console.error('❌ No tenantId provided');
-    throw new Error('Missing tenantId');
-  }
-
-  if (!userEmail) {
-    console.error('❌ No email in auth token');
-    throw new Error('Email not found in auth token');
-  }
-
-  try {
-    // 1. Provjeri tenant_links
-    console.log('🔍 Fetching tenant_links document...');
-    const tenantDoc = await admin.firestore()
-      .collection('tenant_links')
-      .doc(tenantId)
-      .get();
-
-    if (!tenantDoc.exists) {
-      console.error(`❌ Tenant ID "${tenantId}" does not exist`);
-      throw new Error(`Tenant ID "${tenantId}" not found. Contact admin.`);
+    if (!request.auth) {
+      console.error('❌ No auth context');
+      throw new Error('Unauthorized - must be logged in');
     }
 
-    const tenantData = tenantDoc.data();
-    console.log('📄 Tenant data:', tenantData);
+    const {tenantId} = request.data;
+    const firebaseUid = request.auth.uid;
+    const userEmail = request.auth.token.email;
 
-    // 2. Email match check
-    const tenantEmail = tenantData.email;
-    if (!tenantEmail) {
-      console.error('❌ No email in tenant document');
-      throw new Error('Tenant document missing email');
+    console.log(`📧 Email: ${userEmail}, UID: ${firebaseUid}, TenantID: ${tenantId}`);
+
+    if (!tenantId) {
+      console.error('❌ No tenantId provided');
+      throw new Error('Missing tenantId');
     }
 
-    if (tenantEmail.toLowerCase() !== userEmail.toLowerCase()) {
-      console.error(`❌ Email mismatch: ${userEmail} vs ${tenantEmail}`);
-      throw new Error('Tenant ID does not match your email');
+    if (!userEmail) {
+      console.error('❌ No email in auth token');
+      throw new Error('Email not found in auth token');
     }
 
-    // 3. Provjeri status
-    if (tenantData.status === 'suspended') {
-      console.error('❌ Account suspended');
-      throw new Error('Your account has been suspended. Contact admin.');
+    try {
+      console.log('🔍 Fetching tenant_links document...');
+      const tenantDoc = await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .get();
+
+      if (!tenantDoc.exists) {
+        console.error(`❌ Tenant ID "${tenantId}" does not exist`);
+        throw new Error(`Tenant ID "${tenantId}" not found. Contact admin.`);
+      }
+
+      const tenantData = tenantDoc.data();
+      console.log('📄 Tenant data:', tenantData);
+
+      const tenantEmail = tenantData.email;
+      if (!tenantEmail) {
+        console.error('❌ No email in tenant document');
+        throw new Error('Tenant document missing email');
+      }
+
+      if (tenantEmail.toLowerCase() !== userEmail.toLowerCase()) {
+        console.error(`❌ Email mismatch: ${userEmail} vs ${tenantEmail}`);
+        throw new Error('Tenant ID does not match your email');
+      }
+
+      if (tenantData.status === 'suspended') {
+        console.error('❌ Account suspended');
+        throw new Error('Your account has been suspended. Contact admin.');
+      }
+
+      console.log('🔑 Setting custom claims...');
+      await admin.auth().setCustomUserClaims(firebaseUid, {tenantId: tenantId});
+
+      console.log('📝 Updating tenant_links...');
+      await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .update({
+          linkedAt: admin.firestore.FieldValue.serverTimestamp(),
+          status: 'active',
+        });
+
+      console.log('✅ linkTenantId completed successfully');
+
+      return {
+        success: true,
+        tenantId: String(tenantId),
+        message: 'Tenant ID linked successfully',
+      };
+    } catch (error) {
+      console.error('❌ Error in linkTenantId:', error);
+      throw new Error(error.message || 'Failed to link tenant ID');
     }
-
-    // 4. Set custom claims
-    console.log('🔐 Setting custom claims...');
-    await admin.auth().setCustomUserClaims(firebaseUid, {
-      ownerId: tenantId,  // ✅ FIXED: ownerId umjesto tenantId
-      role: 'owner',
-    });
-
-    // 5. Update tenant_links
-    console.log('💾 Updating tenant_links...');
-    await admin.firestore()
-      .collection('tenant_links')
-      .doc(tenantId)
-      .update({
-        linkedAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: 'active',
-      });
-
-    console.log('✅ Linking successful!');
-
-    return {
-      success: true,
-      tenantId: String(tenantId),
-      message: 'Account activated successfully!',
-    };
-  } catch (error) {
-    console.error('❌ Error during linking:', error);
-    throw new Error(error.message || 'Failed to link tenant ID');
   }
-});
+);
 
 // =====================================================
-// FUNKCIJA 3: Lista Vlasnika (Super Admin)
+// FUNKCIJA 3: Lista Vlasnika
 // =====================================================
 exports.listOwners = onCall(
   {region: 'europe-west3'},
   async (request) => {
-  // Auth check
-  if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
-    throw new Error('Unauthorized - Super Admin only');
+    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+      throw new Error('Unauthorized - Super Admin only');
+    }
+
+    try {
+      const snapshot = await admin.firestore().collection('tenant_links').get();
+
+      const owners = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          tenantId: String(doc.id),
+          email: String(data.email || ''),
+          displayName: String(data.displayName || ''),
+          status: String(data.status || 'pending'),
+          createdAt: data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toISOString() : null,
+          linkedAt: data.linkedAt && data.linkedAt.toDate ? data.linkedAt.toDate().toISOString() : null,
+        };
+      });
+
+      return {success: true, owners: owners};
+    } catch (error) {
+      console.error('❌ Error listing owners:', error);
+      throw new Error(error.message || 'Failed to list owners');
+    }
   }
-
-  try {
-    const snapshot = await admin.firestore().collection('tenant_links').get();
-
-    const owners = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        tenantId: String(data.tenantId || ''),
-        email: String(data.email || ''),
-        displayName: String(data.displayName || ''),
-        firebaseUid: String(data.firebaseUid || ''),
-        status: String(data.status || 'pending'),
-        createdAt: data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toISOString() : null,
-        linkedAt: data.linkedAt && data.linkedAt.toDate ? data.linkedAt.toDate().toISOString() : null,
-      };
-    });
-
-    return {success: true, owners: owners};
-  } catch (error) {
-    console.error('❌ Error listing owners:', error);
-    throw new Error(error.message || 'Failed to list owners');
-  }
-});
+);
 
 // =====================================================
 // FUNKCIJA 4: Brisanje Vlasnika
@@ -234,51 +224,46 @@ exports.listOwners = onCall(
 exports.deleteOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
-  // Auth check
-  if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
-    throw new Error('Unauthorized - Super Admin only');
-  }
-
-  const {tenantId} = request.data;
-
-  if (!tenantId) {
-    throw new Error('Missing tenantId');
-  }
-
-  try {
-    // Get tenant data
-    const tenantDoc = await admin.firestore()
-      .collection('tenant_links')
-      .doc(tenantId)
-      .get();
-
-    if (!tenantDoc.exists) {
-      throw new Error('Tenant not found');
+    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+      throw new Error('Unauthorized - Super Admin only');
     }
 
-    const firebaseUid = tenantDoc.data().firebaseUid;
+    const {tenantId} = request.data;
 
-    // Delete Firebase Auth user
-    if (firebaseUid) {
-      await admin.auth().deleteUser(firebaseUid);
+    if (!tenantId) {
+      throw new Error('Missing tenantId');
     }
 
-    // Delete tenant_links document
-    await admin.firestore().collection('tenant_links').doc(tenantId).delete();
+    try {
+      const tenantDoc = await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .get();
 
-    // Delete settings document
-    await admin.firestore().collection('settings').doc(tenantId).delete();
+      if (!tenantDoc.exists) {
+        throw new Error('Tenant not found');
+      }
 
-    return {
-      success: true,
-      message: 'Owner deleted successfully',
-      tenantId: String(tenantId),
-    };
-  } catch (error) {
-    console.error('❌ Error deleting owner:', error);
-    throw new Error(error.message || 'Failed to delete owner');
+      const firebaseUid = tenantDoc.data().firebaseUid;
+
+      if (firebaseUid) {
+        await admin.auth().deleteUser(firebaseUid);
+      }
+
+      await admin.firestore().collection('tenant_links').doc(tenantId).delete();
+      await admin.firestore().collection('settings').doc(tenantId).delete();
+
+      return {
+        success: true,
+        message: 'Owner deleted successfully',
+        tenantId: String(tenantId),
+      };
+    } catch (error) {
+      console.error('❌ Error deleting owner:', error);
+      throw new Error(error.message || 'Failed to delete owner');
+    }
   }
-});
+);
 
 // =====================================================
 // FUNKCIJA 5: Reset Lozinke
@@ -286,54 +271,51 @@ exports.deleteOwner = onCall(
 exports.resetOwnerPassword = onCall(
   {region: 'europe-west3'},
   async (request) => {
-  // Auth check
-  if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
-    throw new Error('Unauthorized - Super Admin only');
-  }
-
-  const {tenantId, newPassword} = request.data;
-
-  // Validation
-  if (!tenantId || !newPassword) {
-    throw new Error('Missing required fields: tenantId, newPassword');
-  }
-
-  if (newPassword.length < 6) {
-    throw new Error('Password must be at least 6 characters');
-  }
-
-  try {
-    // Get tenant data
-    const tenantDoc = await admin.firestore()
-      .collection('tenant_links')
-      .doc(tenantId)
-      .get();
-
-    if (!tenantDoc.exists) {
-      throw new Error('Tenant not found');
+    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+      throw new Error('Unauthorized - Super Admin only');
     }
 
-    const firebaseUid = tenantDoc.data().firebaseUid;
+    const {tenantId, newPassword} = request.data;
 
-    if (!firebaseUid) {
-      throw new Error('Firebase UID not found');
+    if (!tenantId || !newPassword) {
+      throw new Error('Missing required fields: tenantId, newPassword');
     }
 
-    // Update password
-    await admin.auth().updateUser(firebaseUid, {
-      password: newPassword,
-    });
+    if (newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
 
-    return {
-      success: true,
-      message: 'Password reset successfully',
-      tenantId: String(tenantId),
-    };
-  } catch (error) {
-    console.error('❌ Error resetting password:', error);
-    throw new Error(error.message || 'Failed to reset password');
+    try {
+      const tenantDoc = await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .get();
+
+      if (!tenantDoc.exists) {
+        throw new Error('Tenant not found');
+      }
+
+      const firebaseUid = tenantDoc.data().firebaseUid;
+
+      if (!firebaseUid) {
+        throw new Error('Firebase UID not found');
+      }
+
+      await admin.auth().updateUser(firebaseUid, {
+        password: newPassword,
+      });
+
+      return {
+        success: true,
+        message: 'Password reset successfully',
+        tenantId: String(tenantId),
+      };
+    } catch (error) {
+      console.error('❌ Error resetting password:', error);
+      throw new Error(error.message || 'Failed to reset password');
+    }
   }
-});
+);
 
 // =====================================================
 // FUNKCIJA 6: Suspend/Unsuspend Vlasnika
@@ -341,54 +323,49 @@ exports.resetOwnerPassword = onCall(
 exports.toggleOwnerStatus = onCall(
   {region: 'europe-west3'},
   async (request) => {
-  // Auth check
-  if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
-    throw new Error('Unauthorized - Super Admin only');
-  }
-
-  const {tenantId, status} = request.data;
-
-  // Validation
-  if (!tenantId || !['active', 'suspended'].includes(status)) {
-    throw new Error('Invalid parameters');
-  }
-
-  try {
-    // Update status
-    await admin.firestore().collection('tenant_links').doc(tenantId).update({
-      status: status,
-    });
-
-    // Get tenant data
-    const tenantDoc = await admin.firestore()
-      .collection('tenant_links')
-      .doc(tenantId)
-      .get();
-
-    const firebaseUid = tenantDoc.data().firebaseUid;
-
-    // Disable/enable user
-    if (firebaseUid) {
-      await admin.auth().updateUser(firebaseUid, {
-        disabled: status === 'suspended',
-      });
+    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+      throw new Error('Unauthorized - Super Admin only');
     }
 
-    return {
-      success: true,
-      message: `Owner ${status === 'active' ? 'activated' : 'suspended'}`,
-      tenantId: String(tenantId),
-      status: String(status),
-    };
-  } catch (error) {
-    console.error('❌ Error toggling status:', error);
-    throw new Error(error.message || 'Failed to toggle status');
+    const {tenantId, status} = request.data;
+
+    if (!tenantId || !['active', 'suspended'].includes(status)) {
+      throw new Error('Invalid parameters');
+    }
+
+    try {
+      await admin.firestore().collection('tenant_links').doc(tenantId).update({
+        status: status,
+      });
+
+      const tenantDoc = await admin.firestore()
+        .collection('tenant_links')
+        .doc(tenantId)
+        .get();
+
+      const firebaseUid = tenantDoc.data().firebaseUid;
+
+      if (firebaseUid) {
+        await admin.auth().updateUser(firebaseUid, {
+          disabled: status === 'suspended',
+        });
+      }
+
+      return {
+        success: true,
+        message: `Owner ${status === 'active' ? 'activated' : 'suspended'}`,
+        tenantId: String(tenantId),
+        status: String(status),
+      };
+    } catch (error) {
+      console.error('❌ Error toggling status:', error);
+      throw new Error(error.message || 'Failed to toggle status');
+    }
   }
-});
+);
 
 // =====================================================
-// FUNKCIJA 7: AI PRIJEVOD - GEMINI SDK
-// ✅ FIXED: Model gemini-2.5-flash + Enhanced prompt
+// FUNKCIJA 7: AI PRIJEVOD - GEMINI SDK (House Rules)
 // =====================================================
 exports.translateHouseRules = onCall(
   {
@@ -398,14 +375,12 @@ exports.translateHouseRules = onCall(
   async (request) => {
     console.log('🌐 translateHouseRules called');
 
-    // Auth check
     if (!request.auth) {
       throw new Error('Unauthorized - must be logged in');
     }
 
     const {text, sourceLang, targetLangs} = request.data;
 
-    // Validation
     if (!text || !sourceLang || !targetLangs || !Array.isArray(targetLangs)) {
       throw new Error('Invalid parameters: text, sourceLang, targetLangs required');
     }
@@ -413,13 +388,11 @@ exports.translateHouseRules = onCall(
     try {
       const {GoogleGenerativeAI} = require('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(geminiApiKey.value());
-      // ✅ FIXED: Stable model instead of experimental
-      const model = genAI.getGenerativeModel({model: 'gemini-2.5-flash'});
+      const model = genAI.getGenerativeModel({model: 'gemini-2.0-flash'});
 
       const translations = {};
 
       for (const targetLang of targetLangs) {
-        // ✅ FIXED: Enhanced prompt with quality checks
         const prompt = `You are a professional translator for a luxury villa rental service.
 
 TASK: Translate the following text from ${sourceLang} to ${targetLang}.
@@ -468,29 +441,17 @@ OUTPUT ONLY THE TRANSLATION IN ${targetLang}:`;
     }
   }
 );
-// =====================================================
-// FUNKCIJA 8: Registracija Tableta (DODAJ NA KRAJ index.js)
-// =====================================================
-// 
-// SVRHA: Tablet poziva ovu funkciju pri SETUP-u.
-// Funkcija verificira da Unit pripada Tenantu,
-// kreira Anonymous Auth user i postavlja Custom Claims.
-//
-// FLOW:
-// 1. Tablet šalje: tenantId + unitId
-// 2. CF verificira da unit.ownerId == tenantId
-// 3. CF kreira anonymous user + postavlja claims
-// 4. CF vraća customToken za auto-login
-// =====================================================
 
+// =====================================================
+// FUNKCIJA 8: Registracija Tableta
+// =====================================================
 exports.registerTablet = onCall(
   {region: 'europe-west3'},
   async (request) => {
     console.log('📱 registerTablet called');
 
-    const {tenantId, unitId} = request.data;
+    const {tenantId, unitId, deviceId, model, osVersion, appVersion} = request.data;
 
-    // Validacija inputa
     if (!tenantId || !unitId) {
       console.error('❌ Missing required fields');
       throw new Error('Missing required fields: tenantId, unitId');
@@ -509,124 +470,53 @@ exports.registerTablet = onCall(
 
       if (!unitDoc.exists) {
         console.error(`❌ Unit "${unitId}" not found`);
-        throw new Error(`Unit "${unitId}" not found. Check Web Panel.`);
+        throw new Error(`Unit "${unitId}" not found.`);
       }
 
       const unitData = unitDoc.data();
       
-      // Provjeri vlasništvo
       if (unitData.ownerId !== tenantId) {
-        console.error(`❌ Unit "${unitId}" does not belong to tenant "${tenantId}"`);
-        throw new Error('Unit does not belong to this tenant. Check credentials.');
+        console.error(`❌ Unit does not belong to tenant ${tenantId}`);
+        throw new Error('Unit does not belong to this tenant.');
       }
 
-      console.log('✅ Unit ownership verified');
-
-      // 2. PROVJERI DA TENANT POSTOJI I AKTIVAN JE
-      console.log('🔍 Checking tenant status...');
+      // 2. Kreiraj ili updatiraj tablet dokument
+      const tabletDocId = deviceId || `${tenantId}_${unitId}`;
       
-      const tenantDoc = await admin.firestore()
-        .collection('tenant_links')
-        .doc(tenantId)
-        .get();
-
-      if (!tenantDoc.exists) {
-        console.error(`❌ Tenant "${tenantId}" not found`);
-        throw new Error(`Tenant "${tenantId}" not found. Contact admin.`);
-      }
-
-      const tenantData = tenantDoc.data();
-      
-      if (tenantData.status === 'suspended') {
-        console.error('❌ Tenant account suspended');
-        throw new Error('Owner account is suspended. Contact admin.');
-      }
-
-      console.log('✅ Tenant verified');
-
-      // 3. PROVJERI DA LI VEĆ POSTOJI TABLET ZA OVAJ UNIT
-      // (Opcijski - možemo dozvoliti više tableta po unitu ili ne)
-      const existingTablets = await admin.firestore()
-        .collection('tablets')
-        .where('unitId', '==', unitId)
-        .where('status', '==', 'active')
-        .get();
-
-      if (!existingTablets.empty) {
-        console.log('⚠️ Active tablet already exists for this unit, deactivating old...');
-        // Deaktiviraj stare tablete za ovaj unit
-        const batch = admin.firestore().batch();
-        existingTablets.docs.forEach(doc => {
-          batch.update(doc.ref, {status: 'replaced', replacedAt: admin.firestore.FieldValue.serverTimestamp()});
-        });
-        await batch.commit();
-      }
-
-      // 4. KREIRAJ ANONYMOUS AUTH USER ZA TABLET
-      console.log('👤 Creating tablet auth user...');
-      
-      const tabletDisplayName = `Tablet_${unitId}_${Date.now()}`;
-      
-      const userRecord = await admin.auth().createUser({
-        displayName: tabletDisplayName,
-        // Anonymous user - nema email/password
-      });
-
-      console.log(`✅ Auth user created: ${userRecord.uid}`);
-
-      // 5. POSTAVI CUSTOM CLAIMS
-      console.log('🔐 Setting custom claims...');
-      
-      await admin.auth().setCustomUserClaims(userRecord.uid, {
+      await admin.firestore().collection('tablets').doc(tabletDocId).set({
+        deviceId: tabletDocId,
+        tenantId: tenantId,
         ownerId: tenantId,
         unitId: unitId,
-        role: 'tablet',
-      });
-
-      console.log('✅ Custom claims set');
-
-      // 6. SPREMI TABLET REGISTRACIJU U FIRESTORE
-      console.log('💾 Saving tablet registration...');
-      
-      const tabletDocRef = admin.firestore().collection('tablets').doc();
-      
-      await tabletDocRef.set({
-        id: tabletDocRef.id,
-        firebaseUid: userRecord.uid,
-        ownerId: tenantId,
-        unitId: unitId,
-        unitName: unitData.name || 'Unknown',
+        unitName: unitData.name || unitId,
+        ownerName: tenantId,
+        model: model || 'Unknown',
+        osVersion: osVersion || 'Unknown',
+        appVersion: appVersion || '1.0.0',
         status: 'active',
         registeredAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
-        platform: 'Android',
-        appVersion: '1.0.0',
-      });
+        lastHeartbeat: admin.firestore.FieldValue.serverTimestamp(),
+        pendingUpdate: false,
+        pendingVersion: '',
+        pendingApkUrl: '',
+        forceUpdate: false,
+      }, {merge: true});
 
-      console.log('✅ Tablet registration saved');
-
-      // 7. GENERIRAJ CUSTOM TOKEN ZA AUTO-LOGIN
-      console.log('🎫 Generating custom token...');
-      
-      const customToken = await admin.auth().createCustomToken(userRecord.uid, {
-        ownerId: tenantId,
-        unitId: unitId,
+      // 3. Kreiraj custom token za tablet
+      const customToken = await admin.auth().createCustomToken(tabletDocId, {
         role: 'tablet',
+        tenantId: tenantId,
+        unitId: unitId,
       });
 
-      console.log('✅ Custom token generated');
+      console.log('✅ Tablet registered successfully');
 
-      // 8. VRATI PODATKE TABLETU
       return {
         success: true,
+        tabletId: tabletDocId,
         customToken: customToken,
-        firebaseUid: userRecord.uid,
-        ownerId: String(tenantId),
-        unitId: String(unitId),
-        unitName: String(unitData.name || 'Unknown'),
-        message: 'Tablet registered successfully!',
+        message: 'Tablet registered successfully',
       };
-
     } catch (error) {
       console.error('❌ Error registering tablet:', error);
       throw new Error(error.message || 'Failed to register tablet');
@@ -634,49 +524,133 @@ exports.registerTablet = onCall(
   }
 );
 
-
 // =====================================================
-// FUNKCIJA 9: Heartbeat Tableta (opcijski, za tracking)
+// FUNKCIJA 9: Heartbeat Tableta
 // =====================================================
-// Tablet može periodički zvati ovu funkciju da
-// vlasnik vidi da je tablet online.
-// =====================================================
-
 exports.tabletHeartbeat = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    // Auth check - mora biti tablet
     if (!request.auth) {
       throw new Error('Unauthorized');
     }
 
     const claims = request.auth.token;
-    
-    if (claims.role !== 'tablet') {
-      throw new Error('Only tablets can send heartbeat');
-    }
-
-    const {unitId} = claims;
+    const {deviceId, appVersion, batteryLevel, isCharging} = request.data;
 
     try {
-      // Update lastActiveAt u tablets collection
-      const tabletsSnapshot = await admin.firestore()
-        .collection('tablets')
-        .where('unitId', '==', unitId)
-        .where('status', '==', 'active')
-        .limit(1)
-        .get();
+      // Pronađi tablet dokument
+      let tabletRef;
+      
+      if (deviceId) {
+        tabletRef = admin.firestore().collection('tablets').doc(deviceId);
+      } else if (claims.unitId) {
+        const tabletsSnapshot = await admin.firestore()
+          .collection('tablets')
+          .where('unitId', '==', claims.unitId)
+          .where('status', '==', 'active')
+          .limit(1)
+          .get();
 
-      if (!tabletsSnapshot.empty) {
-        await tabletsSnapshot.docs[0].ref.update({
-          lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        if (!tabletsSnapshot.empty) {
+          tabletRef = tabletsSnapshot.docs[0].ref;
+        }
+      }
+
+      if (tabletRef) {
+        const updateData = {
+          lastHeartbeat: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        if (appVersion) updateData.appVersion = appVersion;
+        if (batteryLevel !== undefined) updateData.batteryLevel = batteryLevel;
+        if (isCharging !== undefined) updateData.isCharging = isCharging;
+
+        await tabletRef.update(updateData);
+
+        // Provjeri ima li pending update
+        const tabletDoc = await tabletRef.get();
+        const tabletData = tabletDoc.data();
+
+        return {
+          success: true,
+          pendingUpdate: tabletData.pendingUpdate || false,
+          pendingVersion: tabletData.pendingVersion || '',
+          pendingApkUrl: tabletData.pendingApkUrl || '',
+          forceUpdate: tabletData.forceUpdate || false,
+        };
       }
 
       return {success: true};
     } catch (error) {
       console.error('Heartbeat error:', error);
-      return {success: false};
+      return {success: false, error: error.message};
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 10: Translate Notification (NOVO!)
+// =====================================================
+exports.translateNotification = onCall(
+  {
+    region: 'europe-west3',
+    secrets: [geminiApiKey],
+  },
+  async (request) => {
+    // Super Admin only
+    if (!request.auth || request.auth.token.email !== 'nevenroksa@gmail.com') {
+      throw new Error('Unauthorized - Super Admin only');
+    }
+
+    const {text, sourceLanguage, targetLanguages} = request.data;
+
+    if (!text || !sourceLanguage || !targetLanguages) {
+      throw new Error('Missing required fields');
+    }
+
+    const languageNames = {
+      'en': 'English', 'hr': 'Croatian', 'de': 'German', 'it': 'Italian',
+      'sk': 'Slovak', 'cz': 'Czech', 'es': 'Spanish', 'fr': 'French',
+      'pl': 'Polish', 'hu': 'Hungarian', 'sl': 'Slovenian',
+    };
+
+    const translations = {};
+    translations[sourceLanguage] = text;
+
+    try {
+      const {GoogleGenerativeAI} = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(geminiApiKey.value());
+      const model = genAI.getGenerativeModel({model: 'gemini-2.0-flash'});
+
+      for (const targetLang of targetLanguages) {
+        const sourceName = languageNames[sourceLanguage] || sourceLanguage;
+        const targetName = languageNames[targetLang] || targetLang;
+
+        const prompt = `Translate the following system notification from ${sourceName} to ${targetName}. 
+Keep the tone professional and clear. Return ONLY the translated text, nothing else.
+
+Text to translate:
+"${text}"`;
+
+        console.log(`🔄 Translating notification to ${targetLang}...`);
+
+        const result = await model.generateContent(prompt);
+        const translatedText = result.response.text();
+
+        if (translatedText) {
+          translations[targetLang] = translatedText.trim().replace(/^["']|["']$/g, '');
+        } else {
+          translations[targetLang] = text;
+        }
+
+        // Rate limit protection
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      return {translations};
+    } catch (error) {
+      console.error('Notification translation error:', error);
+      throw new Error('Translation failed');
     }
   }
 );
