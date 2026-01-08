@@ -1,0 +1,58 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Firebase
+.firebase/
+.firebaserc
+
+# Generated
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+.metadata
+
+# DevTools
+devtools_options.yaml
+
+# Logs
+*.log
+npm-debug.log*
+firebase-debug.log*
+
+# Environment (IMPORTANT - security!)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Test
+coverage/
+.test_coverage/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Misc
+*.bak
+*.tmp
+*.temp
