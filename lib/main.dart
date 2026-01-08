@@ -1,6 +1,6 @@
 // FILE: lib/main.dart
 // OPIS: Entry point za Admin Panel.
-// STATUS: UPDATED - Added GoRouter for URL-based navigation (refresh stays on same page)
+// STATUS: UPDATED - Added Super Admin routing (nevenroksa@gmail.com → SuperAdminScreen)
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,11 +11,17 @@ import 'package:go_router/go_router.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/tenant_setup_screen.dart';
+import 'screens/super_admin_screen.dart';
 import 'config/theme.dart';
 import 'firebase_options.dart';
 import 'providers/app_provider.dart';
 import 'services/settings_service.dart';
 import 'models/settings_model.dart';
+
+// =============================================================================
+// 🔐 SUPER ADMIN EMAIL - Samo ovaj email vidi Super Admin Dashboard
+// =============================================================================
+const String superAdminEmail = 'nevenroksa@gmail.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,9 +58,9 @@ class AdminApp extends StatelessWidget {
   }
 }
 
-// =====================================================
-// AuthWrapper - Sa Tenant ID Check
-// =====================================================
+// =============================================================================
+// AuthWrapper - Sa Super Admin Check + Tenant ID Check
+// =============================================================================
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -75,18 +81,24 @@ class AuthWrapper extends StatelessWidget {
           return const LoginScreen();
         }
 
-        // 3. LOGGED IN → Check Custom Claims
+        // 🆕 3. SUPER ADMIN CHECK - Prije svega ostalog!
+        final userEmail = snapshot.data!.email;
+        if (userEmail == superAdminEmail) {
+          return const SuperAdminScreen();
+        }
+
+        // 4. REGULAR USER → Check Custom Claims
         return FutureBuilder<IdTokenResult>(
           future: snapshot.data!.getIdTokenResult(),
           builder: (context, tokenSnapshot) {
-            // 3a. Loading Claims
+            // 4a. Loading Claims
             if (tokenSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            // 3b. Error reading Claims
+            // 4b. Error reading Claims
             if (tokenSnapshot.hasError) {
               return Scaffold(
                 body: Center(
@@ -110,16 +122,16 @@ class AuthWrapper extends StatelessWidget {
               );
             }
 
-            // 3c. Check Claims
+            // 4c. Check Claims
             final claims = tokenSnapshot.data?.claims;
             final hasAdminRole = claims?['role'] == 'admin';
 
-            // 3d. NEMA Claims → Tenant Setup Screen
+            // 4d. NEMA Claims → Tenant Setup Screen
             if (!hasAdminRole) {
               return const TenantSetupScreen();
             }
 
-            // 3e. IMA Claims → Onboarding Check → Dashboard
+            // 4e. IMA Claims → Onboarding Check → Dashboard
             return const OnboardingWrapper();
           },
         );

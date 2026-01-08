@@ -33558,10 +33558,100 @@ freely, subject to the following restrictions:
 --------------------------------------------------------------------------------
 villa_admin
 
-Copyright (c) 2026 nroxa92. All rights reserved.
+VLASNIČKA LICENCA SOFTVERA
+=============================
 
-The source code is currently in the development phase and is publicly available for viewing purposes only. 
-Any copying, modification, distribution, or use of this software, in whole or in part, without the express written permission of the copyright holder is strictly prohibited.
+Autorsko pravo (c) 2025-2026 nroxa92. Sva prava pridržana.
+
+NAPOMENA: OVO NIJE SOFTVER OTVORENOG KODA (OPEN SOURCE)
+
+Ovaj softver, uključujući sav izvorni kod, dokumentaciju, resurse i povezane 
+datoteke sadržane u ovom repozitoriju ("Softver"), isključivo je intelektualno 
+vlasništvo nositelja autorskog prava. Ovaj Softver je javno vidljiv na 
+GitHubu ISKLJUČIVO u svrhu demonstracije portfelja.
+
+================================================================================
+                              STROGE ZABRANE
+================================================================================
+
+PRISTUPANJEM OVOM REPOZITORIJU POTVRĐUJETE I SLAŽETE SE DA SU SLJEDEĆE 
+AKTIVNOSTI STROGO ZABRANJENE BEZ PRETHODNOG PISANOG ODOBRENJA:
+
+1. KOPIRANJE I REPRODUKCIJA
+   - Preuzimanje, kloniranje, forkanje ili kopiranje bilo kojeg dijela ove baze koda
+   - Uzimanje snimaka zaslona ili snimanje izvornog koda
+   - Reproduciranje bilo kojeg dijela ovog Softvera u bilo kojem obliku ili mediju
+
+2. IZMJENE I IZVEDENA DJELA
+   - Mijenjanje, prilagođavanje ili preinaka izvornog koda
+   - Stvaranje izvedenih djela temeljenih na ovom Softveru
+   - Prevođenje ili pretvaranje koda u druge programske jezike
+
+3. DISTRIBUCIJA I DIJELJENJE
+   - Redistribucija Softvera u bilo kojem obliku
+   - Dijeljenje isječaka koda, datoteka ili dokumentacije
+   - Objavljivanje ili postavljanje bilo kojeg dijela drugdje
+
+4. KOMERCIJALNA I OSOBNA UPOTREBA
+   - Korištenje ovog Softvera u bilo koju komercijalnu svrhu
+   - Korištenje ovog Softvera za osobne projekte
+   - Uključivanje bilo kojeg koda u druge aplikacije
+   - Korištenje algoritama, arhitektura ili implementacija iz ovog projekta
+
+5. OBRNUTI INŽENJERING (REVERSE ENGINEERING)
+   - Dekompilacija ili rastavljanje (disassembliranje) Softvera
+   - Pokušaj izvođenja izvornog koda iz kompiliranih verzija
+   - Analiziranje koda radi repliciranja funkcionalnosti
+
+================================================================================
+                              PRAVNE POSLJEDICE
+================================================================================
+
+NEOVLAŠTENO KORIŠTENJE OVOG SOFTVERA PREDSTAVLJA:
+
+• Kršenje autorskih prava prema međunarodnim zakonima o autorskim pravima uključujući:
+  - Bernsku konvenciju za zaštitu književnih i umjetničkih djela
+  - WIPO ugovor o autorskom pravu
+  - Zakon o autorskim pravima u digitalnom tisućljeću (DMCA)
+  - Direktivu EU o autorskim pravima
+
+• Potencijalno kazneno djelo kažnjivo:
+  - Novčanim kaznama do 150.000 USD po kršenju (nadležnost SAD-a)
+  - Zatvorskom kaznom u teškim slučajevima
+  - Građanskom parnicom za naknadu štete i izgubljene dobiti
+
+NOSITELJ AUTORSKOG PRAVA AKTIVNO NADZIRE NEOVLAŠTENU UPOTREBU I PODUZET ĆE 
+SVE DOSTUPNE PRAVNE LIJEKOVE PROTIV PREKRŠITELJA, UKLJUČUJUĆI ALI NE 
+OGRANIČAVAJUĆI SE NA:
+
+  → DMCA zahtjeve za uklanjanje sadržaja
+  → Naloge za prestanak i odustajanje (Cease and Desist)
+  → Građanske tužbe za naknadu štete
+  → Kazneni progon gdje je primjenjivo
+  → Naplatu pravnih troškova i naknada
+
+================================================================================
+                              BEZ JAMSTVA
+================================================================================
+
+OVAJ SOFTVER SE DAJE "KAKAV JEST" BEZ JAMSTVA BILO KOJE VRSTE, IZRIČITOG ILI 
+IMPLICIRANOG. NOSITELJ AUTORSKOG PRAVA NEĆE BITI ODGOVORAN ZA BILO KAKAV 
+ZAHTJEV, ŠTETU ILI DRUGU ODGOVORNOST KOJA PROIZLAZI IZ PRISTUPA ILI 
+PREGLEDAVANJA OVOG SOFTVERA.
+
+================================================================================
+                              KONTAKT
+================================================================================
+
+Za upite o licenciranju ili zahtjeve za dopuštenje:
+GitHub: @nroxa92
+EMail: nevenroksa@gmail.com
+
+Neovlaštena upotreba bit će procesuirana u najvećoj mjeri dopuštenoj zakonom.
+
+================================================================================
+
+Zadnje ažurirano: Siječanj 2026.
 --------------------------------------------------------------------------------
 vulkan-validation-layers
 
