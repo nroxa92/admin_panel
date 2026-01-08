@@ -167,35 +167,9 @@ Firestore Security Rules (ownerId filter)
 Izolirani podaci po tenant-u
 ```
 
-### Firestore Rules (primjer)
-
-```javascript
-match /units/{unitId} {
-  allow read, write: if request.auth.token.ownerId == resource.data.ownerId;
-}
-```
-
----
-
-## 🚦 Deployment
-
-### Web Panel
-```bash
-flutter build web --release
-firebase deploy --only hosting
-```
-
-### Cloud Functions
-```bash
-cd functions
-npm run deploy
-```
-
----
-
 ## 📈 Roadmap
 
-### ✅ Završeno (v1.0)
+### ✅ Završeno 
 - [x] Dashboard s real-time statusom
 - [x] Booking kalendar (drag & drop)
 - [x] PDF generator (10 tipova)
@@ -204,23 +178,17 @@ npm run deploy
 - [x] Digital Book management
 - [x] Cleaning status indikacija
 
-### 🔄 U tijeku (v1.1)
+### 🔄 U tijeku 
 - [ ] Tablet app - Guest check-in flow
 - [ ] Tablet app - Cleaner mode
 - [ ] Push notifikacije
 - [ ] Offline support
 
-### 📋 Planirano (v2.0)
-- [ ] Channel Manager integracija
-- [ ] Automatski pricing
-- [ ] Revenue analytics
-- [ ] Mobile app za vlasnike
-
 ---
 
 ## 👨‍💻 Razvoj
 
-Projekt je razvijen u suradnji s **Claude AI** (Anthropic) kao Senior Lead Developer asistent, s fokusom na:
+Projekt je razvijan s fokusom na:
 
 - Production-ready kod
 - Best practices

@@ -663,16 +663,20 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
       debugPrint("✅ Emergency Contact SAVED!");
 
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Emergency Contact Saved!"),
+          SnackBar(
+            content: Text(t('msg_emergency_saved')),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       debugPrint("❌ Error saving emergency contact: $e");
-      _showError("Error: $e");
+      if (mounted) {
+        final t = context.read<AppProvider>().translate;
+        _showError("${t('msg_error')}: $e");
+      }
     } finally {
       if (mounted) setState(() => _isLoadingEmergency = false);
     }
@@ -731,9 +735,10 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
       await _settingsService.saveSettings(newSettings);
 
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Timers saved!"),
+          SnackBar(
+            content: Text("✅ ${t('msg_timers_saved')}"),
             backgroundColor: Colors.green,
           ),
         );
@@ -741,8 +746,11 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
     } catch (e) {
       debugPrint("Error saving timers: $e");
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text("${t('msg_error')}: $e"),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -798,9 +806,10 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
       await _settingsService.saveSettings(newSettings);
 
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Checklist saved (${tasks.length} tasks)!"),
+            content: Text("${t('msg_checklist_saved')} (${tasks.length})"),
             backgroundColor: Colors.green,
           ),
         );
@@ -808,9 +817,10 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
     } catch (e) {
       debugPrint("Error saving checklist: $e");
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: $e"),
+            content: Text("${t('msg_error')}: $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -863,9 +873,10 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
       await _settingsService.saveSettings(newSettings);
 
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("AI Context saved!"),
+          SnackBar(
+            content: Text(t('msg_ai_saved')),
             backgroundColor: Colors.green,
           ),
         );
@@ -873,9 +884,10 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
     } catch (e) {
       debugPrint("Error saving AI context: $e");
       if (mounted) {
+        final t = context.read<AppProvider>().translate;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: $e"),
+            content: Text("${t('msg_error')}: $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -888,6 +900,7 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
+    final t = provider.translate;
     final primaryColor = provider.primaryColor;
     final backgroundColor = provider.backgroundColor;
     final isDark = backgroundColor.computeLuminance() < 0.5;
@@ -902,7 +915,7 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
         children: [
           // ===== HEADER =====
           Text(
-            "Digital Info Book",
+            t('header_digital_book'),
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -911,7 +924,7 @@ class _DigitalBookScreenState extends State<DigitalBookScreen> {
           ),
           const SizedBox(height: 5),
           Text(
-            "Manage content visible to guests on tablets",
+            t('digital_book_subtitle'),
             style: TextStyle(
               fontSize: 14,
               color: textColor.withValues(alpha: 0.6),

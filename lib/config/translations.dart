@@ -66,6 +66,7 @@ class AppTranslations {
 
       // SETTINGS - DIGITAL BOOK & AI
       'header_digital_book': 'Content & AI Knowledge',
+      'digital_book_subtitle': 'Manage content visible to guests on tablets',
       'section_guest_info': '1. FOR GUESTS (Rules & Info)',
       'section_cleaner_info': '2. FOR CLEANERS (Internal Checklist)',
       'section_ai_knowledge': '3. LOCAL KNOWLEDGE (AI Context)',
@@ -257,6 +258,8 @@ class AppTranslations {
 
       // SETTINGS - DIGITAL BOOK & AI
       'header_digital_book': 'Sadržaj i AI',
+      'digital_book_subtitle':
+          'Upravljanje sadržajem vidljivim gostima na tabletu',
       'section_guest_info': '1. ZA GOSTE (Pravila)',
       'section_cleaner_info': '2. ZA ČISTAČICE (Interni)',
       'section_ai_knowledge': '3. LOKALNO ZNANJE (AI)',
@@ -419,6 +422,7 @@ class AppTranslations {
       'label_new_password': 'Nové Heslo',
       'label_confirm_password': 'Potvrdiť Heslo',
       'header_digital_book': 'Obsah a AI',
+      'digital_book_subtitle': 'Správa obsahu viditelného hosťom na tablete',
       'section_guest_info': '1. PRE HOSTÍ',
       'section_cleaner_info': '2. PRE UPRATOVAČKY',
       'section_ai_knowledge': '3. MIESTNE ZNALOSTI',
@@ -570,6 +574,7 @@ class AppTranslations {
       'label_new_password': 'Nové Heslo',
       'label_confirm_password': 'Potvrdit Heslo',
       'header_digital_book': 'Obsah a AI',
+      'digital_book_subtitle': 'Správa obsahu viditelného hosťom na tablete',
       'section_guest_info': '1. PRO HOSTY',
       'section_cleaner_info': '2. PRO ÚKLID',
       'section_ai_knowledge': '3. MÍSTNÍ ZNALOSTI',
@@ -721,6 +726,8 @@ class AppTranslations {
       'label_new_password': 'Neues Passwort',
       'label_confirm_password': 'Bestätigen',
       'header_digital_book': 'Inhalt & AI Wissen',
+      'digital_book_subtitle':
+          'Verwalten von Inhalten für Gäste auf dem Tablet',
       'section_guest_info': '1. FÜR GÄSTE',
       'section_cleaner_info': '2. FÜR REINIGUNG',
       'section_ai_knowledge': '3. LOKALES WISSEN',
@@ -872,6 +879,8 @@ class AppTranslations {
       'label_new_password': 'Nuova Password',
       'label_confirm_password': 'Conferma Password',
       'header_digital_book': 'Contenuto e AI',
+      'digital_book_subtitle':
+          'Gestisci contenuti visibili agli ospiti sul tablet',
       'section_guest_info': '1. PER OSPITI',
       'section_cleaner_info': '2. PER PULIZIE',
       'section_ai_knowledge': '3. CONOSCENZE LOCALI',
@@ -1023,6 +1032,8 @@ class AppTranslations {
       'label_new_password': 'Nueva Contraseña',
       'label_confirm_password': 'Confirmar',
       'header_digital_book': 'Contenido e IA',
+      'digital_book_subtitle':
+          'Gestiona contenido visible para huéspedes en tablet',
       'section_guest_info': '1. PARA HUÉSPEDES',
       'section_cleaner_info': '2. PARA LIMPIEZA',
       'section_ai_knowledge': '3. CONOCIMIENTO LOCAL',
@@ -1174,6 +1185,8 @@ class AppTranslations {
       'label_new_password': 'Nouveau mot de passe',
       'label_confirm_password': 'Confirmer',
       'header_digital_book': 'Contenu & IA',
+      'digital_book_subtitle':
+          'Gérer le contenu visible par les invités sur tablette',
       'section_guest_info': '1. POUR INVITÉS',
       'section_cleaner_info': '2. POUR NETTOYAGE',
       'section_ai_knowledge': '3. CONNAISSANCES LOCALES',
@@ -1325,6 +1338,8 @@ class AppTranslations {
       'label_new_password': 'Nowe Hasło',
       'label_confirm_password': 'Potwierdź',
       'header_digital_book': 'Treść i AI',
+      'digital_book_subtitle':
+          'Zarządzaj treścią widoczną dla gości na tablecie',
       'section_guest_info': '1. DLA GOŚCI',
       'section_cleaner_info': '2. DLA SPRZĄTANIA',
       'section_ai_knowledge': '3. WIEDZA LOKALNA',
@@ -1476,6 +1491,8 @@ class AppTranslations {
       'label_new_password': 'Új Jelszó',
       'label_confirm_password': 'Megerősítés',
       'header_digital_book': 'Tartalom és AI',
+      'digital_book_subtitle':
+          'Vendégek számára látható tartalom kezelése tableten',
       'section_guest_info': '1. VENDÉGEKNEK',
       'section_cleaner_info': '2. TAKARÍTÓKNAK',
       'section_ai_knowledge': '3. HELYI ISMERETEK',
@@ -1627,6 +1644,7 @@ class AppTranslations {
       'label_new_password': 'Novo Geslo',
       'label_confirm_password': 'Potrdi',
       'header_digital_book': 'Vsebina in AI',
+      'digital_book_subtitle': 'Upravljanje vsebine vidne gostom na tablici',
       'section_guest_info': '1. ZA GOSTE',
       'section_cleaner_info': '2. ZA ČIŠČENJE',
       'section_ai_knowledge': '3. LOKALNO ZNANJE',
