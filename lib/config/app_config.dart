@@ -1,6 +1,6 @@
 // FILE: lib/config/app_config.dart
 // PROJECT: Vesta Lumina System (VLS)
-// VERSION: 3.0.0 - Phase 3 Production Readiness
+// VERSION: 4.0.0 - Phase 4 Complete
 
 import 'package:flutter/foundation.dart';
 
@@ -13,8 +13,8 @@ class AppConfig {
   // =====================================================
 
   static const String appName = 'VLS Admin Panel';
-  static const String appVersion = '3.0.0';
-  static const String appBuildNumber = '3';
+  static const String appVersion = '4.0.0';
+  static const String appBuildNumber = '4';
 
   // =====================================================
   // FIREBASE CONFIG
@@ -63,6 +63,35 @@ class AppConfig {
   static const bool enableRepositoryPattern = true;
   static const bool enableUnitTests = true;
 
+  // Phase 4 Features
+  static const bool enableOfflineMode = true;
+  static const bool enableEmailNotifications = true;
+  static const bool enableCalendarExport = true;
+  static const bool enableRevenueAnalytics = true;
+  static const bool enablePerformanceOptimization = true;
+
+  // =====================================================
+  // CACHE SETTINGS (Phase 4)
+  // =====================================================
+
+  static const Duration cacheExpiry = Duration(hours: 24);
+  static const Duration syncInterval = Duration(hours: 1);
+  static const int maxPendingActions = 100;
+
+  // =====================================================
+  // EMAIL SETTINGS (Phase 4)
+  // =====================================================
+
+  static const int reminderDaysBeforeCheckIn = 1;
+  static const bool defaultEmailNotifications = true;
+
+  // =====================================================
+  // CALENDAR SETTINGS (Phase 4)
+  // =====================================================
+
+  static const String icalTimezone = 'Europe/Zagreb';
+  static const String defaultCurrency = 'EUR';
+
   // =====================================================
   // BACKUP SETTINGS
   // =====================================================
@@ -88,7 +117,15 @@ class AppConfig {
   static const Duration snackbarDuration = Duration(seconds: 3);
 
   // =====================================================
-  // ANALYTICS SETTINGS (Phase 3)
+  // PAGINATION SETTINGS (Phase 4)
+  // =====================================================
+
+  static const int defaultPageSize = 20;
+  static const int maxPageSize = 100;
+  static const double lazyLoadThreshold = 200.0;
+
+  // =====================================================
+  // ANALYTICS SETTINGS
   // =====================================================
 
   static const int analyticsDefaultLimit = 100;
@@ -125,18 +162,20 @@ class AppConfig {
     if (!kDebugMode) return;
 
     debugPrint('═══════════════════════════════════════════');
-    debugPrint('📋 VLS APP CONFIG v$appVersion (Phase 3)');
+    debugPrint('📋 VLS APP CONFIG v$appVersion (Phase 4)');
     debugPrint('═══════════════════════════════════════════');
     debugPrint('Firebase: $firebaseProjectId');
     debugPrint('Primary Admin: $primaryAdminEmail');
     debugPrint('───────────────────────────────────────────');
-    debugPrint('Phase 1: Error Tracking, Security, Connectivity');
+    debugPrint('Phase 1: Error Tracking, Security');
     debugPrint('Phase 2: Multi-Admin, Backup, Logging');
     debugPrint('Phase 3: Analytics, Repository, Tests');
+    debugPrint('Phase 4: Offline, Email, Calendar, Revenue');
     debugPrint('───────────────────────────────────────────');
-    debugPrint('Sentry: $enableSentry');
-    debugPrint('Analytics: $enableAnalyticsDashboard');
-    debugPrint('Repository Pattern: $enableRepositoryPattern');
+    debugPrint('Offline Mode: $enableOfflineMode');
+    debugPrint('Email Notifications: $enableEmailNotifications');
+    debugPrint('Calendar Export: $enableCalendarExport');
+    debugPrint('Revenue Analytics: $enableRevenueAnalytics');
     debugPrint('═══════════════════════════════════════════');
   }
 }

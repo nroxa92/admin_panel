@@ -1,15 +1,20 @@
 // =====================================================
-// VLS Cloud Functions - PHASE 2 COMPLETE (14 FUNCTIONS)
-// Version: 5.0 - Multiple Super Admins + Backup + Logging
+// VLS Cloud Functions - PHASE 4 COMPLETE (20 FUNCTIONS)
+// Version: 6.0 - Email Notifications + Calendar + Revenue
 // Date: 2026-01-09
 // =====================================================
 
 const {onCall, onRequest} = require('firebase-functions/v2/https');
 const {onSchedule} = require('firebase-functions/v2/scheduler');
+const {onDocumentCreated, onDocumentUpdated} = require('firebase-functions/v2/firestore');
 const {defineSecret} = require('firebase-functions/params');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
+const smtpHost = defineSecret('SMTP_HOST');
+const smtpUser = defineSecret('SMTP_USER');
+const smtpPass = defineSecret('SMTP_PASS');
 
 admin.initializeApp();
 
@@ -21,7 +26,6 @@ async function isSuperAdmin(email) {
   
   const normalizedEmail = email.toLowerCase();
   
-  // Check super_admins collection
   const superAdminDoc = await admin.firestore()
     .collection('super_admins')
     .doc(normalizedEmail)
@@ -31,7 +35,6 @@ async function isSuperAdmin(email) {
     return true;
   }
   
-  // Fallback: Primary admin (can never be removed)
   if (normalizedEmail === 'vestaluminasystem@gmail.com') {
     return true;
   }
@@ -54,6 +57,41 @@ async function logAdminAction(adminEmail, action, details = {}) {
   } catch (error) {
     console.error('Failed to log admin action:', error);
   }
+}
+
+// =====================================================
+// HELPER: CREATE EMAIL TRANSPORTER
+// =====================================================
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: smtpHost.value(),
+    port: 587,
+    secure: false,
+    auth: {
+      user: smtpUser.value(),
+      pass: smtpPass.value(),
+    },
+  });
+}
+
+// =====================================================
+// HELPER: GET OWNER EMAIL SETTINGS
+// =====================================================
+async function getOwnerEmailSettings(ownerId) {
+  const settingsDoc = await admin.firestore()
+    .collection('settings')
+    .doc(ownerId)
+    .get();
+  
+  if (!settingsDoc.exists) return null;
+  
+  const data = settingsDoc.data();
+  return {
+    contactEmail: data.contactEmail,
+    ownerName: `${data.ownerFirstName || ''} ${data.ownerLastName || ''}`.trim(),
+    companyName: data.companyName || '',
+    emailNotifications: data.emailNotifications !== false,
+  };
 }
 
 // =====================================================
@@ -121,9 +159,9 @@ exports.createOwner = onCall(
         aiGuide: '',
         checkInTime: '15:00',
         checkOutTime: '10:00',
+        emailNotifications: true,
       });
 
-      // Log action
       await logAdminAction(adminEmail, 'CREATE_OWNER', {
         tenantId: tenantId,
         ownerEmail: email,
@@ -281,7 +319,6 @@ exports.deleteOwner = onCall(
       await admin.firestore().collection('tenant_links').doc(tenantId).delete();
       await admin.firestore().collection('settings').doc(tenantId).delete();
 
-      // Log action
       await logAdminAction(adminEmail, 'DELETE_OWNER', {
         tenantId: tenantId,
         ownerEmail: ownerEmail,
@@ -331,7 +368,6 @@ exports.resetOwnerPassword = onCall(
 
       await admin.auth().updateUser(firebaseUid, {password: newPassword});
 
-      // Log action
       await logAdminAction(adminEmail, 'RESET_PASSWORD', {
         tenantId: tenantId,
       });
@@ -382,7 +418,6 @@ exports.toggleOwnerStatus = onCall(
         });
       }
 
-      // Log action
       await logAdminAction(adminEmail, 'TOGGLE_STATUS', {
         tenantId: tenantId,
         newStatus: status,
@@ -631,14 +666,13 @@ exports.translateNotification = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 11: ADD SUPER ADMIN (Primary Admin Only)
+// FUNKCIJA 11: ADD SUPER ADMIN
 // =====================================================
 exports.addSuperAdmin = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
     
-    // Only primary admin can add other super admins
     if (!adminEmail || adminEmail.toLowerCase() !== 'vestaluminasystem@gmail.com') {
       throw new Error('Unauthorized - Primary Admin only');
     }
@@ -676,7 +710,7 @@ exports.addSuperAdmin = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 12: REMOVE SUPER ADMIN (Primary Admin Only)
+// FUNKCIJA 12: REMOVE SUPER ADMIN
 // =====================================================
 exports.removeSuperAdmin = onCall(
   {region: 'europe-west3'},
@@ -695,7 +729,6 @@ exports.removeSuperAdmin = onCall(
 
     const normalizedEmail = email.toLowerCase();
 
-    // Cannot remove primary admin
     if (normalizedEmail === 'vestaluminasystem@gmail.com') {
       throw new Error('Cannot remove primary admin');
     }
@@ -744,7 +777,6 @@ exports.listSuperAdmins = onCall(
         };
       });
 
-      // Always include primary admin
       const hasPrimary = admins.some(a => a.email === 'vestaluminasystem@gmail.com');
       if (!hasPrimary) {
         admins.unshift({
@@ -765,11 +797,11 @@ exports.listSuperAdmins = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 14: SCHEDULED BACKUP (Daily at 3 AM)
+// FUNKCIJA 14: SCHEDULED BACKUP
 // =====================================================
 exports.scheduledBackup = onSchedule(
   {
-    schedule: '0 3 * * *', // Every day at 3:00 AM
+    schedule: '0 3 * * *',
     region: 'europe-west3',
     timeZone: 'Europe/Zagreb',
   },
@@ -804,7 +836,6 @@ exports.scheduledBackup = onSchedule(
         console.log(`✅ Backed up ${snapshot.size} docs from ${collectionName}`);
       }
 
-      // Store backup metadata
       await admin.firestore().collection('backups').doc(backupId).set({
         backupId: backupId,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -814,9 +845,7 @@ exports.scheduledBackup = onSchedule(
         sizeEstimate: JSON.stringify(backupData).length,
       });
 
-      // Store actual backup data (for smaller datasets)
-      // For large datasets, use Cloud Storage instead
-      if (JSON.stringify(backupData).length < 1000000) { // < 1MB
+      if (JSON.stringify(backupData).length < 1000000) {
         await admin.firestore().collection('backups').doc(backupId).update({
           data: backupData,
         });
@@ -824,7 +853,6 @@ exports.scheduledBackup = onSchedule(
 
       console.log(`✅ Backup completed: ${backupId}, ${totalDocs} documents`);
       
-      // Cleanup old backups (keep last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
@@ -857,7 +885,7 @@ exports.scheduledBackup = onSchedule(
 );
 
 // =====================================================
-// FUNKCIJA 15: MANUAL BACKUP (Super Admin trigger)
+// FUNKCIJA 15: MANUAL BACKUP
 // =====================================================
 exports.manualBackup = onCall(
   {region: 'europe-west3'},
@@ -964,6 +992,275 @@ exports.getAdminLogs = onCall(
     } catch (error) {
       console.error('❌ Error getting admin logs:', error);
       throw new Error(error.message || 'Failed to get admin logs');
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 17: SEND EMAIL NOTIFICATION (Phase 4)
+// =====================================================
+exports.sendEmailNotification = onCall(
+  {
+    region: 'europe-west3',
+    secrets: [smtpHost, smtpUser, smtpPass],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new Error('Unauthorized');
+    }
+
+    const {to, subject, html, text} = request.data;
+
+    if (!to || !subject || (!html && !text)) {
+      throw new Error('Missing required fields: to, subject, and html or text');
+    }
+
+    try {
+      const transporter = createTransporter();
+
+      const mailOptions = {
+        from: `"VLS Admin" <${smtpUser.value()}>`,
+        to: to,
+        subject: subject,
+        text: text,
+        html: html,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return {success: true, message: 'Email sent successfully'};
+    } catch (error) {
+      console.error('❌ Email send error:', error);
+      throw new Error(error.message || 'Failed to send email');
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 18: BOOKING CONFIRMATION EMAIL (Trigger)
+// =====================================================
+exports.onBookingCreated = onDocumentCreated(
+  {
+    document: 'bookings/{bookingId}',
+    region: 'europe-west3',
+    secrets: [smtpHost, smtpUser, smtpPass],
+  },
+  async (event) => {
+    const booking = event.data.data();
+    const bookingId = event.params.bookingId;
+
+    if (!booking.guestEmail) {
+      console.log('No guest email, skipping notification');
+      return;
+    }
+
+    try {
+      const ownerSettings = await getOwnerEmailSettings(booking.ownerId);
+      
+      if (!ownerSettings || !ownerSettings.emailNotifications) {
+        console.log('Email notifications disabled');
+        return;
+      }
+
+      const checkIn = booking.checkIn.toDate();
+      const checkOut = booking.checkOut.toDate();
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #D4AF37, #B8860B); padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Booking Confirmed</h1>
+          </div>
+          <div style="padding: 30px; background: #f9f9f9;">
+            <p>Dear ${booking.guestName},</p>
+            <p>Your booking has been confirmed. Here are the details:</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Property:</strong> ${booking.unitName}</p>
+              <p><strong>Check-in:</strong> ${checkIn.toLocaleDateString('en-GB')} at ${ownerSettings.checkInTime || '15:00'}</p>
+              <p><strong>Check-out:</strong> ${checkOut.toLocaleDateString('en-GB')} at ${ownerSettings.checkOutTime || '10:00'}</p>
+              <p><strong>Guests:</strong> ${booking.guestCount}</p>
+              <p><strong>Booking ID:</strong> ${bookingId}</p>
+            </div>
+            
+            <p>If you have any questions, please contact us.</p>
+            <p>Best regards,<br>${ownerSettings.ownerName || 'The Host'}</p>
+          </div>
+          <div style="padding: 15px; background: #333; color: #999; text-align: center; font-size: 12px;">
+            Powered by VLS Admin Panel
+          </div>
+        </div>
+      `;
+
+      const transporter = createTransporter();
+      
+      await transporter.sendMail({
+        from: `"${ownerSettings.companyName || ownerSettings.ownerName}" <${smtpUser.value()}>`,
+        to: booking.guestEmail,
+        subject: `Booking Confirmed - ${booking.unitName}`,
+        html: html,
+      });
+
+      console.log(`✅ Confirmation email sent for booking ${bookingId}`);
+      
+      // Log email sent
+      await admin.firestore().collection('email_logs').add({
+        bookingId: bookingId,
+        to: booking.guestEmail,
+        type: 'booking_confirmation',
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'sent',
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to send confirmation email:', error);
+      
+      await admin.firestore().collection('email_logs').add({
+        bookingId: bookingId,
+        to: booking.guestEmail,
+        type: 'booking_confirmation',
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'failed',
+        error: error.message,
+      });
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 19: CHECK-IN REMINDER EMAIL (Scheduled)
+// =====================================================
+exports.sendCheckInReminders = onSchedule(
+  {
+    schedule: '0 9 * * *', // Every day at 9 AM
+    region: 'europe-west3',
+    timeZone: 'Europe/Zagreb',
+    secrets: [smtpHost, smtpUser, smtpPass],
+  },
+  async (event) => {
+    console.log('🔵 Sending check-in reminders...');
+
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const dayAfter = new Date(tomorrow);
+      dayAfter.setDate(dayAfter.getDate() + 1);
+
+      const bookingsSnapshot = await admin.firestore()
+        .collection('bookings')
+        .where('checkIn', '>=', tomorrow)
+        .where('checkIn', '<', dayAfter)
+        .get();
+
+      console.log(`Found ${bookingsSnapshot.size} bookings for tomorrow`);
+
+      let sentCount = 0;
+      
+      for (const doc of bookingsSnapshot.docs) {
+        const booking = doc.data();
+        
+        if (!booking.guestEmail) continue;
+
+        try {
+          const ownerSettings = await getOwnerEmailSettings(booking.ownerId);
+          
+          if (!ownerSettings || !ownerSettings.emailNotifications) continue;
+
+          const checkIn = booking.checkIn.toDate();
+          
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #4CAF50, #2E7D32); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Check-in Tomorrow!</h1>
+              </div>
+              <div style="padding: 30px; background: #f9f9f9;">
+                <p>Dear ${booking.guestName},</p>
+                <p>This is a friendly reminder that your check-in at <strong>${booking.unitName}</strong> is tomorrow!</p>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p><strong>Check-in Date:</strong> ${checkIn.toLocaleDateString('en-GB')}</p>
+                  <p><strong>Check-in Time:</strong> ${ownerSettings.checkInTime || '15:00'}</p>
+                  <p><strong>Property:</strong> ${booking.unitName}</p>
+                </div>
+                
+                <p>We look forward to welcoming you!</p>
+                <p>Best regards,<br>${ownerSettings.ownerName || 'The Host'}</p>
+              </div>
+            </div>
+          `;
+
+          const transporter = createTransporter();
+          
+          await transporter.sendMail({
+            from: `"${ownerSettings.companyName || ownerSettings.ownerName}" <${smtpUser.value()}>`,
+            to: booking.guestEmail,
+            subject: `Check-in Reminder - ${booking.unitName}`,
+            html: html,
+          });
+
+          sentCount++;
+          
+          await admin.firestore().collection('email_logs').add({
+            bookingId: doc.id,
+            to: booking.guestEmail,
+            type: 'checkin_reminder',
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            status: 'sent',
+          });
+
+        } catch (error) {
+          console.error(`Failed to send reminder for booking ${doc.id}:`, error);
+        }
+      }
+
+      console.log(`✅ Sent ${sentCount} check-in reminders`);
+      return null;
+    } catch (error) {
+      console.error('❌ Check-in reminders failed:', error);
+      return null;
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 20: UPDATE EMAIL SETTINGS
+// =====================================================
+exports.updateEmailSettings = onCall(
+  {region: 'europe-west3'},
+  async (request) => {
+    if (!request.auth) {
+      throw new Error('Unauthorized');
+    }
+
+    const ownerId = request.auth.token.ownerId;
+    
+    if (!ownerId) {
+      throw new Error('Owner ID not found');
+    }
+
+    const {emailNotifications, reminderDaysBefore} = request.data;
+
+    try {
+      const updateData = {};
+      
+      if (typeof emailNotifications === 'boolean') {
+        updateData.emailNotifications = emailNotifications;
+      }
+      
+      if (typeof reminderDaysBefore === 'number') {
+        updateData.reminderDaysBefore = reminderDaysBefore;
+      }
+
+      await admin.firestore()
+        .collection('settings')
+        .doc(ownerId)
+        .update(updateData);
+
+      return {success: true, message: 'Email settings updated'};
+    } catch (error) {
+      console.error('❌ Error updating email settings:', error);
+      throw new Error(error.message || 'Failed to update settings');
     }
   }
 );
