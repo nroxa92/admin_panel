@@ -1,0 +1,93 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // =====================================================
+    // 🔐 VLS STORAGE SECURITY RULES
+    // Version: 3.1
+    // Date: 2026-01-09
+    // =====================================================
+    
+    // Helper: Super Admin check
+    function isSuperAdmin() {
+      return request.auth != null && 
+             request.auth.token.email == 'vestaluminasystem@gmail.com';
+    }
+    
+    // Helper: Owner check
+    function isOwnerOf(ownerId) {
+      return request.auth != null && 
+             request.auth.token.ownerId == ownerId;
+    }
+    
+    // Helper: Tablet check
+    function isTablet() {
+      return request.auth != null && 
+             request.auth.token.role == 'tablet';
+    }
+    
+    // Helper: Web Panel check (not tablet)
+    function isWebPanel() {
+      return request.auth != null && 
+             request.auth.token.ownerId != null &&
+             request.auth.token.role != 'tablet';
+    }
+    
+    
+    // =====================================================
+    // SIGNATURES - Guest signatures from tablet
+    // Path: /signatures/{ownerId}/{filename}
+    // =====================================================
+    match /signatures/{ownerId}/{filename} {
+      // Tablet can upload signatures for their owner
+      allow write: if isTablet() && isOwnerOf(ownerId);
+      // Owner can read/delete their signatures
+      allow read, delete: if isOwnerOf(ownerId) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // SCREENSAVER - Gallery images for tablet screensaver
+    // Path: /screensaver/{ownerId}/{imageId}
+    // =====================================================
+    match /screensaver/{ownerId}/{imageId} {
+      // Web Panel can upload screensaver images
+      allow write: if isWebPanel() && isOwnerOf(ownerId);
+      // Owner (Web Panel or Tablet) can read
+      allow read: if isOwnerOf(ownerId) || isSuperAdmin();
+      // Web Panel can delete
+      allow delete: if isWebPanel() && isOwnerOf(ownerId);
+    }
+    
+    
+    // =====================================================
+    // APK FILES - Super Admin uploads for tablet updates
+    // Path: /apk/{filename}
+    // =====================================================
+    match /apk/{filename} {
+      // Only Super Admin can upload APK files
+      allow write: if isSuperAdmin();
+      // All authenticated users can download (for tablet updates)
+      allow read: if request.auth != null;
+    }
+    
+    
+    // =====================================================
+    // GALLERY - Legacy path (for backward compatibility)
+    // Path: /gallery/{ownerId}/{filename}
+    // =====================================================
+    match /gallery/{ownerId}/{filename} {
+      allow write: if isWebPanel() && isOwnerOf(ownerId);
+      allow read: if isOwnerOf(ownerId) || isSuperAdmin();
+      allow delete: if isWebPanel() && isOwnerOf(ownerId);
+    }
+    
+    
+    // =====================================================
+    // ❌ CATCH-ALL: Deny everything else
+    // =====================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

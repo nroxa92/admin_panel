@@ -1,0 +1,264 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =====================================================
+    // 🔐 VLS PRODUCTION SECURITY RULES
+    // Version: 3.1 - Added screensaver_images collection
+    // Date: 2026-01-09
+    // =====================================================
+    // 
+    // CLAIMS STRUCTURE:
+    // - Web Panel Owner: { ownerId: "TENANT123", role: "owner" }
+    // - Web Panel Admin:  { ownerId: "TENANT123", role: "admin" }
+    // - Tablet:          { ownerId: "TENANT123", unitId: "unit_abc", role: "tablet" }
+    // - Super Admin:     { email: "vestaluminasystem@gmail.com" }
+    //
+    // TENANT IZOLACIJA: Svaki vlasnik vidi SAMO svoje podatke!
+    // =====================================================
+    
+    
+    // =====================================================
+    // HELPER FUNCTIONS
+    // =====================================================
+    
+    // Provjera da je korisnik ulogiran
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Super Admin - full access
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.email == 'vestaluminasystem@gmail.com';
+    }
+    
+    // ✅ FIX: Web Panel korisnik - ima ownerId i NIJE tablet
+    function isWebPanel() {
+      return isAuthenticated() && 
+             request.auth.token.ownerId != null &&
+             request.auth.token.role != 'tablet';
+    }
+    
+    // Tablet korisnik
+    function isTablet() {
+      return isAuthenticated() && 
+             request.auth.token.role == 'tablet';
+    }
+    
+    // Provjera vlasništva - uspoređuje claims.ownerId s dokumentom
+    function isOwnerOf(ownerId) {
+      return isAuthenticated() && 
+             request.auth.token.ownerId == ownerId;
+    }
+    
+    // Provjera vlasništva nad POSTOJEĆIM dokumentom (resource.data)
+    function isResourceOwner() {
+      return isAuthenticated() && 
+             request.auth.token.ownerId == resource.data.ownerId;
+    }
+    
+    // Provjera vlasništva nad NOVIM dokumentom (request.resource.data)
+    function isRequestOwner() {
+      return isAuthenticated() && 
+             request.auth.token.ownerId == request.resource.data.ownerId;
+    }
+    
+    
+    // =====================================================
+    // 1. APP_CONFIG (API Keys - Gemini, Maps, APK Version)
+    // =====================================================
+    match /app_config/{document} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 2. TENANT_LINKS (Owner accounts management)
+    // =====================================================
+    match /tenant_links/{tenantId} {
+      allow read, write: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 3. SETTINGS (Owner settings - PIN, AI, House Rules)
+    // =====================================================
+    match /settings/{settingsOwnerId} {
+      allow read: if isOwnerOf(settingsOwnerId) || isSuperAdmin();
+      allow write: if (isWebPanel() && isOwnerOf(settingsOwnerId)) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 4. UNITS (Apartments/Villas)
+    // =====================================================
+    match /units/{unitId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if (isWebPanel() && isRequestOwner()) || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 5. BOOKINGS (Reservations)
+    // =====================================================
+    match /bookings/{bookingId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if (isWebPanel() && isRequestOwner()) || isSuperAdmin();
+      allow update: if isResourceOwner() || isSuperAdmin();
+      allow delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+      
+      // GUESTS Subcollection
+      match /guests/{guestId} {
+        function parentBooking() {
+          return get(/databases/$(database)/documents/bookings/$(bookingId)).data;
+        }
+        
+        allow read: if (isAuthenticated() && request.auth.token.ownerId == parentBooking().ownerId) || isSuperAdmin();
+        allow create: if (isAuthenticated() && request.auth.token.ownerId == parentBooking().ownerId) || isSuperAdmin();
+        allow update: if (isAuthenticated() && request.auth.token.ownerId == parentBooking().ownerId) || isSuperAdmin();
+        allow delete: if (isWebPanel() && request.auth.token.ownerId == parentBooking().ownerId) || isSuperAdmin();
+      }
+    }
+    
+    
+    // =====================================================
+    // 6. SIGNATURES (House rules signatures)
+    // =====================================================
+    match /signatures/{signatureId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if isRequestOwner() || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 7. CHECK_INS (OCR scan events)
+    // =====================================================
+    match /check_ins/{checkInId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if isRequestOwner() || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 8. CLEANING_LOGS (Cleaner reports)
+    // =====================================================
+    match /cleaning_logs/{logId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if isRequestOwner() || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 9. FEEDBACK (Guest ratings)
+    // =====================================================
+    match /feedback/{feedbackId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if isRequestOwner() || isSuperAdmin();
+      allow update: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 10. GALLERY (Legacy screensaver images)
+    // =====================================================
+    match /gallery/{imageId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if (isWebPanel() && isRequestOwner()) || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 11. AI_LOGS (Chat history)
+    // =====================================================
+    match /ai_logs/{logId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if isRequestOwner() || isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 12. TABLETS (Registered devices)
+    // =====================================================
+    match /tablets/{tabletId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update: if isResourceOwner() || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 13. ARCHIVED_BOOKINGS (Historical data)
+    // =====================================================
+    match /archived_bookings/{bookingId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if (isWebPanel() && isRequestOwner()) || isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
+      
+      match /guests/{guestId} {
+        allow read: if (isAuthenticated() && request.auth.token.ownerId == get(/databases/$(database)/documents/archived_bookings/$(bookingId)).data.ownerId) || isSuperAdmin();
+        allow write: if isSuperAdmin();
+      }
+    }
+    
+    
+    // =====================================================
+    // 14. SYSTEM_NOTIFICATIONS (Super Admin → Owners)
+    // =====================================================
+    match /system_notifications/{notificationId} {
+      allow read: if isSuperAdmin() || 
+                    (isWebPanel() && (
+                      resource.data.sendToAll == true || 
+                      request.auth.token.ownerId in resource.data.targetOwners
+                    ));
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || 
+                      (isWebPanel() && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissedBy']));
+    }
+    
+    
+    // =====================================================
+    // 15. APK_UPDATES (APK deployment history)
+    // =====================================================
+    match /apk_updates/{updateId} {
+      allow read: if isSuperAdmin() || isTablet();
+      allow write: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 16. ADMIN_LOGS (Super Admin activity logs)
+    // =====================================================
+    match /admin_logs/{logId} {
+      allow read, write: if isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // 17. SCREENSAVER_IMAGES (Gallery images for tablet)
+    // =====================================================
+    match /screensaver_images/{imageId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if (isWebPanel() && isRequestOwner()) || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    
+    // =====================================================
+    // ❌ CATCH-ALL: Deny everything else
+    // =====================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

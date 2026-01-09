@@ -1,7 +1,8 @@
 // =====================================================
-// VillaOS Cloud Functions - COMPLETE (10 FUNCTIONS)
-// Version: 3.0 - Super Admin Email: master@admin.com
-// Date: 2025-01-09
+// VLS Cloud Functions - COMPLETE (10 FUNCTIONS)
+// Version: 4.0 - Vesta Lumina System
+// Super Admin: vestaluminasystem@gmail.com
+// Date: 2026-01-09
 // =====================================================
 
 const {onCall} = require('firebase-functions/v2/https');
@@ -15,30 +16,31 @@ const geminiApiKey = defineSecret('GEMINI_API_KEY');
 admin.initializeApp();
 
 // =====================================================
+// SUPER ADMIN EMAIL - CENTRALIZED
+// =====================================================
+const SUPER_ADMIN_EMAIL = 'vestaluminasystem@gmail.com';
+
+// =====================================================
 // FUNKCIJA 1: Kreiranje Vlasnika (Super Admin poziva)
 // =====================================================
 exports.createOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    // SIGURNOST: Samo Super Admin
-    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
+    if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
     const {email, password, tenantId, displayName} = request.data;
 
-    // Validacija
     if (!email || !password || !tenantId) {
       throw new Error('Missing required fields: email, password, tenantId');
     }
 
-    // Provjeri format tenant ID (6-12 znakova, A-Z i 0-9)
     if (!/^[A-Z0-9]{6,12}$/.test(tenantId)) {
       throw new Error('Invalid tenant ID format (use 6-12 uppercase letters/numbers)');
     }
 
     try {
-      // 1. Provjeri da tenant ID nije zauzet
       const existingTenant = await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
@@ -48,14 +50,12 @@ exports.createOwner = onCall(
         throw new Error(`Tenant ID "${tenantId}" already exists`);
       }
 
-      // 2. Kreiraj Firebase Auth user (BEZ claims - čeka linking!)
       const userRecord = await admin.auth().createUser({
         email: email,
         password: password,
         emailVerified: true,
       });
 
-      // 3. Kreiraj tenant_links dokument
       await admin.firestore().collection('tenant_links').doc(tenantId).set({
         tenantId: tenantId,
         firebaseUid: userRecord.uid,
@@ -66,7 +66,6 @@ exports.createOwner = onCall(
         status: 'pending',
       });
 
-      // 4. Kreiraj settings dokument sa default postavkama
       await admin.firestore().collection('settings').doc(tenantId).set({
         ownerId: tenantId,
         cleanerPin: '0000',
@@ -108,7 +107,6 @@ exports.linkTenantId = onCall(
     console.log('🔵 linkTenantId called');
 
     if (!request.auth) {
-      console.error('❌ No auth context');
       throw new Error('Unauthorized - must be logged in');
     }
 
@@ -116,58 +114,35 @@ exports.linkTenantId = onCall(
     const firebaseUid = request.auth.uid;
     const userEmail = request.auth.token.email;
 
-    console.log(`📧 Email: ${userEmail}, UID: ${firebaseUid}, TenantID: ${tenantId}`);
-
-    if (!tenantId) {
-      console.error('❌ No tenantId provided');
-      throw new Error('Missing tenantId');
-    }
-
-    if (!userEmail) {
-      console.error('❌ No email in auth token');
-      throw new Error('Email not found in auth token');
+    if (!tenantId || !userEmail) {
+      throw new Error('Missing tenantId or email');
     }
 
     try {
-      console.log('🔍 Fetching tenant_links document...');
       const tenantDoc = await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
         .get();
 
       if (!tenantDoc.exists) {
-        console.error(`❌ Tenant ID "${tenantId}" does not exist`);
         throw new Error(`Tenant ID "${tenantId}" not found. Contact admin.`);
       }
 
       const tenantData = tenantDoc.data();
-      console.log('📄 Tenant data:', tenantData);
 
-      const tenantEmail = tenantData.email;
-      if (!tenantEmail) {
-        console.error('❌ No email in tenant document');
-        throw new Error('Tenant document missing email');
-      }
-
-      if (tenantEmail.toLowerCase() !== userEmail.toLowerCase()) {
-        console.error(`❌ Email mismatch: ${userEmail} vs ${tenantEmail}`);
+      if (tenantData.email.toLowerCase() !== userEmail.toLowerCase()) {
         throw new Error('Tenant ID does not match your email');
       }
 
       if (tenantData.status === 'suspended') {
-        console.error('❌ Account suspended');
         throw new Error('Your account has been suspended. Contact admin.');
       }
 
-      // 4. Set custom claims
-      console.log('🔐 Setting custom claims...');
       await admin.auth().setCustomUserClaims(firebaseUid, {
         ownerId: tenantId,
         role: 'owner',
       });
 
-      // 5. Update tenant_links
-      console.log('💾 Updating tenant_links...');
       await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
@@ -175,8 +150,6 @@ exports.linkTenantId = onCall(
           linkedAt: admin.firestore.FieldValue.serverTimestamp(),
           status: 'active',
         });
-
-      console.log('✅ Linking successful!');
 
       return {
         success: true,
@@ -196,7 +169,7 @@ exports.linkTenantId = onCall(
 exports.listOwners = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
+    if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -211,8 +184,8 @@ exports.listOwners = onCall(
           displayName: String(data.displayName || ''),
           firebaseUid: String(data.firebaseUid || ''),
           status: String(data.status || 'pending'),
-          createdAt: data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toISOString() : null,
-          linkedAt: data.linkedAt && data.linkedAt.toDate ? data.linkedAt.toDate().toISOString() : null,
+          createdAt: data.createdAt?.toDate?.().toISOString() || null,
+          linkedAt: data.linkedAt?.toDate?.().toISOString() || null,
         };
       });
 
@@ -230,7 +203,7 @@ exports.listOwners = onCall(
 exports.deleteOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
+    if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -277,18 +250,14 @@ exports.deleteOwner = onCall(
 exports.resetOwnerPassword = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
+    if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
     const {tenantId, newPassword} = request.data;
 
-    if (!tenantId || !newPassword) {
-      throw new Error('Missing required fields: tenantId, newPassword');
-    }
-
-    if (newPassword.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+    if (!tenantId || !newPassword || newPassword.length < 6) {
+      throw new Error('Invalid parameters');
     }
 
     try {
@@ -303,13 +272,7 @@ exports.resetOwnerPassword = onCall(
 
       const firebaseUid = tenantDoc.data().firebaseUid;
 
-      if (!firebaseUid) {
-        throw new Error('Firebase UID not found');
-      }
-
-      await admin.auth().updateUser(firebaseUid, {
-        password: newPassword,
-      });
+      await admin.auth().updateUser(firebaseUid, {password: newPassword});
 
       return {
         success: true,
@@ -329,7 +292,7 @@ exports.resetOwnerPassword = onCall(
 exports.toggleOwnerStatus = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
+    if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -340,9 +303,7 @@ exports.toggleOwnerStatus = onCall(
     }
 
     try {
-      await admin.firestore().collection('tenant_links').doc(tenantId).update({
-        status: status,
-      });
+      await admin.firestore().collection('tenant_links').doc(tenantId).update({status});
 
       const tenantDoc = await admin.firestore()
         .collection('tenant_links')
@@ -359,7 +320,7 @@ exports.toggleOwnerStatus = onCall(
 
       return {
         success: true,
-        message: `Owner ${status === 'active' ? 'activated' : 'suspended'} successfully`,
+        message: `Owner ${status === 'active' ? 'activated' : 'suspended'}`,
         tenantId: String(tenantId),
         status: String(status),
       };
@@ -379,8 +340,6 @@ exports.translateHouseRules = onCall(
     secrets: [geminiApiKey],
   },
   async (request) => {
-    console.log('🌐 translateHouseRules called');
-
     if (!request.auth) {
       throw new Error('Unauthorized - must be logged in');
     }
@@ -388,7 +347,7 @@ exports.translateHouseRules = onCall(
     const {text, sourceLang, targetLangs} = request.data;
 
     if (!text || !sourceLang || !targetLangs || !Array.isArray(targetLangs)) {
-      throw new Error('Invalid parameters: text, sourceLang, targetLangs required');
+      throw new Error('Invalid parameters');
     }
 
     try {
@@ -399,48 +358,13 @@ exports.translateHouseRules = onCall(
       const translations = {};
 
       for (const targetLang of targetLangs) {
-        const prompt = `You are a professional translator for a luxury villa rental service.
-
-TASK: Translate the following text from ${sourceLang} to ${targetLang}.
-
-CRITICAL REQUIREMENTS:
-1. ACCURACY: Translate meaning precisely, not word-for-word
-2. TONE: Maintain the same level of formality and warmth
-3. FORMATTING: Preserve ALL formatting (line breaks, lists, bullet points, numbering)
-4. NATURAL LANGUAGE: Sound like a native ${targetLang} speaker wrote it
-5. NO ADDITIONS: Do not add explanations, notes, or extra text
-6. CULTURAL ADAPTATION: Adapt idioms and cultural references appropriately
-
-QUALITY CHECK (perform internally before outputting):
-- Double-check grammar and spelling
-- Verify all formatting is preserved
-- Ensure the tone matches the original
-- Confirm no content was added or omitted
-
-Text to translate:
-${text}
-
-OUTPUT ONLY THE TRANSLATION IN ${targetLang}:`;
-
-        console.log(`🔄 Translating to ${targetLang}...`);
+        const prompt = `Translate from ${sourceLang} to ${targetLang}. Preserve formatting. Output only the translation:\n\n${text}`;
 
         const result = await model.generateContent(prompt);
-        const translatedText = result.response.text();
-
-        if (!translatedText) {
-          throw new Error(`No translation returned for ${targetLang}`);
-        }
-
-        translations[targetLang] = translatedText.trim();
-
-        console.log(`✅ ${targetLang}: ${translatedText.substring(0, 50)}...`);
+        translations[targetLang] = result.response.text().trim();
       }
 
-      return {
-        success: true,
-        translations: translations,
-        message: `Translated to ${targetLangs.length} languages`,
-      };
+      return {success: true, translations};
     } catch (error) {
       console.error('❌ Translation error:', error);
       throw new Error(error.message || 'Translation failed');
@@ -454,63 +378,29 @@ OUTPUT ONLY THE TRANSLATION IN ${targetLang}:`;
 exports.registerTablet = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    console.log('📱 registerTablet called');
-
     const {tenantId, unitId} = request.data;
 
     if (!tenantId || !unitId) {
-      console.error('❌ Missing required fields');
       throw new Error('Missing required fields: tenantId, unitId');
     }
 
-    console.log(`📋 TenantID: ${tenantId}, UnitID: ${unitId}`);
-
     try {
-      // 1. PROVJERI DA UNIT POSTOJI I PRIPADA TENANTU
-      console.log('🔍 Checking unit ownership...');
-      
-      const unitDoc = await admin.firestore()
-        .collection('units')
-        .doc(unitId)
-        .get();
+      const unitDoc = await admin.firestore().collection('units').doc(unitId).get();
 
-      if (!unitDoc.exists) {
-        console.error(`❌ Unit "${unitId}" not found`);
-        throw new Error(`Unit "${unitId}" not found. Check Web Panel.`);
+      if (!unitDoc.exists || unitDoc.data().ownerId !== tenantId) {
+        throw new Error('Unit not found or does not belong to tenant');
       }
 
-      const unitData = unitDoc.data();
-      
-      if (unitData.ownerId !== tenantId) {
-        console.error(`❌ Unit "${unitId}" does not belong to tenant "${tenantId}"`);
-        throw new Error('Unit does not belong to this tenant. Check credentials.');
-      }
-
-      console.log('✅ Unit ownership verified');
-
-      // 2. PROVJERI DA TENANT POSTOJI I AKTIVAN JE
-      console.log('🔍 Checking tenant status...');
-      
       const tenantDoc = await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
         .get();
 
-      if (!tenantDoc.exists) {
-        console.error(`❌ Tenant "${tenantId}" not found`);
-        throw new Error(`Tenant "${tenantId}" not found. Contact admin.`);
+      if (!tenantDoc.exists || tenantDoc.data().status === 'suspended') {
+        throw new Error('Tenant not found or suspended');
       }
 
-      const tenantData = tenantDoc.data();
-      
-      if (tenantData.status === 'suspended') {
-        console.error('❌ Tenant account suspended');
-        throw new Error('Owner account is suspended. Contact admin.');
-      }
-
-      console.log('✅ Tenant verified');
-
-      // 3. PROVJERI DA LI VEĆ POSTOJI TABLET ZA OVAJ UNIT
+      // Deactivate existing tablets
       const existingTablets = await admin.firestore()
         .collection('tablets')
         .where('unitId', '==', unitId)
@@ -518,7 +408,6 @@ exports.registerTablet = onCall(
         .get();
 
       if (!existingTablets.empty) {
-        console.log('⚠️ Active tablet already exists for this unit, deactivating old...');
         const batch = admin.firestore().batch();
         existingTablets.docs.forEach(doc => {
           batch.update(doc.ref, {status: 'replaced', replacedAt: admin.firestore.FieldValue.serverTimestamp()});
@@ -526,31 +415,17 @@ exports.registerTablet = onCall(
         await batch.commit();
       }
 
-      // 4. KREIRAJ ANONYMOUS AUTH USER ZA TABLET
-      console.log('👤 Creating tablet auth user...');
-      
-      const tabletDisplayName = `Tablet_${unitId}_${Date.now()}`;
-      
+      // Create tablet auth user
       const userRecord = await admin.auth().createUser({
-        displayName: tabletDisplayName,
+        displayName: `Tablet_${unitId}_${Date.now()}`,
       });
 
-      console.log(`✅ Auth user created: ${userRecord.uid}`);
-
-      // 5. POSTAVI CUSTOM CLAIMS
-      console.log('🔐 Setting custom claims...');
-      
       await admin.auth().setCustomUserClaims(userRecord.uid, {
         ownerId: tenantId,
         unitId: unitId,
         role: 'tablet',
       });
 
-      console.log('✅ Custom claims set');
-
-      // 6. KREIRAJ TABLET DOKUMENT
-      console.log('📝 Creating tablet document...');
-      
       const tabletRef = admin.firestore().collection('tablets').doc();
       
       await tabletRef.set({
@@ -558,32 +433,20 @@ exports.registerTablet = onCall(
         firebaseUid: userRecord.uid,
         ownerId: tenantId,
         unitId: unitId,
-        unitName: unitData.name || 'Unknown',
-        ownerName: tenantData.displayName || tenantId,
+        unitName: unitDoc.data().name || 'Unknown',
+        ownerName: tenantDoc.data().displayName || tenantId,
         status: 'active',
         registeredAt: admin.firestore.FieldValue.serverTimestamp(),
         lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
         appVersion: '1.0.0',
         pendingUpdate: false,
-        pendingVersion: '',
-        pendingApkUrl: '',
-        forceUpdate: false,
-        updateStatus: '',
-        updateError: '',
       });
 
-      console.log(`✅ Tablet document created: ${tabletRef.id}`);
-
-      // 7. GENERIRAJ CUSTOM TOKEN
-      console.log('🎟️ Generating custom token...');
-      
       const customToken = await admin.auth().createCustomToken(userRecord.uid, {
         ownerId: tenantId,
         unitId: unitId,
         role: 'tablet',
       });
-
-      console.log('✅ Custom token generated');
 
       return {
         success: true,
@@ -605,17 +468,11 @@ exports.registerTablet = onCall(
 exports.tabletHeartbeat = onCall(
   {region: 'europe-west3'},
   async (request) => {
-    if (!request.auth) {
+    if (!request.auth || request.auth.token.role !== 'tablet') {
       throw new Error('Unauthorized');
     }
 
-    const claims = request.auth.token;
-    
-    if (claims.role !== 'tablet') {
-      throw new Error('Only tablets can send heartbeat');
-    }
-
-    const {unitId} = claims;
+    const {unitId} = request.auth.token;
     const {appVersion, batteryLevel, isCharging, updateStatus, updateError} = request.data;
 
     try {
@@ -630,7 +487,6 @@ exports.tabletHeartbeat = onCall(
         const tabletRef = tabletsSnapshot.docs[0].ref;
         const tabletData = tabletsSnapshot.docs[0].data();
         
-        // Update heartbeat data
         const updateData = {
           lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
         };
@@ -640,19 +496,12 @@ exports.tabletHeartbeat = onCall(
         if (isCharging !== undefined) updateData.isCharging = isCharging;
         if (updateStatus) {
           updateData.updateStatus = updateStatus;
-          if (updateStatus === 'installed') {
-            updateData.pendingUpdate = false;
-            updateData.updateInstalledAt = admin.firestore.FieldValue.serverTimestamp();
-          } else if (updateStatus === 'downloaded') {
-            updateData.updateDownloadedAt = admin.firestore.FieldValue.serverTimestamp();
-          } else if (updateStatus === 'failed' && updateError) {
-            updateData.updateError = updateError;
-          }
+          if (updateStatus === 'installed') updateData.pendingUpdate = false;
+          if (updateStatus === 'failed' && updateError) updateData.updateError = updateError;
         }
         
         await tabletRef.update(updateData);
 
-        // Return pending update info
         return {
           success: true,
           pendingUpdate: tabletData.pendingUpdate || false,
@@ -664,7 +513,6 @@ exports.tabletHeartbeat = onCall(
 
       return {success: true};
     } catch (error) {
-      console.error('Heartbeat error:', error);
       return {success: false, error: error.message};
     }
   }
@@ -679,8 +527,7 @@ exports.translateNotification = onCall(
     secrets: [geminiApiKey],
   },
   async (request) => {
-    // Super Admin only
-    if (!request.auth || request.auth.token.email !== 'master@admin.com') {
+    if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -689,12 +536,6 @@ exports.translateNotification = onCall(
     if (!text || !sourceLanguage || !targetLanguages) {
       throw new Error('Missing required fields');
     }
-
-    const languageNames = {
-      'en': 'English', 'hr': 'Croatian', 'de': 'German', 'it': 'Italian',
-      'sk': 'Slovak', 'cz': 'Czech', 'es': 'Spanish', 'fr': 'French',
-      'pl': 'Polish', 'hu': 'Hungarian', 'sl': 'Slovenian',
-    };
 
     const translations = {};
     translations[sourceLanguage] = text;
@@ -705,33 +546,15 @@ exports.translateNotification = onCall(
       const model = genAI.getGenerativeModel({model: 'gemini-2.0-flash'});
 
       for (const targetLang of targetLanguages) {
-        const sourceName = languageNames[sourceLanguage] || sourceLanguage;
-        const targetName = languageNames[targetLang] || targetLang;
-
-        const prompt = `Translate the following system notification from ${sourceName} to ${targetName}. 
-Keep the tone professional and clear. Return ONLY the translated text, nothing else.
-
-Text to translate:
-"${text}"`;
-
-        console.log(`🔄 Translating notification to ${targetLang}...`);
-
+        const prompt = `Translate to ${targetLang}. Return only translation:\n"${text}"`;
         const result = await model.generateContent(prompt);
-        const translatedText = result.response.text();
-
-        if (translatedText) {
-          translations[targetLang] = translatedText.trim().replace(/^["']|["']$/g, '');
-        } else {
-          translations[targetLang] = text;
-        }
-
-        // Rate limit protection
+        translations[targetLang] = result.response.text().trim().replace(/^["']|["']$/g, '');
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
       return {translations};
     } catch (error) {
-      console.error('Notification translation error:', error);
+      console.error('Translation error:', error);
       throw new Error('Translation failed');
     }
   }

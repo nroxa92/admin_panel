@@ -1,4 +1,7 @@
 // FILE: lib/firebase_options.dart
+// PROJECT: Vesta Lumina System (VLS)
+// FIREBASE: vls-admin
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -6,13 +9,13 @@ class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return const FirebaseOptions(
-        apiKey: "AIzaSyAjoZz3-XfmRw7vMGOxkywGB4-ghHKaqRo",
-        authDomain: "villa-ai-admin.firebaseapp.com",
-        projectId: "villa-ai-admin",
-        storageBucket: "villa-ai-admin.firebasestorage.app",
-        messagingSenderId: "510976438146",
-        appId: "1:510976438146:web:167491469cb0e96ab6a99b",
-        measurementId: "G-HEERRXZEF4",
+        apiKey: "AIzaSyAAcIoY-JcCOeWHAhbQdSF21uBpHO2O_J8",
+        authDomain: "vls-admin.firebaseapp.com",
+        projectId: "vls-admin",
+        storageBucket: "vls-admin.firebasestorage.app",
+        messagingSenderId: "408151118868",
+        appId: "1:408151118868:web:db68e134285d21e7fbeab9",
+        measurementId: "G-N56T0WF88W",
       );
     }
     throw UnsupportedError(
