@@ -124,10 +124,11 @@ class AuthWrapper extends StatelessWidget {
 
             // 4c. Check Claims
             final claims = tokenSnapshot.data?.claims;
-            final hasAdminRole = claims?['role'] == 'admin';
+            final hasOwnerRole =
+                claims?['role'] == 'owner'; // ✅ FIXED: Check for 'owner' role
 
             // 4d. NEMA Claims → Tenant Setup Screen
-            if (!hasAdminRole) {
+            if (!hasOwnerRole) {
               return const TenantSetupScreen();
             }
 

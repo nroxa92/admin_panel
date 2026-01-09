@@ -661,13 +661,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                         }
                       }
 
-                      if (units.isEmpty) {
-                        return Center(
-                            child: Text(t('msg_no_units'),
-                                style: TextStyle(color: textColor)));
-                      }
-
-                      // TODAY
+                      // TODAY (always calculate)
                       final today = _stripTime(DateTime.now());
                       final checkInsToday = bookings
                           .where((b) => _isSameDay(b.startDate, today))
@@ -687,7 +681,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
 
                       return ListView(
                         children: [
-                          // TOOLBAR (inside stream for access to units/categories)
+                          // TOOLBAR (always visible)
                           _buildToolbar(
                             context,
                             isDark,
@@ -697,7 +691,7 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                           ),
                           const SizedBox(height: 30),
 
-                          // RESPONSIVE INFO PANELS
+                          // RESPONSIVE INFO PANELS (always visible)
                           if (isWideScreen)
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -761,14 +755,38 @@ class _LiveMonitorViewState extends State<LiveMonitorView> {
                             ),
                           const SizedBox(height: 30),
 
-                          // UNITS LIST
-                          ..._buildCategoryGroupedUnits(
-                            units,
-                            bookings,
-                            isDark,
-                            primaryColor,
-                            textColor,
-                          ),
+                          // UNITS LIST (or empty state message)
+                          if (units.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.apartment_outlined,
+                                        size: 64, color: Colors.grey.shade600),
+                                    const SizedBox(height: 16),
+                                    Text(t('msg_no_units'),
+                                        style: TextStyle(
+                                            color: textColor, fontSize: 16)),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Settings → Units → Add Unit',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            ..._buildCategoryGroupedUnits(
+                              units,
+                              bookings,
+                              isDark,
+                              primaryColor,
+                              textColor,
+                            ),
                         ],
                       );
                     },
