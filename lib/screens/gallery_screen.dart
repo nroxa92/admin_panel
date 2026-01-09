@@ -1,5 +1,5 @@
 // FILE: lib/screens/gallery_screen.dart
-// STATUS: CLEAN - No ImageNetwork package, pure Flutter Image.network
+// STATUS: UPDATED - Added translations for UI strings
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -98,14 +98,14 @@ class _GalleryScreenState extends State<GalleryScreen> {
           }
         });
         if (mounted) {
-          final provider = Provider.of<AppProvider>(context, listen: false);
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: const Text("Screensaver configuration saved!"),
-              backgroundColor: provider.primaryColor));
+            content: Text(context.read<AppProvider>().translate('msg_saved')),
+            backgroundColor: Colors.green,
+          ));
         }
       }
     } catch (e) {
-      debugPrint("Save error: $e");
+      debugPrint("Error saving config: $e");
     } finally {
       if (mounted) setState(() => _isSavingConfig = false);
     }
@@ -113,101 +113,104 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   Future<void> _uploadImages() async {
     final tenantId = await _getTenantId();
-
     if (tenantId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Error: Tenant ID not found."),
-            backgroundColor: Colors.red));
+          content: Text("Error: Tenant ID not found."),
+          backgroundColor: Colors.red,
+        ));
       }
       return;
     }
 
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: true,
       withData: true,
     );
 
-    if (result != null) {
-      setState(() {
-        _isUploading = true;
-        _totalFiles = result.files.length;
-        _uploadedFiles = 0;
-      });
+    if (result == null || result.files.isEmpty) return;
 
-      final storage = FirebaseStorage.instance;
-      final firestore = FirebaseFirestore.instance;
+    setState(() {
+      _isUploading = true;
+      _totalFiles = result.files.length;
+      _uploadedFiles = 0;
+    });
 
-      for (var file in result.files) {
-        try {
-          Uint8List? fileBytes = file.bytes;
-          if (fileBytes == null) continue;
+    final storage = FirebaseStorage.instance;
+    final firestore = FirebaseFirestore.instance;
 
-          String fileName =
-              "screensaver/$tenantId/${DateTime.now().millisecondsSinceEpoch}_${file.name}";
+    for (var file in result.files) {
+      if (file.bytes == null) continue;
 
-          final ref = storage.ref().child(fileName);
-          await ref.putData(
-              fileBytes, SettableMetadata(contentType: 'image/jpeg'));
-          String downloadUrl = await ref.getDownloadURL();
+      try {
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+        final ref = storage.ref('screensaver/$tenantId/$fileName');
 
-          await firestore.collection('gallery').add({
-            'ownerId': tenantId,
-            'url': downloadUrl,
-            'path': fileName,
-            'uploaded_at': FieldValue.serverTimestamp(),
-            'type': 'screensaver',
-          });
+        await ref.putData(
+          Uint8List.fromList(file.bytes!),
+          SettableMetadata(contentType: 'image/${file.extension ?? 'jpeg'}'),
+        );
 
-          if (mounted) {
-            setState(() => _uploadedFiles++);
-          }
-        } catch (e) {
-          debugPrint("Error uploading: $e");
-        }
+        final url = await ref.getDownloadURL();
+
+        await firestore.collection('screensaver_images').add({
+          'ownerId': tenantId,
+          'url': url,
+          'path': ref.fullPath,
+          'fileName': file.name,
+          'uploadedAt': FieldValue.serverTimestamp(),
+        });
+
+        setState(() => _uploadedFiles++);
+      } catch (e) {
+        debugPrint("Upload error: $e");
       }
+    }
 
-      if (mounted) {
-        setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Success: $_uploadedFiles/$_totalFiles uploaded."),
-            backgroundColor: Colors.green));
-      }
+    setState(() => _isUploading = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Success: $_uploadedFiles/$_totalFiles uploaded."),
+        backgroundColor: Colors.green,
+      ));
     }
   }
 
   Future<void> _deleteImage(String docId, String path) async {
-    final bool confirm = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text("Delete Image?"),
-            content: const Text("This cannot be undone."),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text("Cancel")),
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text("Delete",
-                      style: TextStyle(color: Colors.red))),
-            ],
-          ),
-        ) ??
-        false;
+    final t = context.read<AppProvider>().translate;
 
-    if (!confirm) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('confirm_delete_image')),
+        content: Text(t('msg_confirm_delete')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t('btn_cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(t('btn_delete'),
+                  style: const TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
 
     try {
-      await FirebaseStorage.instance.ref().child(path).delete();
+      await FirebaseStorage.instance.ref(path).delete();
       await FirebaseFirestore.instance
-          .collection('gallery')
+          .collection('screensaver_images')
           .doc(docId)
           .delete();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Image deleted."), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(t('image_deleted')), backgroundColor: Colors.green));
       }
     } catch (e) {
       debugPrint("Delete error: $e");
@@ -216,15 +219,17 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   void _showTransitionPreview(List<String> imageUrls) {
     if (imageUrls.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Upload some images first!"),
-          backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.read<AppProvider>().translate('no_images')),
+        backgroundColor: Colors.orange,
+      ));
       return;
     }
 
-    Navigator.of(context).push(
+    Navigator.push(
+      context,
       MaterialPageRoute(
-        builder: (ctx) => _TransitionPreviewScreen(
+        builder: (_) => _TransitionPreviewScreen(
           imageUrls: imageUrls,
           transitions: _selectedTransitions.toList(),
           duration: _slideDuration.toInt(),
@@ -235,378 +240,395 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.read<AppProvider>().translate;
     final provider = context.watch<AppProvider>();
-    final t = provider.translate;
+    final isDark = provider.backgroundColor.computeLuminance() < 0.5;
     final primaryColor = provider.primaryColor;
-    final backgroundColor = provider.backgroundColor;
-
-    final isDark = backgroundColor.computeLuminance() < 0.5;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final cardColor = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.black.withValues(alpha: 0.05);
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.1)
-        : Colors.black.withValues(alpha: 0.1);
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
 
     return FutureBuilder<String?>(
       future: _getTenantId(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Center(child: CircularProgressIndicator(color: primaryColor));
+      builder: (context, tenantSnapshot) {
+        if (!tenantSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
         }
 
-        final tenantId = snapshot.data;
+        final tenantId = tenantSnapshot.data!;
 
-        return Scaffold(
-          backgroundColor: backgroundColor,
-          floatingActionButton: _isSavingConfig
-              ? null
-              : FloatingActionButton.extended(
-                  onPressed: _saveScreensaverConfig,
-                  backgroundColor: primaryColor,
-                  label: Text(t('btn_save'),
-                      style: TextStyle(
-                          color: isDark ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold)),
-                  icon: Icon(Icons.save,
-                      color: isDark ? Colors.black : Colors.white),
-                ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(30),
+        return FadeInUp(
+          duration: const Duration(milliseconds: 500),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Gallery & Screensaver",
+                // HEADER
+                Text(t('gallery_title'),
                     style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: textColor)),
-                const SizedBox(height: 10),
-                Text("Upload images for tablet screensaver.",
-                    style: TextStyle(color: textColor.withValues(alpha: 0.6))),
+                        color: primaryColor)),
+                const SizedBox(height: 8),
+                Text(t('gallery_subtitle'),
+                    style: TextStyle(
+                        color: textColor.withValues(alpha: 0.7), fontSize: 14)),
                 const SizedBox(height: 30),
+
+                // SETTINGS CARD
                 Container(
-                  padding: const EdgeInsets.all(25),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor)),
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Screensaver Settings",
+                      Text(t('screensaver_settings'),
                           style: TextStyle(
-                              color: primaryColor,
                               fontSize: 18,
-                              fontWeight: FontWeight.bold)),
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor)),
                       const SizedBox(height: 20),
+
+                      // DELAY SLIDER
                       Row(
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Delay (seconds)",
+                                Text(t('delay_before_start'),
                                     style: TextStyle(
-                                        color:
-                                            textColor.withValues(alpha: 0.7))),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Slider(
-                                        value: _screensaverDelay,
-                                        min: 10,
-                                        max: 300,
-                                        divisions: 29,
-                                        activeColor: primaryColor,
-                                        label: "${_screensaverDelay.toInt()}s",
-                                        onChanged: (val) => setState(
-                                            () => _screensaverDelay = val),
-                                      ),
-                                    ),
-                                    Text("${_screensaverDelay.toInt()}s",
-                                        style: TextStyle(
-                                            color: primaryColor,
-                                            fontWeight: FontWeight.bold)),
-                                  ],
+                                        color: textColor,
+                                        fontWeight: FontWeight.w500)),
+                                Slider(
+                                  value: _screensaverDelay,
+                                  min: 30,
+                                  max: 300,
+                                  divisions: 27,
+                                  activeColor: primaryColor,
+                                  label:
+                                      "${_screensaverDelay.toInt()} ${t('seconds')}",
+                                  onChanged: (val) =>
+                                      setState(() => _screensaverDelay = val),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 30),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                                "${_screensaverDelay.toInt()} ${t('seconds')}",
+                                style: TextStyle(
+                                    color: primaryColor,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // SLIDE DURATION SLIDER
+                      Row(
+                        children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Slide Duration (seconds)",
+                                Text(t('slide_duration'),
                                     style: TextStyle(
-                                        color:
-                                            textColor.withValues(alpha: 0.7))),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Slider(
-                                        value: _slideDuration,
-                                        min: 3,
-                                        max: 60,
-                                        divisions: 19,
-                                        activeColor: primaryColor,
-                                        label: "${_slideDuration.toInt()}s",
-                                        onChanged: (val) => setState(
-                                            () => _slideDuration = val),
-                                      ),
-                                    ),
-                                    Text("${_slideDuration.toInt()}s",
-                                        style: TextStyle(
-                                            color: primaryColor,
-                                            fontWeight: FontWeight.bold)),
-                                  ],
+                                        color: textColor,
+                                        fontWeight: FontWeight.w500)),
+                                Slider(
+                                  value: _slideDuration,
+                                  min: 3,
+                                  max: 30,
+                                  divisions: 27,
+                                  activeColor: primaryColor,
+                                  label:
+                                      "${_slideDuration.toInt()} ${t('seconds')}",
+                                  onChanged: (val) =>
+                                      setState(() => _slideDuration = val),
                                 ),
                               ],
                             ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                                "${_slideDuration.toInt()} ${t('seconds')}",
+                                style: TextStyle(
+                                    color: primaryColor,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Text("Transition Effects (select multiple)",
+
+                      // TRANSITIONS
+                      Text(t('transitions'),
                           style: TextStyle(
-                              color: textColor.withValues(alpha: 0.7))),
-                      const SizedBox(height: 10),
+                              color: textColor, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 12),
                       Wrap(
-                        spacing: 15,
+                        spacing: 10,
                         runSpacing: 10,
                         children: [
-                          _buildTransitionCheckbox('fade', 'Cross Fade', isDark,
-                              textColor, primaryColor),
-                          _buildTransitionCheckbox('slide', 'Slide', isDark,
-                              textColor, primaryColor),
+                          _buildTransitionCheckbox('fade', t('transition_fade'),
+                              isDark, textColor, primaryColor),
                           _buildTransitionCheckbox(
-                              'zoom', 'Zoom', isDark, textColor, primaryColor),
+                              'slide',
+                              t('transition_slide'),
+                              isDark,
+                              textColor,
+                              primaryColor),
+                          _buildTransitionCheckbox('zoom', t('transition_zoom'),
+                              isDark, textColor, primaryColor),
                           _buildTransitionCheckbox('kenburns', 'Ken Burns',
                               isDark, textColor, primaryColor),
                           _buildTransitionCheckbox(
-                              'blur', 'Blur', isDark, textColor, primaryColor),
+                              'rotate',
+                              t('transition_rotate'),
+                              isDark,
+                              textColor,
+                              primaryColor),
                         ],
                       ),
-                      if (_selectedTransitions.length > 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Text(
-                            "Selected transitions will play in sequence",
-                            style: TextStyle(
-                                color: primaryColor,
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic),
-                          ),
+                      const SizedBox(height: 20),
+
+                      // SAVE BUTTON
+                      ElevatedButton.icon(
+                        onPressed:
+                            _isSavingConfig ? null : _saveScreensaverConfig,
+                        icon: _isSavingConfig
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.save),
+                        label: Text(t('btn_save')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.black,
                         ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 30),
-                const Divider(color: Colors.grey),
-                const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Gallery Images",
-                        style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: textColor)),
-                    Row(
-                      children: [
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('gallery')
-                              .where('ownerId', isEqualTo: tenantId)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            final imageUrls = snapshot.hasData
-                                ? snapshot.data!.docs
-                                    .map((doc) => (doc.data()
-                                            as Map<String, dynamic>)['url']
-                                        as String)
-                                    .toList()
-                                : <String>[];
 
-                            return ElevatedButton.icon(
-                              onPressed: imageUrls.isEmpty
-                                  ? null
-                                  : () => _showTransitionPreview(imageUrls),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueAccent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 15),
+                // GALLERY SECTION
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(t('tab_gallery'),
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor)),
+                          Row(
+                            children: [
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('screensaver_images')
+                                    .where('ownerId', isEqualTo: tenantId)
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) {
+                                    return const SizedBox();
+                                  }
+                                  final imageUrls = snapshot.data!.docs
+                                      .map((d) =>
+                                          (d.data() as Map)['url'] as String)
+                                      .toList();
+                                  return ElevatedButton.icon(
+                                    onPressed: () =>
+                                        _showTransitionPreview(imageUrls),
+                                    icon: const Icon(Icons.play_arrow),
+                                    label: Text(t('btn_preview')),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          primaryColor.withValues(alpha: 0.2),
+                                      foregroundColor: primaryColor,
+                                    ),
+                                  );
+                                },
                               ),
-                              icon: const Icon(Icons.play_circle_outline),
-                              label: Text(t('btn_preview')),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 15),
-                        ElevatedButton.icon(
-                          onPressed: _isUploading ? null : _uploadImages,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor:
-                                isDark ? Colors.black : Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 15),
+                              const SizedBox(width: 10),
+                              ElevatedButton.icon(
+                                onPressed: _isUploading ? null : _uploadImages,
+                                icon: _isUploading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2))
+                                    : const Icon(Icons.upload),
+                                label: Text(_isUploading
+                                    ? "..."
+                                    : t('btn_upload_images')),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                            ],
                           ),
-                          icon: _isUploading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.black))
-                              : const Icon(Icons.add_photo_alternate),
-                          label: Text(
-                              _isUploading ? "..." : t('btn_upload_images')),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                if (_isUploading)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: Column(
-                      children: [
+                        ],
+                      ),
+                      if (_isUploading) ...[
+                        const SizedBox(height: 10),
                         LinearProgressIndicator(
                           value: _totalFiles > 0
                               ? _uploadedFiles / _totalFiles
                               : 0,
-                          color: primaryColor,
-                          backgroundColor: cardColor,
+                          backgroundColor: Colors.grey.withValues(alpha: 0.3),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(primaryColor),
                         ),
-                        const SizedBox(height: 10),
-                        Text("Uploading: $_uploadedFiles/$_totalFiles",
+                        const SizedBox(height: 5),
+                        Text("${t('msg_loading')} $_uploadedFiles/$_totalFiles",
                             style: TextStyle(
-                                color: textColor.withValues(alpha: 0.6))),
+                                color: textColor.withValues(alpha: 0.7),
+                                fontSize: 12)),
                       ],
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('gallery')
-                        .where('ownerId', isEqualTo: tenantId)
-                        .orderBy('uploaded_at', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return Center(
-                            child: Text("Error: ${snapshot.error}",
-                                style: const TextStyle(color: Colors.red)));
-                      }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(
-                            child:
-                                CircularProgressIndicator(color: primaryColor));
-                      }
+                      const SizedBox(height: 20),
 
-                      final docs = snapshot.data?.docs ?? [];
+                      // IMAGE GRID
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('screensaver_images')
+                            .where('ownerId', isEqualTo: tenantId)
+                            .orderBy('uploadedAt', descending: true)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Center(
+                                child: Text("Error: ${snapshot.error}",
+                                    style: const TextStyle(color: Colors.red)));
+                          }
+                          if (!snapshot.hasData) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
 
-                      if (docs.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.photo_library_outlined,
-                                  size: 64,
-                                  color: textColor.withValues(alpha: 0.2)),
-                              const SizedBox(height: 10),
-                              Text("No images uploaded yet.",
-                                  style: TextStyle(
-                                      color: textColor.withValues(alpha: 0.5))),
-                            ],
-                          ),
-                        );
-                      }
+                          final docs = snapshot.data!.docs;
+                          if (docs.isEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.all(40),
+                              alignment: Alignment.center,
+                              child: Column(
+                                children: [
+                                  Icon(Icons.image_not_supported,
+                                      size: 60,
+                                      color: textColor.withValues(alpha: 0.3)),
+                                  const SizedBox(height: 10),
+                                  Text(t('no_images'),
+                                      style: TextStyle(
+                                          color: textColor.withValues(
+                                              alpha: 0.5))),
+                                ],
+                              ),
+                            );
+                          }
 
-                      return GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 150,
-                          childAspectRatio: 1,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final data =
-                              docs[index].data() as Map<String, dynamic>;
-                          final url = data['url'] ?? '';
-                          final path = data['path'] ?? '';
-                          final docId = docs[index].id;
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1.5,
+                            ),
+                            itemCount: docs.length,
+                            itemBuilder: (context, index) {
+                              final doc = docs[index];
+                              final data = doc.data() as Map<String, dynamic>;
+                              final url = data['url'] as String;
+                              final path = data['path'] as String;
 
-                          return FadeInUp(
-                            duration: const Duration(milliseconds: 300),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: borderColor),
-                                    color: Colors.black,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
+                              return Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
                                     child: Image.network(
                                       url,
                                       fit: BoxFit.cover,
                                       loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
+                                          (context, child, progress) {
+                                        if (progress == null) return child;
                                         return Center(
                                           child: CircularProgressIndicator(
+                                            value: progress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? progress
+                                                        .cumulativeBytesLoaded /
+                                                    progress.expectedTotalBytes!
+                                                : null,
                                             color: primaryColor,
-                                            strokeWidth: 2,
                                           ),
                                         );
                                       },
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return const Center(
-                                          child: Icon(Icons.error,
-                                              color: Colors.red, size: 32),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 5,
-                                  right: 5,
-                                  child: InkWell(
-                                    onTap: () => _deleteImage(docId, path),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.7),
-                                        shape: BoxShape.circle,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: Colors.grey[800],
+                                        child: const Icon(Icons.broken_image,
+                                            color: Colors.white54),
                                       ),
-                                      child: const Icon(Icons.delete_outline,
-                                          size: 16, color: Colors.redAccent),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: InkWell(
+                                      onTap: () => _deleteImage(doc.id, path),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              Colors.red.withValues(alpha: 0.8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.delete,
+                                            size: 16, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -671,6 +693,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 }
 
+// =====================================================
+// TRANSITION PREVIEW SCREEN
+// =====================================================
 class _TransitionPreviewScreen extends StatefulWidget {
   final List<String> imageUrls;
   final List<String> transitions;
@@ -687,103 +712,174 @@ class _TransitionPreviewScreen extends StatefulWidget {
       _TransitionPreviewScreenState();
 }
 
-class _TransitionPreviewScreenState extends State<_TransitionPreviewScreen> {
+class _TransitionPreviewScreenState extends State<_TransitionPreviewScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   int _transitionIndex = 0;
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
     _startSlideshow();
   }
 
   void _startSlideshow() {
     Future.delayed(Duration(seconds: widget.duration), () {
-      if (mounted) {
+      if (!mounted) return;
+      _controller.forward().then((_) {
         setState(() {
           _currentIndex = (_currentIndex + 1) % widget.imageUrls.length;
           _transitionIndex = (_transitionIndex + 1) % widget.transitions.length;
         });
+        _controller.reset();
         _startSlideshow();
-      }
+      });
     });
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentTransition =
-        widget.transitions[_transitionIndex % widget.transitions.length];
+    final currentTransition = widget.transitions[_transitionIndex];
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Center(
-            child: AnimatedSwitcher(
-              duration: Duration(seconds: (widget.duration * 0.3).toInt()),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
-              transitionBuilder: (child, animation) {
-                switch (currentTransition) {
-                  case 'fade':
-                    return FadeTransition(opacity: animation, child: child);
-                  case 'slide':
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(1, 0),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    );
-                  case 'zoom':
-                    return ScaleTransition(scale: animation, child: child);
-                  case 'blur':
-                    return FadeTransition(opacity: animation, child: child);
-                  case 'kenburns':
-                    return ScaleTransition(
-                      scale: Tween<double>(begin: 1.0, end: 1.2)
-                          .animate(animation),
-                      child: child,
-                    );
-                  default:
-                    return FadeTransition(opacity: animation, child: child);
-                }
-              },
-              child: Image.network(
-                widget.imageUrls[_currentIndex],
-                key: ValueKey(_currentIndex),
-                fit: BoxFit.contain,
-                width: double.infinity,
-                height: double.infinity,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 20,
-            right: 20,
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close, color: Colors.white, size: 32),
-            ),
-          ),
-          Positioned(
-            bottom: 20,
-            left: 20,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                "Transition: ${currentTransition.toUpperCase()} | ${_currentIndex + 1}/${widget.imageUrls.length}",
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text(
+          "${currentTransition.toUpperCase()} | ${_currentIndex + 1}/${widget.imageUrls.length}",
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return _buildTransitionWidget(currentTransition);
+        },
       ),
     );
+  }
+
+  Widget _buildTransitionWidget(String transition) {
+    final currentImage = Image.network(
+      widget.imageUrls[_currentIndex],
+      fit: BoxFit.contain,
+      width: double.infinity,
+      height: double.infinity,
+    );
+
+    final nextIndex = (_currentIndex + 1) % widget.imageUrls.length;
+    final nextImage = Image.network(
+      widget.imageUrls[nextIndex],
+      fit: BoxFit.contain,
+      width: double.infinity,
+      height: double.infinity,
+    );
+
+    switch (transition) {
+      case 'fade':
+        return Stack(
+          children: [
+            currentImage,
+            Opacity(opacity: _controller.value, child: nextImage),
+          ],
+        );
+
+      case 'slide':
+        return Stack(
+          children: [
+            Transform.translate(
+              offset: Offset(
+                  -MediaQuery.of(context).size.width * _controller.value, 0),
+              child: currentImage,
+            ),
+            Transform.translate(
+              offset: Offset(
+                  MediaQuery.of(context).size.width * (1 - _controller.value),
+                  0),
+              child: nextImage,
+            ),
+          ],
+        );
+
+      case 'zoom':
+        return Stack(
+          children: [
+            Transform.scale(
+              scale: 1 + (_controller.value * 0.5),
+              child: Opacity(
+                opacity: 1 - _controller.value,
+                child: currentImage,
+              ),
+            ),
+            Transform.scale(
+              scale: 0.5 + (_controller.value * 0.5),
+              child: Opacity(
+                opacity: _controller.value,
+                child: nextImage,
+              ),
+            ),
+          ],
+        );
+
+      case 'rotate':
+        return Stack(
+          children: [
+            Transform.rotate(
+              angle: _controller.value * 0.5,
+              child: Opacity(
+                opacity: 1 - _controller.value,
+                child: currentImage,
+              ),
+            ),
+            Transform.rotate(
+              angle: -0.5 + (_controller.value * 0.5),
+              child: Opacity(
+                opacity: _controller.value,
+                child: nextImage,
+              ),
+            ),
+          ],
+        );
+
+      case 'kenburns':
+        return Stack(
+          children: [
+            Transform.scale(
+              scale: 1 + (_controller.value * 0.1),
+              alignment: Alignment.topLeft,
+              child: Opacity(
+                opacity: 1 - _controller.value,
+                child: currentImage,
+              ),
+            ),
+            Transform.scale(
+              scale: 1.1 - (_controller.value * 0.1),
+              alignment: Alignment.bottomRight,
+              child: Opacity(
+                opacity: _controller.value,
+                child: nextImage,
+              ),
+            ),
+          ],
+        );
+
+      default:
+        return currentImage;
+    }
   }
 }

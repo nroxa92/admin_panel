@@ -1,16 +1,18 @@
 // FILE: lib/screens/analytics_screen.dart
-// STATUS: FIXED (Koristi Tenant ID iz Custom Claims)
+// STATUS: UPDATED - Added booking statistics + translations
+// FEATURES: Monthly/Yearly bookings, Occupancy rate, Avg stay, Feedback, AI Questions
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
 
-  // 🆕 HELPER: Dohvaća Tenant ID iz Custom Claims
   Future<String?> _getTenantId() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
@@ -23,17 +25,90 @@ class AnalyticsScreen extends StatelessWidget {
     final tenantId = await _getTenantId();
     if (tenantId == null) return {};
 
-    // 1. FEEDBACK (Limitirano na zadnjih 50 da štedimo reads)
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfYear = DateTime(now.year, 1, 1);
+
+    // 1. BOOKINGS - All bookings for this owner
+    final bookingsSnapshot = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('ownerId', isEqualTo: tenantId)
+        .get();
+
+    final allBookings = bookingsSnapshot.docs;
+
+    // Filter bookings this month
+    final bookingsThisMonth = allBookings.where((doc) {
+      final data = doc.data();
+      final startDate = (data['startDate'] as Timestamp?)?.toDate();
+      return startDate != null && startDate.isAfter(startOfMonth);
+    }).length;
+
+    // Filter bookings this year
+    final bookingsThisYear = allBookings.where((doc) {
+      final data = doc.data();
+      final startDate = (data['startDate'] as Timestamp?)?.toDate();
+      return startDate != null && startDate.isAfter(startOfYear);
+    }).length;
+
+    // 2. UNITS - Count for occupancy calculation
+    final unitsSnapshot = await FirebaseFirestore.instance
+        .collection('units')
+        .where('ownerId', isEqualTo: tenantId)
+        .get();
+
+    final totalUnits = unitsSnapshot.docs.length;
+
+    // 3. OCCUPANCY RATE (last 30 days)
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+    int totalOccupiedNights = 0;
+    int totalNights = 0;
+    double avgStayNights = 0;
+
+    if (allBookings.isNotEmpty) {
+      for (var doc in allBookings) {
+        final data = doc.data();
+        final startDate = (data['startDate'] as Timestamp?)?.toDate();
+        final endDate = (data['endDate'] as Timestamp?)?.toDate();
+
+        if (startDate != null && endDate != null) {
+          // Calculate nights for this booking
+          final nights = endDate.difference(startDate).inDays;
+          totalNights += nights;
+
+          // Check if booking overlaps with last 30 days
+          if (endDate.isAfter(thirtyDaysAgo) && startDate.isBefore(now)) {
+            final overlapStart =
+                startDate.isBefore(thirtyDaysAgo) ? thirtyDaysAgo : startDate;
+            final overlapEnd = endDate.isAfter(now) ? now : endDate;
+            totalOccupiedNights += overlapEnd.difference(overlapStart).inDays;
+          }
+        }
+      }
+
+      // Average stay calculation
+      if (allBookings.isNotEmpty && totalNights > 0) {
+        avgStayNights = totalNights / allBookings.length;
+      }
+    }
+
+    // Occupancy rate = occupied nights / (units * 30 days) * 100
+    double occupancyRate = 0;
+    if (totalUnits > 0) {
+      occupancyRate = (totalOccupiedNights / (totalUnits * 30)) * 100;
+      if (occupancyRate > 100) occupancyRate = 100;
+    }
+
+    // 4. FEEDBACK (Last 50)
     final feedbackSnapshot = await FirebaseFirestore.instance
         .collection('feedback')
-        .where('ownerId', isEqualTo: tenantId) // ✅ Tenant ID
+        .where('ownerId', isEqualTo: tenantId)
         .orderBy('timestamp', descending: true)
-        .limit(50) // OPTIMIZACIJA
+        .limit(50)
         .get();
 
     final feedbackDocs = feedbackSnapshot.docs;
 
-    // Izračun prosječne ocjene (na bazi zadnjih 50)
     double averageRating = 0.0;
     if (feedbackDocs.isNotEmpty) {
       final totalRating = feedbackDocs.fold<int>(0, (prevTotal, doc) {
@@ -43,12 +118,12 @@ class AnalyticsScreen extends StatelessWidget {
       averageRating = totalRating / feedbackDocs.length;
     }
 
-    // 2. AI PITANJA (Limitirano na zadnjih 100)
+    // 5. AI QUESTIONS (Last 100)
     final aiSnapshot = await FirebaseFirestore.instance
         .collection('ai_logs')
-        .where('ownerId', isEqualTo: tenantId) // ✅ Tenant ID
+        .where('ownerId', isEqualTo: tenantId)
         .orderBy('timestamp', descending: true)
-        .limit(100) // OPTIMIZACIJA
+        .limit(100)
         .get();
 
     Map<String, int> topQuestions = {};
@@ -62,6 +137,10 @@ class AnalyticsScreen extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return {
+      'bookings_this_month': bookingsThisMonth,
+      'bookings_this_year': bookingsThisYear,
+      'occupancy_rate': occupancyRate,
+      'avg_stay_nights': avgStayNights,
       'total_feedback': feedbackDocs.length,
       'average_rating': averageRating,
       'feedback_docs': feedbackDocs,
@@ -71,6 +150,8 @@ class AnalyticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.read<AppProvider>().translate;
+
     return FadeInUp(
       duration: const Duration(milliseconds: 600),
       child: FutureBuilder<Map<String, dynamic>>(
@@ -80,10 +161,14 @@ class AnalyticsScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error loading data: ${snapshot.error}"));
+            return Center(child: Text("Error: ${snapshot.error}"));
           }
 
           final stats = snapshot.data ?? {};
+          final bookingsThisMonth = stats['bookings_this_month'] as int? ?? 0;
+          final bookingsThisYear = stats['bookings_this_year'] as int? ?? 0;
+          final occupancyRate = stats['occupancy_rate'] as double? ?? 0.0;
+          final avgStayNights = stats['avg_stay_nights'] as double? ?? 0.0;
           final totalFeedback = stats['total_feedback'] as int? ?? 0;
           final averageRating = stats['average_rating'] as double? ?? 0.0;
           final feedbackDocs =
@@ -94,20 +179,23 @@ class AnalyticsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(30),
             children: [
-              Text("Guest Insights",
+              // HEADER
+              Text(t('analytics_title'),
                   style: Theme.of(context).textTheme.displayMedium),
               const SizedBox(height: 5),
-              Text("Overview of guest satisfaction (Last 50) and AI queries.",
+              Text(t('analytics_subtitle'),
                   style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 30),
+
+              // ROW 1: BOOKING STATS
               Row(
                 children: [
                   Expanded(
                     child: _buildStatCard(
                       context,
-                      "Recent Reviews",
-                      totalFeedback.toString(),
-                      Icons.rate_review,
+                      t('bookings_this_month'),
+                      bookingsThisMonth.toString(),
+                      Icons.calendar_month,
                       Colors.blue,
                     ),
                   ),
@@ -115,7 +203,59 @@ class AnalyticsScreen extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       context,
-                      "Average Rating",
+                      t('bookings_this_year'),
+                      bookingsThisYear.toString(),
+                      Icons.calendar_today,
+                      Colors.indigo,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // ROW 2: OCCUPANCY & AVG STAY
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('occupancy_rate'),
+                      "${occupancyRate.toStringAsFixed(1)}%",
+                      Icons.hotel,
+                      Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('avg_stay_nights'),
+                      "${avgStayNights.toStringAsFixed(1)} ${t('nights')}",
+                      Icons.nights_stay,
+                      Colors.purple,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // ROW 3: FEEDBACK STATS
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('recent_reviews'),
+                      totalFeedback.toString(),
+                      Icons.rate_review,
+                      Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('average_rating'),
                       averageRating.toStringAsFixed(1),
                       Icons.star,
                       Colors.amber,
@@ -124,15 +264,19 @@ class AnalyticsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 40),
-              Text("Top AI Questions (What guests are asking)",
+
+              // TOP AI QUESTIONS
+              Text(t('top_ai_questions'),
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 15),
-              _buildTopQuestions(context, topQuestions),
+              _buildTopQuestions(context, topQuestions, t),
               const SizedBox(height: 40),
-              Text("Recent Feedback",
+
+              // RECENT FEEDBACK TABLE
+              Text(t('recent_reviews'),
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 15),
-              _buildFeedbackTable(context, feedbackDocs),
+              _buildFeedbackTable(context, feedbackDocs, t),
               const SizedBox(height: 50),
             ],
           );
@@ -169,27 +313,30 @@ class AnalyticsScreen extends StatelessWidget {
             child: Icon(icon, size: 32, color: color),
           ),
           const SizedBox(width: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color)),
-              Text(title,
-                  style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                      fontSize: 14)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color)),
+                Text(title,
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                        fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTopQuestions(
-      BuildContext context, List<MapEntry<String, int>> questions) {
+  Widget _buildTopQuestions(BuildContext context,
+      List<MapEntry<String, int>> questions, String Function(String) t) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
@@ -201,10 +348,10 @@ class AnalyticsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (questions.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(10),
-              child: Text("No AI questions logged yet.",
-                  style: TextStyle(color: Colors.grey)),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(t('no_ai_questions'),
+                  style: const TextStyle(color: Colors.grey)),
             ),
           ...questions.map((entry) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
@@ -233,8 +380,8 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeedbackTable(
-      BuildContext context, List<QueryDocumentSnapshot> docs) {
+  Widget _buildFeedbackTable(BuildContext context,
+      List<QueryDocumentSnapshot> docs, String Function(String) t) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (docs.isEmpty) {
       return Container(
@@ -243,7 +390,7 @@ class AnalyticsScreen extends StatelessWidget {
         decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
             borderRadius: BorderRadius.circular(12)),
-        child: const Text("No reviews yet."),
+        child: Text(t('no_reviews')),
       );
     }
     return Container(
@@ -257,16 +404,16 @@ class AnalyticsScreen extends StatelessWidget {
         child: DataTable(
           headingRowColor: WidgetStateProperty.all(
               Theme.of(context).primaryColor.withValues(alpha: 0.05)),
-          columns: const [
+          columns: [
             DataColumn(
-                label: Text("DATE",
-                    style: TextStyle(fontWeight: FontWeight.bold))),
+                label: Text(t('date_col'),
+                    style: const TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(
-                label: Text("RATING",
-                    style: TextStyle(fontWeight: FontWeight.bold))),
+                label: Text(t('rating_col'),
+                    style: const TextStyle(fontWeight: FontWeight.bold))),
             DataColumn(
-                label: Text("COMMENT",
-                    style: TextStyle(fontWeight: FontWeight.bold))),
+                label: Text(t('comment_col'),
+                    style: const TextStyle(fontWeight: FontWeight.bold))),
           ],
           rows: docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
