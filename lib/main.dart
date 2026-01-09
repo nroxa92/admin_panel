@@ -1,6 +1,7 @@
 // FILE: lib/main.dart
-// OPIS: Entry point za Admin Panel.
-// STATUS: UPDATED - Added Super Admin routing (nevenroksa@gmail.com → SuperAdminScreen)
+// PROJECT: Vesta Lumina System (VLS)
+// VERSION: 4.0 - New Firebase Project
+// DATE: 2026-01-09
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,7 +22,7 @@ import 'models/settings_model.dart';
 // =============================================================================
 // 🔐 SUPER ADMIN EMAIL - Samo ovaj email vidi Super Admin Dashboard
 // =============================================================================
-const String superAdminEmail = 'master@admin.com';
+const String superAdminEmail = 'vestaluminasystem@gmail.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +48,7 @@ class AdminApp extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
 
     return MaterialApp(
-      title: 'Villa Admin Panel',
+      title: 'VLS Admin Panel',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.generateTheme(
         primaryColor: appProvider.primaryColor,
@@ -69,36 +70,30 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // 1. LOADING
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // 2. NOT LOGGED IN → Login Screen
         if (!snapshot.hasData || snapshot.data == null) {
           return const LoginScreen();
         }
 
-        // 🆕 3. SUPER ADMIN CHECK - Prije svega ostalog!
         final userEmail = snapshot.data!.email;
         if (userEmail == superAdminEmail) {
           return const SuperAdminScreen();
         }
 
-        // 4. REGULAR USER → Check Custom Claims
         return FutureBuilder<IdTokenResult>(
-          future: snapshot.data!.getIdTokenResult(true), // ✅ FORCE REFRESH!
+          future: snapshot.data!.getIdTokenResult(true),
           builder: (context, tokenSnapshot) {
-            // 4a. Loading Claims
             if (tokenSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            // 4b. Error reading Claims
             if (tokenSnapshot.hasError) {
               return Scaffold(
                 body: Center(
@@ -122,17 +117,13 @@ class AuthWrapper extends StatelessWidget {
               );
             }
 
-            // 4c. Check Claims
             final claims = tokenSnapshot.data?.claims;
-            final hasOwnerRole =
-                claims?['role'] == 'owner'; // ✅ FIXED: Check for 'owner' role
+            final hasOwnerRole = claims?['role'] == 'owner';
 
-            // 4d. NEMA Claims → Tenant Setup Screen
             if (!hasOwnerRole) {
               return const TenantSetupScreen();
             }
 
-            // 4e. IMA Claims → Onboarding Check → Dashboard
             return const OnboardingWrapper();
           },
         );
@@ -142,7 +133,7 @@ class AuthWrapper extends StatelessWidget {
 }
 
 // =====================================================
-// ✅ NOVO: OnboardingWrapper - Provjera profila + Router
+// OnboardingWrapper - Provjera profila + Router
 // =====================================================
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
@@ -155,8 +146,6 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   final SettingsService _settingsService = SettingsService();
   bool _isLoading = true;
   bool _showOnboarding = false;
-
-  // ✅ GoRouter instance
   late final GoRouter _router;
 
   @override
@@ -194,14 +183,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
 
   Future<void> _checkOnboardingStatus() async {
     try {
-      debugPrint("🔵 Checking onboarding status...");
       final settings = await _settingsService.getSettingsStream().first;
-
-      debugPrint("🔵 isOnboardingComplete: ${settings.isOnboardingComplete}");
-      debugPrint("🔵 ownerFirstName: '${settings.ownerFirstName}'");
-      debugPrint("🔵 ownerLastName: '${settings.ownerLastName}'");
-      debugPrint("🔵 contactEmail: '${settings.contactEmail}'");
-      debugPrint("🔵 contactPhone: '${settings.contactPhone}'");
 
       if (mounted) {
         setState(() {
@@ -209,7 +191,6 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
           _isLoading = false;
         });
 
-        // Prikaži popup ako treba
         if (_showOnboarding) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _showOnboardingDialog();
@@ -221,7 +202,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _showOnboarding = false; // U slučaju greške, propusti na dashboard
+          _showOnboarding = false;
         });
       }
     }
@@ -230,7 +211,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   void _showOnboardingDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // NE MOŽE se zatvoriti klikom vani
+      barrierDismissible: false,
       builder: (context) => OnboardingPopup(
         onComplete: () {
           Navigator.of(context).pop();
@@ -252,24 +233,19 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 20),
-              Text(
-                "Loading profile...",
-                style: TextStyle(color: Colors.grey),
-              ),
+              Text("Loading profile...", style: TextStyle(color: Colors.grey)),
             ],
           ),
         ),
       );
     }
 
-    // ✅ NOVO: Koristi Router.withConfig umjesto MaterialApp.router
-    // Da zadržimo istu temu iz parent MaterialApp
     return Router.withConfig(config: _router);
   }
 }
 
 // =====================================================
-// ✅ NOVO: OnboardingPopup - Unos podataka vlasnika
+// OnboardingPopup - Unos podataka vlasnika
 // =====================================================
 class OnboardingPopup extends StatefulWidget {
   final VoidCallback onComplete;
@@ -281,11 +257,9 @@ class OnboardingPopup extends StatefulWidget {
 }
 
 class _OnboardingPopupState extends State<OnboardingPopup> {
-  // Gold boja za popup - static const za performance
   static const Color _primaryColor = Color(0xFFD4AF37);
 
   final SettingsService _settingsService = SettingsService();
-
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -304,7 +278,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
   }
 
   Future<void> _saveAndContinue() async {
-    // Validacija
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
     final email = _emailController.text.trim();
@@ -327,7 +300,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
       return;
     }
 
-    // Email format validacija
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(email)) {
       setState(() => _errorMessage = "Please enter a valid email address");
@@ -340,18 +312,15 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
     });
 
     try {
-      debugPrint("🔵 Saving onboarding data...");
       final currentSettings = await _settingsService.getSettingsStream().first;
 
       final newSettings = VillaSettings(
         ownerId: currentSettings.ownerId,
-        // ✅ NOVO - Owner Info (prvi i jedini put!)
         ownerFirstName: firstName,
         ownerLastName: lastName,
         contactEmail: email,
         contactPhone: phone,
-        companyName: '', // Opcionalno, može se dodati kasnije u Settings
-        // Keep existing values
+        companyName: '',
         themeColor: currentSettings.themeColor,
         themeMode: currentSettings.themeMode,
         appLanguage: currentSettings.appLanguage,
@@ -372,8 +341,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
       );
 
       await _settingsService.saveSettings(newSettings);
-      debugPrint("✅ Onboarding data saved!");
-
       widget.onComplete();
     } catch (e) {
       debugPrint("❌ Error saving onboarding: $e");
@@ -407,7 +374,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ===== HEADER =====
               Container(
                 width: 70,
                 height: 70,
@@ -424,7 +390,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                     const Icon(Icons.person_add, size: 35, color: Colors.black),
               ),
               const SizedBox(height: 20),
-
               const Text(
                 "COMPLETE YOUR PROFILE",
                 style: TextStyle(
@@ -435,18 +400,12 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                 ),
               ),
               const SizedBox(height: 8),
-
               const Text(
                 "This information will be used for guest communication\nand legal documents.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white54,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.white54),
               ),
               const SizedBox(height: 30),
-
-              // ===== ERROR MESSAGE =====
               if (_errorMessage != null)
                 Container(
                   width: double.infinity,
@@ -473,8 +432,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                     ],
                   ),
                 ),
-
-              // ===== FIRST NAME =====
               _buildTextField(
                 controller: _firstNameController,
                 label: "First Name *",
@@ -482,8 +439,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                 icon: Icons.person,
               ),
               const SizedBox(height: 16),
-
-              // ===== LAST NAME =====
               _buildTextField(
                 controller: _lastNameController,
                 label: "Last Name *",
@@ -491,8 +446,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                 icon: Icons.person_outline,
               ),
               const SizedBox(height: 16),
-
-              // ===== EMAIL =====
               _buildTextField(
                 controller: _emailController,
                 label: "Contact Email *",
@@ -501,8 +454,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
-
-              // ===== PHONE =====
               _buildTextField(
                 controller: _phoneController,
                 label: "Phone Number *",
@@ -511,8 +462,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 8),
-
-              // ===== INFO TEXT =====
               Row(
                 children: [
                   Icon(Icons.info_outline,
@@ -531,8 +480,6 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // ===== SUBMIT BUTTON =====
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -544,8 +491,7 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                     disabledBackgroundColor:
                         _primaryColor.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
                   child: _isSaving
@@ -566,10 +512,9 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                             Text(
                               "CONTINUE TO DASHBOARD",
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1),
                             ),
                           ],
                         ),
