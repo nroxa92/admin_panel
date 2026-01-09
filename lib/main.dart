@@ -21,7 +21,7 @@ import 'models/settings_model.dart';
 // =============================================================================
 // 🔐 SUPER ADMIN EMAIL - Samo ovaj email vidi Super Admin Dashboard
 // =============================================================================
-const String superAdminEmail = 'nevenroksa@gmail.com';
+const String superAdminEmail = 'master@admin.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
