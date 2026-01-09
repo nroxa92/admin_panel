@@ -1,6 +1,6 @@
 // FILE: lib/config/app_config.dart
 // PROJECT: Vesta Lumina System (VLS)
-// VERSION: 2.1.0 - Phase 2 Production Readiness
+// VERSION: 3.0.0 - Phase 3 Production Readiness
 
 import 'package:flutter/foundation.dart';
 
@@ -13,8 +13,8 @@ class AppConfig {
   // =====================================================
 
   static const String appName = 'VLS Admin Panel';
-  static const String appVersion = '2.1.0';
-  static const String appBuildNumber = '2';
+  static const String appVersion = '3.0.0';
+  static const String appBuildNumber = '3';
 
   // =====================================================
   // FIREBASE CONFIG
@@ -24,13 +24,11 @@ class AppConfig {
   static const String functionsRegion = 'europe-west3';
 
   // =====================================================
-  // SUPER ADMIN (Phase 2: Multiple Admins)
+  // SUPER ADMIN
   // =====================================================
 
-  /// Primary Super Admin (cannot be removed)
   static const String primaryAdminEmail = 'vestaluminasystem@gmail.com';
 
-  /// Quick check if email is primary admin
   static bool isPrimaryAdmin(String? email) {
     if (email == null) return false;
     return email.toLowerCase() == primaryAdminEmail.toLowerCase();
@@ -50,27 +48,27 @@ class AppConfig {
   // FEATURE FLAGS
   // =====================================================
 
+  // Phase 1 Features
   static const bool enableSentry = !kDebugMode;
   static const bool enableConnectivityMonitoring = true;
   static const bool enableSessionTimeout = true;
 
-  /// Phase 2: Multiple Super Admins
+  // Phase 2 Features
   static const bool enableMultipleSuperAdmins = true;
-
-  /// Phase 2: Automatic Backups
   static const bool enableAutomaticBackups = true;
-
-  /// Phase 2: Admin Activity Logging
   static const bool enableAdminLogging = true;
 
+  // Phase 3 Features
+  static const bool enableAnalyticsDashboard = true;
+  static const bool enableRepositoryPattern = true;
+  static const bool enableUnitTests = true;
+
   // =====================================================
-  // BACKUP SETTINGS (Phase 2)
+  // BACKUP SETTINGS
   // =====================================================
 
-  /// How many days to keep backups
   static const int backupRetentionDays = 30;
 
-  /// Collections to backup
   static const List<String> backupCollections = [
     'tenant_links',
     'settings',
@@ -88,6 +86,14 @@ class AppConfig {
   static const int defaultBackgroundColorValue = 0xFF121212;
   static const Duration animationDuration = Duration(milliseconds: 300);
   static const Duration snackbarDuration = Duration(seconds: 3);
+
+  // =====================================================
+  // ANALYTICS SETTINGS (Phase 3)
+  // =====================================================
+
+  static const int analyticsDefaultLimit = 100;
+  static const int analyticsChartMonths = 12;
+  static const int analyticsUpcomingBookingsLimit = 5;
 
   // =====================================================
   // BUSINESS RULES
@@ -119,14 +125,18 @@ class AppConfig {
     if (!kDebugMode) return;
 
     debugPrint('═══════════════════════════════════════════');
-    debugPrint('📋 VLS APP CONFIG v$appVersion (Phase 2)');
+    debugPrint('📋 VLS APP CONFIG v$appVersion (Phase 3)');
     debugPrint('═══════════════════════════════════════════');
     debugPrint('Firebase: $firebaseProjectId');
     debugPrint('Primary Admin: $primaryAdminEmail');
-    debugPrint('Multiple Admins: $enableMultipleSuperAdmins');
-    debugPrint('Auto Backup: $enableAutomaticBackups');
-    debugPrint('Admin Logging: $enableAdminLogging');
+    debugPrint('───────────────────────────────────────────');
+    debugPrint('Phase 1: Error Tracking, Security, Connectivity');
+    debugPrint('Phase 2: Multi-Admin, Backup, Logging');
+    debugPrint('Phase 3: Analytics, Repository, Tests');
+    debugPrint('───────────────────────────────────────────');
     debugPrint('Sentry: $enableSentry');
+    debugPrint('Analytics: $enableAnalyticsDashboard');
+    debugPrint('Repository Pattern: $enableRepositoryPattern');
     debugPrint('═══════════════════════════════════════════');
   }
 }
