@@ -1,6 +1,6 @@
 // FILE: lib/main.dart
 // PROJECT: Vesta Lumina System (VLS)
-// VERSION: 2.0.0 - Phase 1 Production Readiness
+// VERSION: 2.1.0 - Phase 2 Multiple Super Admins + Backup + Logging
 // DATE: 2026-01-09
 
 import 'package:flutter/material.dart';
@@ -21,30 +21,26 @@ import 'services/settings_service.dart';
 import 'services/error_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/security_service.dart';
+import 'services/super_admin_service.dart';
 import 'models/settings_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize Error Tracking (Sentry)
   if (AppConfig.enableSentry) {
     await ErrorService().initialize();
   }
 
-  // Initialize Connectivity Monitoring
   if (AppConfig.enableConnectivityMonitoring) {
     await ConnectivityService().initialize();
   }
 
-  // Print config in debug mode
   AppConfig.printConfig();
 
-  // Setup global error handler
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     ErrorService().captureException(
@@ -86,7 +82,7 @@ class AdminApp extends StatelessWidget {
 }
 
 // =============================================================================
-// AuthWrapper
+// AuthWrapper - Phase 2: Multiple Super Admins Support
 // =============================================================================
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -109,63 +105,78 @@ class AuthWrapper extends StatelessWidget {
         }
 
         final userEmail = snapshot.data!.email;
-        if (AppConfig.isSuperAdmin(userEmail)) {
-          ErrorService().trackScreenView('SuperAdminScreen');
-          return const SuperAdminScreen();
-        }
 
-        return FutureBuilder<IdTokenResult>(
-          future: snapshot.data!.getIdTokenResult(true),
-          builder: (context, tokenSnapshot) {
-            if (tokenSnapshot.connectionState == ConnectionState.waiting) {
+        // Phase 2: Check if user is any Super Admin
+        return FutureBuilder<bool>(
+          future: SuperAdminService().isSuperAdmin(userEmail),
+          builder: (context, superAdminSnapshot) {
+            if (superAdminSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            if (tokenSnapshot.hasError) {
-              ErrorService().captureException(
-                tokenSnapshot.error,
-                context: 'AuthWrapper.getIdTokenResult',
-              );
-
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error, color: Colors.red, size: 60),
-                      const SizedBox(height: 20),
-                      Text(
-                        "Error: ${tokenSnapshot.error}",
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () => FirebaseAuth.instance.signOut(),
-                        child: const Text("Logout & Retry"),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+            // If Super Admin -> SuperAdminScreen
+            if (superAdminSnapshot.data == true) {
+              ErrorService().trackScreenView('SuperAdminScreen');
+              return const SuperAdminScreen();
             }
 
-            final claims = tokenSnapshot.data?.claims;
-            final hasOwnerRole = claims?['role'] == 'owner';
+            // Regular user -> Check Claims
+            return FutureBuilder<IdTokenResult>(
+              future: snapshot.data!.getIdTokenResult(true),
+              builder: (context, tokenSnapshot) {
+                if (tokenSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-            if (!hasOwnerRole) {
-              ErrorService().trackScreenView('TenantSetupScreen');
-              return const TenantSetupScreen();
-            }
+                if (tokenSnapshot.hasError) {
+                  ErrorService().captureException(
+                    tokenSnapshot.error,
+                    context: 'AuthWrapper.getIdTokenResult',
+                  );
 
-            ErrorService().setUserContext(
-              tenantId: claims?['ownerId'] as String?,
-              email: userEmail,
-              role: claims?['role'] as String?,
+                  return Scaffold(
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error, color: Colors.red, size: 60),
+                          const SizedBox(height: 20),
+                          Text(
+                            "Error: ${tokenSnapshot.error}",
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () => FirebaseAuth.instance.signOut(),
+                            child: const Text("Logout & Retry"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final claims = tokenSnapshot.data?.claims;
+                final hasOwnerRole = claims?['role'] == 'owner';
+
+                if (!hasOwnerRole) {
+                  ErrorService().trackScreenView('TenantSetupScreen');
+                  return const TenantSetupScreen();
+                }
+
+                ErrorService().setUserContext(
+                  tenantId: claims?['ownerId'] as String?,
+                  email: userEmail,
+                  role: claims?['role'] as String?,
+                );
+
+                return const OnboardingWrapper();
+              },
             );
-
-            return const OnboardingWrapper();
           },
         );
       },

@@ -1,6 +1,6 @@
 // FILE: lib/config/app_config.dart
 // PROJECT: Vesta Lumina System (VLS)
-// VERSION: 2.0.0 - Phase 1 Production Readiness
+// VERSION: 2.1.0 - Phase 2 Production Readiness
 
 import 'package:flutter/foundation.dart';
 
@@ -13,8 +13,8 @@ class AppConfig {
   // =====================================================
 
   static const String appName = 'VLS Admin Panel';
-  static const String appVersion = '2.0.0';
-  static const String appBuildNumber = '1';
+  static const String appVersion = '2.1.0';
+  static const String appBuildNumber = '2';
 
   // =====================================================
   // FIREBASE CONFIG
@@ -24,14 +24,16 @@ class AppConfig {
   static const String functionsRegion = 'europe-west3';
 
   // =====================================================
-  // SUPER ADMIN
+  // SUPER ADMIN (Phase 2: Multiple Admins)
   // =====================================================
 
-  static const String superAdminEmail = 'vestaluminasystem@gmail.com';
+  /// Primary Super Admin (cannot be removed)
+  static const String primaryAdminEmail = 'vestaluminasystem@gmail.com';
 
-  static bool isSuperAdmin(String? email) {
+  /// Quick check if email is primary admin
+  static bool isPrimaryAdmin(String? email) {
     if (email == null) return false;
-    return email.toLowerCase() == superAdminEmail.toLowerCase();
+    return email.toLowerCase() == primaryAdminEmail.toLowerCase();
   }
 
   // =====================================================
@@ -51,6 +53,32 @@ class AppConfig {
   static const bool enableSentry = !kDebugMode;
   static const bool enableConnectivityMonitoring = true;
   static const bool enableSessionTimeout = true;
+
+  /// Phase 2: Multiple Super Admins
+  static const bool enableMultipleSuperAdmins = true;
+
+  /// Phase 2: Automatic Backups
+  static const bool enableAutomaticBackups = true;
+
+  /// Phase 2: Admin Activity Logging
+  static const bool enableAdminLogging = true;
+
+  // =====================================================
+  // BACKUP SETTINGS (Phase 2)
+  // =====================================================
+
+  /// How many days to keep backups
+  static const int backupRetentionDays = 30;
+
+  /// Collections to backup
+  static const List<String> backupCollections = [
+    'tenant_links',
+    'settings',
+    'units',
+    'bookings',
+    'tablets',
+    'super_admins',
+  ];
 
   // =====================================================
   // UI SETTINGS
@@ -91,10 +119,13 @@ class AppConfig {
     if (!kDebugMode) return;
 
     debugPrint('═══════════════════════════════════════════');
-    debugPrint('📋 VLS APP CONFIG v$appVersion');
+    debugPrint('📋 VLS APP CONFIG v$appVersion (Phase 2)');
     debugPrint('═══════════════════════════════════════════');
     debugPrint('Firebase: $firebaseProjectId');
-    debugPrint('Super Admin: $superAdminEmail');
+    debugPrint('Primary Admin: $primaryAdminEmail');
+    debugPrint('Multiple Admins: $enableMultipleSuperAdmins');
+    debugPrint('Auto Backup: $enableAutomaticBackups');
+    debugPrint('Admin Logging: $enableAdminLogging');
     debugPrint('Sentry: $enableSentry');
     debugPrint('═══════════════════════════════════════════');
   }
