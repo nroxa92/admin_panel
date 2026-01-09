@@ -1,0 +1,44 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Firebase
+.firebase/
+
+# Generated
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+.metadata
+
+# Secrets (NIKAD na GitHub!)
+.env
+*.key
+*.pem
+
+# Logs
+*.log
+
+# Node (za Cloud Functions)
+functions/node_modules/
+functions/.npm/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary
+*.tmp
+*.temp
