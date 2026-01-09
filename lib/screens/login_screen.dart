@@ -1,5 +1,9 @@
 // FILE: lib/screens/login_screen.dart
-// OPIS: Login ekran za Admina.
+// PROJECT: VillaOS Admin Panel
+// VERSION: 2.1.0 - Phase 5 Enterprise Auth
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESCRIPTION: Login screen with enterprise auth integration
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
@@ -17,25 +21,47 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   Future<void> _handleLogin() async {
+    // Validate inputs
+    final email = _emailController.text.trim();
+    final password = _passController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter email and password');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    final error = await _authService.signIn(
-      _emailController.text.trim(),
-      _passController.text.trim(),
-    );
+    // Use new AuthResult from auth_service
+    final result = await _authService.signIn(email, password);
 
-    if (error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (!result.success && mounted) {
+      _showError(result.errorMessage ?? 'Login failed');
       setState(() => _isLoading = false);
     }
-    // Ako nema greške, main.dart će automatski prebaciti na Dashboard
+    // If success, main.dart will automatically navigate to Dashboard
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[700],
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passController.dispose();
+    super.dispose();
   }
 
   @override
@@ -85,6 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _emailController,
                   style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: "Email",
                     prefixIcon: const Icon(Icons.email_outlined),
@@ -98,11 +126,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 // PASSWORD
                 TextField(
                   controller: _passController,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   style: const TextStyle(color: Colors.white),
+                  textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     labelText: "Password",
                     prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -118,9 +157,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.black)
-                        : const Text("ACCESS DASHBOARD",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "ACCESS DASHBOARD",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                   ),
                 ),
               ],
