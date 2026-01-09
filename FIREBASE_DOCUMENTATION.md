@@ -1,16 +1,106 @@
 # 🔥 VillaOS - Firebase Data Documentation
 
-## Za: Android Tablet Team
-## Verzija: 2.0 (Januar 2026)
+## Za: Android Tablet Team & Backend Developers
+## Verzija: 3.1 (Januar 2026)
 ## Super Admin Email: `master@admin.com`
+
+---
+
+# 📋 SADRŽAJ
+
+1. [Firestore Kolekcije](#-firestore-kolekcije)
+2. [Authentication & Claims](#-authentication--claims)
+3. [Cloud Functions](#-cloud-functions)
+4. [Storage Structure](#-storage-structure)
+5. [Security Rules](#-security-rules)
+6. [Indexes](#-indexes)
+7. [Data Flow Diagrams](#-data-flow-diagrams)
 
 ---
 
 # 📊 FIRESTORE KOLEKCIJE
 
-## 1. `settings` (Postavke Vlasnika)
+## Pregled (17 Kolekcija)
 
-**Putanja:** `/settings/{tenantId}`
+| # | Kolekcija | Dokument ID | Opis |
+|---|-----------|-------------|------|
+| 1 | `app_config` | fixed IDs | API ključevi, APK verzija |
+| 2 | `tenant_links` | tenantId | Owner računi |
+| 3 | `settings` | ownerId | Postavke vlasnika |
+| 4 | `units` | auto-generated | Smještajne jedinice |
+| 5 | `bookings` | auto-generated | Rezervacije |
+| 6 | `bookings/{id}/guests` | auto-generated | Gosti (subcollection) |
+| 7 | `signatures` | auto-generated | Potpisi kućnog reda |
+| 8 | `check_ins` | auto-generated | OCR scan eventi |
+| 9 | `cleaning_logs` | auto-generated | Izvještaji čistačica |
+| 10 | `feedback` | auto-generated | Ocjene gostiju |
+| 11 | `gallery` | auto-generated | Legacy galerija |
+| 12 | `screensaver_images` | auto-generated | Slike za screensaver |
+| 13 | `ai_logs` | auto-generated | AI chat povijest |
+| 14 | `tablets` | tabletId | Registrirani uređaji |
+| 15 | `archived_bookings` | auto-generated | Arhivirane rezervacije |
+| 16 | `system_notifications` | auto-generated | Super Admin obavijesti |
+| 17 | `apk_updates` | auto-generated | APK deployment history |
+| 18 | `admin_logs` | auto-generated | Audit trail |
+
+---
+
+## 1. `app_config` (Globalna Konfiguracija)
+
+**Putanja:** `/app_config/{configId}`
+
+**Tko čita:** Svi autentificirani ✅
+**Tko piše:** Super Admin ✅
+
+### Document: `api_keys`
+```javascript
+{
+  "geminiApiKey": "AIza...",           // Google Gemini API
+  "mapsApiKey": "AIza...",             // Google Maps API
+  "translateApiKey": "AIza..."         // Google Translate API
+}
+```
+
+### Document: `apk_version`
+```javascript
+{
+  "currentVersion": "1.2.3",           // Trenutna verzija
+  "minVersion": "1.0.0",               // Minimalna podržana
+  "apkUrl": "gs://bucket/apk/v1.2.3.apk",
+  "releaseNotes": "Bug fixes...",
+  "updatedAt": Timestamp,
+  "updatedBy": "master@admin.com"
+}
+```
+
+---
+
+## 2. `tenant_links` (Owner Računi)
+
+**Putanja:** `/tenant_links/{tenantId}`
+
+**Tko čita:** Super Admin ✅
+**Tko piše:** Super Admin ✅ | Cloud Functions ✅
+
+```javascript
+{
+  "tenantId": "ROKSA123",              // 6-12 uppercase chars
+  "email": "neven@example.com",
+  "uid": "firebase-auth-uid-abc123",
+  "displayName": "Neven Roksa",
+  "status": "active",                  // active | disabled
+  "createdAt": Timestamp,
+  "createdBy": "master@admin.com",
+  "disabledAt": null,                  // Timestamp when disabled
+  "disabledBy": null
+}
+```
+
+---
+
+## 3. `settings` (Postavke Vlasnika)
+
+**Putanja:** `/settings/{ownerId}`
 
 **Tko čita:** Web Panel ✅ | Tablet ✅
 **Tko piše:** Web Panel ✅ | Tablet ❌
@@ -18,16 +108,16 @@
 ```javascript
 {
   // === IDENTIFIKACIJA ===
-  "ownerId": "ROKSA123",              // Tenant ID (6-12 uppercase chars)
+  "ownerId": "ROKSA123",
 
-  // === OWNER INFO (za PDF/dokumente) ===
+  // === OWNER INFO ===
   "ownerFirstName": "Neven",
-  "ownerLastName": "Roksa", 
+  "ownerLastName": "Roksa",
   "contactEmail": "neven@example.com",
   "contactPhone": "+385 91 123 4567",
   "companyName": "VillaOS d.o.o.",
 
-  // === EMERGENCY CONTACT (za QR kodove na tabletu) ===
+  // === EMERGENCY CONTACT ===
   "emergencyCall": "+385 91 111 2222",
   "emergencySms": "+385 91 111 2222",
   "emergencyWhatsapp": "+385 91 111 2222",
@@ -35,21 +125,20 @@
   "emergencyEmail": "emergency@example.com",
 
   // === KATEGORIJE JEDINICA ===
-  "categories": ["Zona A", "Zona B", "Premium"],
+  "categories": ["Zgrada 1", "Zgrada 2", "Premium"],
 
   // === SIGURNOSNI PIN-ovi ===
-  "cleanerPin": "1234",               // 4 znamenke - za cleaner mode
-  "hardResetPin": "9999",             // 4 znamenke - za hard reset tableta
+  "cleanerPin": "1234",                // 4 znamenke
+  "hardResetPin": "9999",              // 4 znamenke
 
   // === AI KNOWLEDGE BASE ===
-  "aiConcierge": "Villa je u Splitu, blizu Dioklecijanove palače...",
-  "aiHousekeeper": "Posteljina se mijenja svaka 3 dana...",
-  "aiTech": "WiFi router je u hodniku, restart držanjem 10 sec...",
-  "aiGuide": "Gosti vole opušten ton, savjetuj lokalne restorane...",
+  "aiConcierge": "Villa je u Splitu...",
+  "aiHousekeeper": "Posteljina se mijenja...",
+  "aiTech": "WiFi router je u hodniku...",
+  "aiGuide": "Gosti vole opušten ton...",
 
   // === DIGITAL INFO BOOK ===
-  "welcomeMessage": "Welcome to our Villa!",  // Legacy (samo EN)
-  "welcomeMessageTranslations": {             // 11 jezika
+  "welcomeMessageTranslations": {
     "en": "Welcome to our beautiful villa!",
     "hr": "Dobrodošli u našu prekrasnu vilu!",
     "de": "Willkommen in unserer schönen Villa!",
@@ -57,36 +146,43 @@
     "fr": "Bienvenue dans notre belle villa!",
     "es": "¡Bienvenidos a nuestra hermosa villa!",
     "pl": "Witamy w naszej pięknej willi!",
-    "cz": "Vítejte v naší krásné vile!",
+    "cs": "Vítejte v naší krásné vile!",
     "hu": "Üdvözöljük gyönyörű villánkban!",
     "sl": "Dobrodošli v naši čudoviti vili!",
     "sk": "Vitajte v našej krásnej vile!"
   },
-  "houseRulesTranslations": {                 // 11 jezika
+  "houseRulesTranslations": {
     "en": "1. No smoking inside.\n2. Quiet hours 22:00-08:00...",
     "hr": "1. Zabranjeno pušenje unutra.\n2. Noćni mir 22:00-08:00...",
     // ... ostali jezici
   },
-  "cleanerChecklist": [                       // Lista zadataka za čistačice
+  "cleanerChecklist": [
     "Promijeni posteljinu",
     "Očisti kupaonicu",
     "Usisaj podove",
     "Provjeri minibar"
   ],
 
-  // === TABLET TIMERS ===
-  "welcomeMessageDuration": 15,               // Sekunde (10-30)
-  "houseRulesDuration": 30,                   // Sekunde (20-60)
+  // === SCREENSAVER CONFIG ===
+  "screensaver_config": {
+    "delay": 60,                       // Sekunde prije pokretanja
+    "duration": 10,                    // Sekunde po slajdu
+    "transitions": ["fade", "slide", "zoom"]  // Efekti
+  },
 
-  // === CHECK-IN/OUT VREMENA ===
+  // === TIMERS ===
+  "welcomeMessageDuration": 15,        // Sekunde (10-30)
+  "houseRulesDuration": 30,            // Sekunde (20-60)
+
+  // === CHECK-IN/OUT ===
   "checkInTime": "16:00",
   "checkOutTime": "10:00",
 
-  // === WIFI (globalno za sve jedinice ako nije definirano per-unit) ===
+  // === WIFI (globalno) ===
   "wifiSsid": "VillaGuest",
   "wifiPass": "welcome123",
 
-  // === IZGLED (samo Web Panel) ===
+  // === IZGLED (Web Panel) ===
   "themeColor": "gold",
   "themeMode": "dark1",
   "appLanguage": "hr"
@@ -95,557 +191,766 @@
 
 ---
 
-## 2. `units` (Smještajne Jedinice)
+## 4. `units` (Smještajne Jedinice)
 
 **Putanja:** `/units/{unitId}`
 
-**Tko čita:** Web Panel ✅ | Tablet ✅
-**Tko piše:** Web Panel ✅ | Tablet ❌
+**Tko čita:** Web Panel ✅ | Tablet ✅ (svoje)
+**Tko piše:** Web Panel ✅
 
 ```javascript
 {
+  "id": "unit_abc123",
   "ownerId": "ROKSA123",
   "ownerEmail": "neven@example.com",
-  "name": "Villa Sunset",
-  "address": "Ulica 123, Split",
-  "category": "Premium",              // null = "Bez kategorije"
-  "wifi_ssid": "VillaSunset_Guest",
-  "wifi_pass": "sunset2024",
-  "contacts": {
+  "name": "Apartman 1",
+  "address": "Ulica Palih Boraca 15, Split",
+  "category": "Zgrada 1",              // Zona/kategorija
+  
+  // WiFi (per-unit override)
+  "wifiSsid": "Apartman1_Guest",
+  "wifiPass": "apt1pass123",
+  
+  // Operations
+  "cleanerPin": "1234",                // Override globalnog
+  "reviewLink": "https://g.page/review/...",
+  
+  // Contact options za goste
+  "contactOptions": {
     "phone": "+385 91 123 4567",
-    "email": "villa@example.com"
+    "whatsapp": "+385 91 123 4567",
+    "email": "contact@villa.com"
   },
-  "cleaner_pin": "5678",              // Override globalnog PIN-a
-  "review_link": "https://g.page/...",
-  "created_at": Timestamp
+  
+  "createdAt": Timestamp
 }
 ```
 
-**Unit ID Format:** `{OWNER_INITIALS}-{CATEGORY_PREFIX}-{UNIT_NAME}`
-
 ---
 
-## 3. `bookings` (Rezervacije)
+## 5. `bookings` (Rezervacije)
 
 **Putanja:** `/bookings/{bookingId}`
 
 **Tko čita:** Web Panel ✅ | Tablet ✅
-**Tko piše:** Web Panel ✅ | Tablet ❌ (samo označi is_scanned)
+**Tko piše:** Web Panel ✅ (create/update/delete) | Tablet ✅ (update only)
 
 ```javascript
 {
+  "id": "booking_xyz789",
   "ownerId": "ROKSA123",
-  "unit_id": "NR-PREM-SUNSET",
-  "guest_name": "John Smith",
-  "guest_count": 4,
-  "start_date": Timestamp,
-  "end_date": Timestamp,
-  "check_in_time": "16:00",
-  "check_out_time": "10:00",
-  "status": "confirmed",              // confirmed, booking.com, airbnb, private, blocked
-  "is_scanned": false,
-  "note": "Late arrival ~20:00"
+  "unitId": "unit_abc123",
+  "guestName": "Ivan Horvat",
+  "guestCount": 4,
+  
+  // Datumi
+  "startDate": Timestamp,              // Check-in datum
+  "endDate": Timestamp,                // Check-out datum
+  "checkInTime": "16:00",              // Sat check-ina
+  "checkOutTime": "10:00",             // Sat check-outa
+  
+  // Status
+  "status": "confirmed",               // confirmed|pending|blocked|private
+  "isScanned": false,                  // true nakon OCR check-ina
+  
+  // Izvor
+  "source": "booking.com",             // booking.com|airbnb|private|other
+  
+  // Notes
+  "note": "VIP gosti, late check-in",
+  
+  "createdAt": Timestamp,
+  "updatedAt": Timestamp
 }
 ```
 
-### Status Boje (za UI):
-| Status | Boja |
-|--------|------|
-| `confirmed` | 🟢 Green |
-| `booking.com` | 🔵 Blue |
-| `airbnb` | 🟠 Orange |
-| `private` | 🟡 Yellow |
-| `blocked` | 🔴 Red |
-
----
-
-## 4. `bookings/{bookingId}/guests` (Subcollection)
+### 5.1 `bookings/{bookingId}/guests` (Subcollection)
 
 **Putanja:** `/bookings/{bookingId}/guests/{guestId}`
 
-**Tko čita:** Web Panel ✅ | Tablet ✅
-**Tko piše:** Web Panel ❌ | Tablet ✅ (nakon skeniranja)
-
 ```javascript
 {
-  "first_name": "John",
-  "last_name": "Smith",
-  "full_name": "SMITH JOHN",
-  "document_number": "AB1234567",
-  "document_type": "P",               // P = Passport, ID = ID Card
-  "nationality": "GBR",               // ISO 3166-1 alpha-3
-  "date_of_birth": "1985-06-15",
-  "sex": "M",
-  "expiry_date": "2030-12-31",
-  "timestamp": Timestamp,
-  "scanned_by": "tablet_villa_sunset"
+  "id": "guest_001",
+  "firstName": "Ivan",
+  "lastName": "Horvat",
+  "dateOfBirth": "1985-03-15",
+  "nationality": "HR",
+  "documentType": "ID_CARD",           // ID_CARD|PASSPORT|DRIVING_LICENSE
+  "documentNumber": "123456789",
+  "documentExpiry": "2028-03-15",
+  
+  // Adresa
+  "address": "Ilica 100",
+  "city": "Zagreb",
+  "postalCode": "10000",
+  "country": "HR",
+  
+  // Signature
+  "signatureUrl": "https://storage.../signatures/...",
+  "signedAt": Timestamp,
+  
+  // OCR scan info
+  "scannedAt": Timestamp,
+  "scannedBy": "tablet_abc"            // Tablet ID koji je skenirao
 }
 ```
 
 ---
 
-## 5. `signatures` (Potpisi Pravila)
+## 6. `signatures` (Potpisi Kućnog Reda)
 
 **Putanja:** `/signatures/{signatureId}`
 
-**Tko čita:** Web Panel ✅ | Tablet ❌
-**Tko piše:** Web Panel ❌ | Tablet ✅
+**Tko čita:** Web Panel ✅
+**Tko piše:** Web Panel ✅ | Tablet ✅ (create)
 
 ```javascript
 {
-  "unit_id": "NR-PREM-SUNSET",
-  "booking_id": "abc123",
-  "owner_id": "ROKSA123",
-  "signature_url": "gs://bucket/signatures/...",  // Firebase Storage URL
-  "guest_name": "John Smith",
-  "signed_at": Timestamp,
-  "language": "en",
-  "device_id": "tablet_villa_sunset"
+  "id": "sig_abc123",
+  "ownerId": "ROKSA123",
+  "bookingId": "booking_xyz789",
+  "unitId": "unit_abc123",
+  "guestName": "Ivan Horvat",
+  
+  // Signature data
+  "signatureUrl": "https://storage.../signatures/sig_abc123.png",
+  "signedAt": Timestamp,
+  "language": "hr",                    // Jezik na kojem je potpisano
+  
+  // Device info
+  "tabletId": "tablet_abc",
+  "ipAddress": "192.168.1.100"
 }
 ```
 
 ---
 
-## 6. `cleaning_logs` (Zapisnici Čišćenja)
+## 7. `check_ins` (OCR Scan Eventi)
+
+**Putanja:** `/check_ins/{checkInId}`
+
+**Tko čita:** Web Panel ✅
+**Tko piše:** Tablet ✅ (create)
+
+```javascript
+{
+  "id": "checkin_abc123",
+  "ownerId": "ROKSA123",
+  "bookingId": "booking_xyz789",
+  "unitId": "unit_abc123",
+  
+  // Scan info
+  "scannedAt": Timestamp,
+  "tabletId": "tablet_abc",
+  "scanMethod": "OCR",                 // OCR|MANUAL
+  
+  // Guest data from scan
+  "guestData": {
+    "firstName": "Ivan",
+    "lastName": "Horvat",
+    "documentType": "ID_CARD",
+    "documentNumber": "123456789",
+    "nationality": "HR"
+  },
+  
+  // Raw OCR result (za debugging)
+  "rawOcrText": "...",
+  "confidence": 0.95
+}
+```
+
+---
+
+## 8. `cleaning_logs` (Izvještaji Čistačica)
 
 **Putanja:** `/cleaning_logs/{logId}`
 
+**Tko čita:** Web Panel ✅
+**Tko piše:** Tablet ✅ (create)
+
 ```javascript
 {
-  "unit_id": "NR-PREM-SUNSET",
+  "id": "clean_abc123",
   "ownerId": "ROKSA123",
-  "cleaner_name": "Ana K.",
-  "tasks_completed": {
-    "Promijeni posteljinu": true,
-    "Očisti kupaonicu": true,
-    "Usisaj podove": true,
-    "Provjeri minibar": false
-  },
+  "unitId": "unit_abc123",
+  
+  // Cleaning info
+  "timestamp": Timestamp,
+  "cleanerName": "Marija",             // Uneseno na tabletu
+  "tabletId": "tablet_abc",
+  
+  // Checklist results
+  "completedTasks": [
+    "Promijeni posteljinu",
+    "Očisti kupaonicu",
+    "Usisaj podove"
+  ],
+  "skippedTasks": [
+    "Provjeri minibar"
+  ],
+  
+  // Notes
   "notes": "Nedostaje sapun u kupaonici",
-  "status": "completed",              // completed, inspection_needed
-  "timestamp": Timestamp
+  
+  // Photos (optional)
+  "photoUrls": [
+    "https://storage.../cleaning/photo1.jpg"
+  ]
 }
 ```
 
 ---
 
-# 👑 SUPER ADMIN KOLEKCIJE (NOVO!)
+## 9. `feedback` (Ocjene Gostiju)
 
-## 7. `tenant_links` (Owner Accounts)
+**Putanja:** `/feedback/{feedbackId}`
 
-**Putanja:** `/tenant_links/{tenantId}`
-
-**Tko čita:** Super Admin ✅ | Owner ❌ | Tablet ❌
-**Tko piše:** Super Admin ✅ (via Cloud Functions)
+**Tko čita:** Web Panel ✅
+**Tko piše:** Tablet ✅ (create) | Web Panel ✅ (update read status)
 
 ```javascript
 {
-  "tenantId": "ROKSA123",
-  "firebaseUid": "abc123xyz",
-  "email": "owner@admin.com",         // Login email (npr. owner1@admin.com)
-  "displayName": "Neven Roksa",
-  "status": "active",                 // "pending" | "active" | "suspended"
-  "createdAt": Timestamp,
-  "linkedAt": Timestamp               // Kada je aktivirao account
+  "id": "feedback_abc123",
+  "ownerId": "ROKSA123",
+  "unitId": "unit_abc123",
+  "bookingId": "booking_xyz789",       // Optional
+  
+  // Rating
+  "rating": 5,                         // 1-5 stars
+  "comment": "Prekrasan boravak!",
+  
+  // Meta
+  "timestamp": Timestamp,
+  "language": "hr",
+  "tabletId": "tablet_abc",
+  
+  // Admin
+  "isRead": false,
+  "readAt": null
 }
 ```
 
 ---
 
-## 8. `tablets` (Registrirani Tableti)
+## 10. `gallery` (Legacy Galerija)
+
+**Putanja:** `/gallery/{imageId}`
+
+> ⚠️ **LEGACY** - Novi kod koristi `screensaver_images`
+
+```javascript
+{
+  "id": "img_abc123",
+  "ownerId": "ROKSA123",
+  "url": "https://storage.../gallery/image1.jpg",
+  "path": "gallery/ROKSA123/image1.jpg",
+  "fileName": "image1.jpg",
+  "uploadedAt": Timestamp
+}
+```
+
+---
+
+## 11. `screensaver_images` (Slike za Screensaver)
+
+**Putanja:** `/screensaver_images/{imageId}`
+
+**Tko čita:** Web Panel ✅ | Tablet ✅
+**Tko piše:** Web Panel ✅
+
+```javascript
+{
+  "id": "scr_abc123",
+  "ownerId": "ROKSA123",
+  "url": "https://storage.../screensaver/ROKSA123/image1.jpg",
+  "path": "screensaver/ROKSA123/image1.jpg",
+  "fileName": "sunset_villa.jpg",
+  "uploadedAt": Timestamp
+}
+```
+
+**Index potreban:** `ownerId` (ASC) + `uploadedAt` (DESC)
+
+---
+
+## 12. `ai_logs` (AI Chat Povijest)
+
+**Putanja:** `/ai_logs/{logId}`
+
+**Tko čita:** Web Panel ✅
+**Tko piše:** Tablet ✅ (create)
+
+```javascript
+{
+  "id": "ai_abc123",
+  "ownerId": "ROKSA123",
+  "unitId": "unit_abc123",
+  
+  // Chat
+  "question": "Where is the nearest restaurant?",
+  "answer": "The nearest restaurant is...",
+  "persona": "concierge",              // concierge|housekeeper|tech|guide
+  
+  // Meta
+  "timestamp": Timestamp,
+  "language": "en",
+  "tabletId": "tablet_abc",
+  
+  // AI info
+  "model": "gemini-1.5-flash",
+  "tokensUsed": 150
+}
+```
+
+---
+
+## 13. `tablets` (Registrirani Uređaji)
 
 **Putanja:** `/tablets/{tabletId}`
 
-**Tko čita:** Super Admin ✅ | Owner ✅ (svoje) | Tablet ✅ (svoj)
+**Tko čita:** Web Panel ✅ | Super Admin ✅
 **Tko piše:** Super Admin ✅ | Tablet ✅ (heartbeat update)
 
 ```javascript
 {
-  // === IDENTIFIKACIJA ===
-  "tabletId": "tab_abc123",
-  "firebaseUid": "uid_xyz789",
+  "tabletId": "tablet_abc123",
   "ownerId": "ROKSA123",
-  "unitId": "NR-PREM-SUNSET",
-  "ownerName": "Neven Roksa",
-  "unitName": "Villa Sunset",
+  "unitId": "unit_abc123",             // Assigned unit
   
-  // === DEVICE INFO ===
-  "model": "Samsung Galaxy Tab A8",
-  "osVersion": "Android 13",
-  "appVersion": "1.0.0",
+  // Device info
+  "deviceModel": "Samsung Galaxy Tab A8",
+  "androidVersion": "13",
+  "appVersion": "1.2.3",
   
-  // === STATUS ===
-  "status": "active",                 // "active" | "replaced"
-  "lastActiveAt": Timestamp,          // Zadnji heartbeat
-  "batteryLevel": 85,                 // 0-100
-  "isCharging": false,
+  // Status
+  "status": "active",                  // active|inactive|pending_update
+  "lastHeartbeat": Timestamp,
+  "isOnline": true,
   
-  // === APK UPDATE ===
-  "pendingUpdate": false,
-  "pendingVersion": "1.0.1",
-  "pendingApkUrl": "gs://bucket/apk/...",
-  "forceUpdate": false,
+  // Battery
+  "batteryLevel": 85,
+  "isCharging": true,
   
-  // === UPDATE STATUS TRACKING (NOVO!) ===
-  "updateStatus": "",                 // "pending" | "downloading" | "downloaded" | "installed" | "failed"
-  "updateError": "",                  // Error message if failed
-  "updatePushedAt": Timestamp,        // Kada je Super Admin push-ao
-  "updateDownloadedAt": Timestamp,    // Kada je tablet skinuo APK
-  "updateInstalledAt": Timestamp,     // Kada je instalacija završila
+  // Update status
+  "updateStatus": "idle",              // idle|downloading|installing|failed
+  "updateError": null,
+  "pendingVersion": null,
   
-  // === METADATA ===
-  "registeredAt": Timestamp
+  // Auth
+  "email": "tablet_abc123@villa.local",
+  "uid": "firebase-auth-uid-tablet",
+  
+  // Registration
+  "registeredAt": Timestamp,
+  "registeredBy": "master@admin.com"
 }
-```
-
-### Update Status Flow:
-```
-1. Super Admin pushes → pendingUpdate: true, updateStatus: ''
-2. Tablet heartbeat → updateStatus: 'pending'
-3. Download starts → updateStatus: 'downloading'
-4. Download done → updateStatus: 'downloaded'
-5. Install done → updateStatus: 'installed', pendingUpdate: false
-   (or) Error → updateStatus: 'failed', updateError: 'message'
 ```
 
 ---
 
-## 9. `system_notifications` (Obavijesti za Ownere) (NOVO!)
+## 14. `archived_bookings` (Arhivirane Rezervacije)
 
-**Putanja:** `/system_notifications/{notificationId}`
+**Putanja:** `/archived_bookings/{bookingId}`
 
-**Tko čita:** Super Admin ✅ | Owner ✅ (svoje)
-**Tko piše:** Super Admin ✅ | Owner ✅ (samo dismissedBy)
+Ista struktura kao `bookings`, plus:
 
 ```javascript
 {
-  // === SADRŽAJ ===
-  "message": "Scheduled maintenance on Sunday 10:00-12:00",
-  "priority": "yellow",               // "red" | "yellow" | "green" | "blue"
-  "sourceLanguage": "en",
-  "translations": {                   // Auto-generirano AI-jem (11 jezika)
-    "en": "Scheduled maintenance on Sunday 10:00-12:00",
-    "hr": "Planirano održavanje u nedjelju 10:00-12:00",
-    "de": "Geplante Wartung am Sonntag 10:00-12:00",
-    // ... ostali jezici
-  },
-  
-  // === TARGETING (NOVO!) ===
-  "sendToAll": true,                  // true = svi owneri
-  "targetOwners": [],                 // Ako sendToAll=false, lista tenant ID-eva
-  
-  // === STATUS ===
-  "active": true,
-  "dismissedBy": ["OWNER123", "OWNER456"],  // Owneri koji su dismiss-ali
-  
-  // === METADATA ===
-  "createdAt": Timestamp,
-  "createdBy": "Super Admin"
+  // ... svi booking fields ...
+  "archivedAt": Timestamp,
+  "archivedBy": "system"               // system|manual
 }
 ```
 
-### Priority Boje:
-| Priority | Boja | Ikona | Korištenje |
-|----------|------|-------|------------|
-| `red` | 🔴 | error | Critical/Urgent |
-| `yellow` | 🟡 | warning | Warning/Important |
-| `green` | 🟢 | check_circle | Success/Info |
-| `blue` | 🔵 | info | General Info |
-
 ---
 
-## 10. `apk_updates` (APK Update History) (NOVO!)
+## 15. `system_notifications` (Super Admin Obavijesti)
 
-**Putanja:** `/apk_updates/{updateId}`
+**Putanja:** `/system_notifications/{notificationId}`
 
-**Tko čita:** Super Admin ✅ | Tablet ✅
+**Tko čita:** Super Admin ✅ | Owners ✅ (svoje)
 **Tko piše:** Super Admin ✅
 
 ```javascript
 {
-  "version": "1.0.1",
-  "apkUrl": "gs://bucket/apk/villaos_1.0.1.apk",
-  "targetOwners": ["ROKSA123", "VILLA456"],  // Prazno = svi
-  "forceUpdate": false,
-  "tabletCount": 5,                   // Broj tableta koji trebaju update
-  "pushedAt": Timestamp,
-  "pushedBy": "Super Admin"
+  "id": "notif_abc123",
+  "title": "Scheduled Maintenance",
+  "message": "System will be down for maintenance...",
+  "type": "info",                      // info|warning|critical
+  
+  // Targeting
+  "sendToAll": true,                   // true = all owners
+  "targetOwners": [],                  // ili ["OWNER1", "OWNER2"]
+  
+  // Status
+  "createdAt": Timestamp,
+  "createdBy": "master@admin.com",
+  "expiresAt": Timestamp,              // Auto-dismiss after
+  
+  // Dismissals
+  "dismissedBy": ["OWNER1", "OWNER3"]  // Owners who dismissed
 }
 ```
 
 ---
 
-## 11. `admin_logs` (Activity Log) (NOVO!)
+## 16. `apk_updates` (APK Deployment History)
+
+**Putanja:** `/apk_updates/{updateId}`
+
+**Tko čita:** Super Admin ✅ | Tablets ✅
+**Tko piše:** Super Admin ✅
+
+```javascript
+{
+  "id": "update_abc123",
+  "version": "1.2.3",
+  "apkUrl": "https://storage.../apk/villa_tablet_1.2.3.apk",
+  "apkSize": 45000000,                 // bytes
+  "releaseNotes": "Bug fixes and improvements",
+  
+  // Targeting
+  "targetAll": false,
+  "targetOwners": ["ROKSA123"],
+  "targetTablets": ["tablet_abc"],
+  
+  // Status
+  "status": "deployed",                // pending|deployed|cancelled
+  "deployedAt": Timestamp,
+  "deployedBy": "master@admin.com",
+  
+  // Results
+  "successCount": 5,
+  "failedCount": 1,
+  "failedTablets": ["tablet_xyz"]
+}
+```
+
+---
+
+## 17. `admin_logs` (Audit Trail)
 
 **Putanja:** `/admin_logs/{logId}`
 
 **Tko čita:** Super Admin ✅
-**Tko piše:** Super Admin ✅ (automatski)
+**Tko piše:** Super Admin ✅ | Cloud Functions ✅
 
 ```javascript
 {
-  "action": "CREATE_OWNER",           // CREATE_OWNER, DELETE_OWNER, SUSPEND_OWNER, PUSH_UPDATE, CREATE_NOTIFICATION, etc.
-  "targetId": "ROKSA123",             // Tenant ID ili opis
-  "details": "Created owner with email owner@admin.com",
+  "id": "log_abc123",
+  "action": "CREATE_OWNER",
+  "actor": "master@admin.com",
+  "target": "ROKSA123",
+  "details": {
+    "email": "neven@example.com",
+    "displayName": "Neven Roksa"
+  },
   "timestamp": Timestamp,
-  "performedBy": "Super Admin"
+  "ipAddress": "192.168.1.1"
 }
 ```
 
+**Actions:**
+- `CREATE_OWNER`, `DISABLE_OWNER`, `ENABLE_OWNER`
+- `REGISTER_TABLET`, `DEACTIVATE_TABLET`
+- `DEPLOY_APK`, `SEND_NOTIFICATION`
+- `UPDATE_CONFIG`, `DELETE_DATA`
+
 ---
 
-## 12. `app_config` (Global Config)
+# 🔐 AUTHENTICATION & CLAIMS
 
-**Putanja:** `/app_config/{configId}`
-
-**Tko čita:** Super Admin ✅ | Owner ✅ | Tablet ✅
-**Tko piše:** Super Admin ✅
+## Custom Claims Structure
 
 ```javascript
-// /app_config/tablet_app
+// Web Panel Owner
 {
-  "currentVersion": "1.0.0",
-  "apkUrl": "gs://bucket/apk/villaos_latest.apk",
-  "updatedAt": Timestamp,
-  "forceUpdate": false
+  "ownerId": "ROKSA123",
+  "role": "owner"
 }
 
-// /app_config/api_keys (za Tablet)
+// Web Panel Admin (future)
 {
-  "geminiApiKey": "AIza...",          // Za AI chat
-  "mapsApiKey": "AIza..."             // Za Google Maps
+  "ownerId": "ROKSA123",
+  "role": "admin"
 }
+
+// Tablet
+{
+  "ownerId": "ROKSA123",
+  "unitId": "unit_abc123",
+  "role": "tablet"
+}
+
+// Super Admin (no custom claims, email check only)
+// email == "master@admin.com"
 ```
 
----
-
-# 📦 FIREBASE STORAGE
-
-## Putanje:
+## Auth Flow
 
 ```
-/apk/{filename}                              # APK files
-/apk/{version}/{filename}                    # Verzionirana putanja
-/screensaver/{ownerId}/{imageId}             # Screensaver slike
-/signatures/{ownerId}/{filename}             # Potpisi gostiju
-/units/{ownerId}/{unitId}/{filename}         # Slike jedinica
-/exports/{ownerId}/{filename}                # PDF exporti
+┌─────────────────────────────────────────────────────────────────┐
+│                      AUTHENTICATION FLOW                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. User enters email/password                                   │
+│                    │                                             │
+│                    ▼                                             │
+│  2. Firebase Auth validates credentials                          │
+│                    │                                             │
+│                    ▼                                             │
+│  3. Get ID Token with Custom Claims                             │
+│                    │                                             │
+│                    ▼                                             │
+│  4. Route based on claims:                                       │
+│     ┌─────────────────────────────────────────────┐             │
+│     │ email == "master@admin.com"                 │             │
+│     │         → SuperAdminScreen                  │             │
+│     ├─────────────────────────────────────────────┤             │
+│     │ role == "owner" && ownerId exists           │             │
+│     │         → OwnerDashboard                    │             │
+│     ├─────────────────────────────────────────────┤             │
+│     │ role == "tablet" && unitId exists           │             │
+│     │         → TabletApp                         │             │
+│     ├─────────────────────────────────────────────┤             │
+│     │ No claims                                   │             │
+│     │         → TenantSetupScreen                 │             │
+│     └─────────────────────────────────────────────┘             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
-
-## Storage Rules Pristup:
-
-| Putanja | Super Admin | Owner | Tablet |
-|---------|-------------|-------|--------|
-| `/apk/**` | ✅ Write | ❌ | 🔵 Read |
-| `/screensaver/{ownerId}/**` | ✅ Full | ✅ Own | 🔵 Read |
-| `/signatures/{ownerId}/**` | ✅ Full | ✅ Read | ✅ Write |
-| `/units/{ownerId}/**` | ✅ Full | ✅ Own | 🔵 Read |
-| `/exports/{ownerId}/**` | ✅ Full | ✅ Own | ❌ |
 
 ---
 
 # ☁️ CLOUD FUNCTIONS
 
-## Dostupne Funkcije (region: `europe-west3`):
+## Functions List (10)
 
-| # | Funkcija | Poziva | Opis |
-|---|----------|--------|------|
-| 1 | `createOwner` | Super Admin | Kreira novog vlasnika |
-| 2 | `linkTenantId` | Owner | Aktivira account |
-| 3 | `listOwners` | Super Admin | Lista svih vlasnika |
-| 4 | `deleteOwner` | Super Admin | Briše vlasnika |
-| 5 | `resetOwnerPassword` | Super Admin | Reset lozinke |
-| 6 | `toggleOwnerStatus` | Super Admin | Suspend/Activate |
-| 7 | `translateHouseRules` | Owner | AI prijevod (Gemini) |
-| 8 | `registerTablet` | Tablet | Registrira tablet |
-| 9 | `tabletHeartbeat` | Tablet | Ping + update check |
-| 10 | `translateNotification` | Super Admin | Prijevod obavijesti |
+| Function | Trigger | Description |
+|----------|---------|-------------|
+| `createOwner` | Callable | Create new tenant account |
+| `disableOwner` | Callable | Disable tenant account |
+| `refreshOwnerClaims` | Callable | Refresh JWT claims |
+| `registerTablet` | Callable | Register new tablet |
+| `deactivateTablet` | Callable | Deactivate tablet |
+| `deployApkToAll` | Callable | Push APK to all tablets |
+| `deployApkToOwner` | Callable | Push APK to owner's tablets |
+| `tabletHeartbeat` | Callable | Update tablet status |
+| `translateHouseRules` | Callable | Auto-translate content |
+| `cleanupOldBookings` | Scheduled | Archive old bookings |
 
-### Primjer poziva `translateHouseRules`:
+## Function Signatures
 
-```dart
-final result = await FirebaseFunctions
-  .instanceFor(region: 'europe-west3')
-  .httpsCallable('translateHouseRules')
-  .call({
-    'text': 'Welcome to our villa!',
-    'sourceLang': 'en',
-    'targetLangs': ['hr', 'de', 'it'],
-  });
-```
-
-### Primjer poziva `tabletHeartbeat`:
-
-```dart
-final result = await FirebaseFunctions
-  .instanceFor(region: 'europe-west3')
-  .httpsCallable('tabletHeartbeat')
-  .call({
-    'appVersion': '1.0.0',
-    'batteryLevel': 85,
-    'isCharging': false,
-    'updateStatus': 'installed',      // Optional: report update progress
-    'updateError': '',                // Optional: report errors
-  });
-
-// Response:
-// {
-//   success: true,
-//   pendingUpdate: true,
-//   pendingVersion: '1.0.1',
-//   pendingApkUrl: 'gs://...',
-//   forceUpdate: false,
-// }
-```
-
----
-
-# 🔐 FIRESTORE SECURITY RULES
-
-**Super Admin Email:** `master@admin.com`
-
-## Claims Structure:
+### createOwner
 ```javascript
-// Super Admin (email-based, no claims)
-{ email: 'master@admin.com' }
+// Request
+{
+  "email": "owner@example.com",
+  "password": "securepass123",
+  "tenantId": "TENANT123",
+  "displayName": "Owner Name"
+}
 
-// Owner (Web Panel)
-{ ownerId: 'ROKSA123', role: 'owner' }
-
-// Tablet
-{ ownerId: 'ROKSA123', unitId: 'NR-PREM-SUNSET', role: 'tablet' }
+// Response
+{
+  "success": true,
+  "uid": "firebase-uid",
+  "tenantId": "TENANT123"
+}
 ```
 
-## Pristup po kolekcijama:
+### registerTablet
+```javascript
+// Request
+{
+  "tabletId": "tablet_abc123",
+  "ownerId": "TENANT123",
+  "unitId": "unit_xyz",
+  "deviceModel": "Samsung Tab A8"
+}
 
-| Kolekcija | Super Admin | Owner | Tablet |
-|-----------|-------------|-------|--------|
-| `settings` | ✅ Full | ✅ Own | 🔵 Read |
-| `units` | ✅ Full | ✅ Own | 🔵 Read |
-| `bookings` | ✅ Full | ✅ Own | 🔵 Read + update |
-| `bookings/*/guests` | ✅ Full | ✅ Own | ✅ Write |
-| `signatures` | ✅ Full | ✅ Own | ✅ Write |
-| `cleaning_logs` | ✅ Full | ✅ Own | ✅ Write |
-| `feedback` | ✅ Full | ✅ Own | ✅ Write |
-| `tenant_links` | ✅ Full | ❌ | ❌ |
-| `tablets` | ✅ Full | 🔵 Read | 🔵 Update |
-| `system_notifications` | ✅ Full | 🔵 Read + dismiss | ❌ |
-| `apk_updates` | ✅ Full | ❌ | 🔵 Read |
-| `admin_logs` | ✅ Full | ❌ | ❌ |
-| `app_config` | ✅ Full | 🔵 Read | 🔵 Read |
-
----
-
-# 📱 TABLET APP - ŠTO TREBA ČITATI
-
-## Pri pokretanju (jednom):
-1. `settings/{tenantId}` → Cijeli dokument
-2. `units/{unitId}` → Jedinica za ovaj tablet
-3. `app_config/api_keys` → API ključevi
-
-## Na Guest Screen:
-1. `bookings` WHERE `unit_id == thisUnit` AND `start_date <= today <= end_date`
-
-## Za Cleaner Mode:
-1. Verify PIN against `settings.cleanerPin`
-2. Read `settings.cleanerChecklist`
-
-## Za APK Update Check:
-1. Call `tabletHeartbeat()` every 60s
-2. Check response `pendingUpdate`
-3. If true → download from `pendingApkUrl`
-
----
-
-# 📱 TABLET APP - ŠTO TREBA PISATI
-
-## Nakon skeniranja dokumenta:
-```dart
-// Dodaj gosta u subcollection
-await firestore
-  .collection('bookings')
-  .doc(bookingId)
-  .collection('guests')
-  .add(guestData);
-
-// Označi booking kao skeniran
-await firestore
-  .collection('bookings')
-  .doc(bookingId)
-  .update({'is_scanned': true});
-```
-
-## Nakon potpisa pravila:
-```dart
-// Upload sliku u Storage
-final ref = storage.ref('signatures/$ownerId/${bookingId}_$timestamp.png');
-await ref.putData(signatureBytes);
-final url = await ref.getDownloadURL();
-
-// Spremi u Firestore
-await firestore.collection('signatures').add({
-  'unit_id': unitId,
-  'booking_id': bookingId,
-  'owner_id': ownerId,
-  'signature_url': url,
-  'guest_name': guestName,
-  'signed_at': FieldValue.serverTimestamp(),
-  'language': selectedLanguage,
-});
-```
-
-## Heartbeat s update statusom:
-```dart
-// Pozovi svakih 60 sekundi
-final result = await functions.httpsCallable('tabletHeartbeat').call({
-  'appVersion': currentVersion,
-  'batteryLevel': batteryPercent,
-  'isCharging': isPluggedIn,
-  'updateStatus': updateState,    // 'pending', 'downloading', 'downloaded', 'installed', 'failed'
-  'updateError': errorMessage,    // Samo ako failed
-});
-
-// Provjeri ima li pending update
-if (result.data['pendingUpdate'] == true) {
-  final apkUrl = result.data['pendingApkUrl'];
-  // Download and install APK...
+// Response
+{
+  "success": true,
+  "email": "tablet_abc123@villa.local",
+  "password": "auto-generated"
 }
 ```
 
 ---
 
-# 🌐 PODRŽANI JEZICI
+# 📦 STORAGE STRUCTURE
 
-| Kod | Jezik |
-|-----|-------|
-| `en` | English |
-| `hr` | Hrvatski |
-| `de` | Deutsch |
-| `it` | Italiano |
-| `fr` | Français |
-| `es` | Español |
-| `pl` | Polski |
-| `cz` | Čeština |
-| `hu` | Magyar |
-| `sl` | Slovenščina |
-| `sk` | Slovenčina |
-
----
-
-# ⚠️ VAŽNE NAPOMENE
-
-1. **Timestamps:** Uvijek koristi `Timestamp.fromDate()` za spremanje
-2. **ownerId:** UVIJEK provjeri da je prisutan u svakom dokumentu
-3. **PIN format:** Točno 4 znamenke kao String ("1234")
-4. **Jezični kodovi:** Koristi 2-char kodove, osim `cz` za češki
-5. **Signature URL:** Preferiraj `signature_url` nad `signature_base64`
-6. **Super Admin:** Email je `master@admin.com`
-7. **Update Status:** Tablet MORA reportirati progress kroz heartbeat
-8. **Region:** Sve Cloud Functions su na `europe-west3`
+```
+Firebase Storage
+├── screensaver/
+│   └── {ownerId}/
+│       ├── image1.jpg
+│       ├── image2.jpg
+│       └── ...
+│
+├── signatures/
+│   └── {ownerId}/
+│       └── {signatureId}.png
+│
+├── cleaning/
+│   └── {ownerId}/
+│       └── {logId}/
+│           ├── photo1.jpg
+│           └── photo2.jpg
+│
+└── apk/
+    ├── villa_tablet_1.0.0.apk
+    ├── villa_tablet_1.1.0.apk
+    └── villa_tablet_1.2.3.apk
+```
 
 ---
 
-**Dokument generirao:** Claude AI  
-**Datum:** Januar 2026  
-**Web Panel verzija:** 2.0 Production Ready  
-**Super Admin verzija:** 1.0
+# 🔐 SECURITY RULES
+
+## Firestore Rules Summary
+
+```javascript
+// Helper Functions
+isAuthenticated()    // User is logged in
+isSuperAdmin()       // email == 'master@admin.com'
+isWebPanel()         // Has ownerId, role != 'tablet'
+isTablet()           // role == 'tablet'
+isResourceOwner()    // ownerId matches document
+isRequestOwner()     // ownerId matches new document
+
+// Access Matrix
+┌─────────────────────┬───────┬───────┬────────┬─────────────┐
+│ Collection          │ Read  │ Create│ Update │ Delete      │
+├─────────────────────┼───────┼───────┼────────┼─────────────┤
+│ app_config          │ Auth  │ SA    │ SA     │ SA          │
+│ tenant_links        │ SA    │ SA    │ SA     │ SA          │
+│ settings            │ Owner │ Owner │ Owner  │ Owner       │
+│ units               │ Owner │ WP    │ WP     │ WP          │
+│ bookings            │ Owner │ WP    │ Owner  │ WP          │
+│ bookings/guests     │ Owner │ Owner │ Owner  │ WP          │
+│ signatures          │ Owner │ Owner │ WP     │ WP          │
+│ check_ins           │ Owner │ Owner │ WP     │ WP          │
+│ cleaning_logs       │ Owner │ Owner │ WP     │ WP          │
+│ feedback            │ Owner │ Owner │ WP     │ SA          │
+│ gallery             │ Owner │ WP    │ WP     │ WP          │
+│ screensaver_images  │ Owner │ WP    │ WP     │ WP          │
+│ ai_logs             │ Owner │ Owner │ SA     │ SA          │
+│ tablets             │ Owner │ SA    │ Owner  │ SA          │
+│ archived_bookings   │ Owner │ WP    │ SA     │ SA          │
+│ system_notifications│ Target│ SA    │ SA+Own │ SA          │
+│ apk_updates         │ SA+Tab│ SA    │ SA     │ SA          │
+│ admin_logs          │ SA    │ SA    │ SA     │ SA          │
+└─────────────────────┴───────┴───────┴────────┴─────────────┘
+
+Legend: SA=Super Admin, WP=Web Panel, Owner=Owner+Tablet, Auth=Any authenticated
+```
+
+---
+
+# 📇 INDEXES
+
+## Required Composite Indexes
+
+| Collection | Field 1 | Field 2 | Query Scope |
+|------------|---------|---------|-------------|
+| `screensaver_images` | ownerId (ASC) | uploadedAt (DESC) | Collection |
+| `bookings` | ownerId (ASC) | startDate (ASC) | Collection |
+| `bookings` | unitId (ASC) | startDate (ASC) | Collection |
+| `cleaning_logs` | unitId (ASC) | timestamp (DESC) | Collection |
+| `cleaning_logs` | ownerId (ASC) | timestamp (DESC) | Collection |
+| `feedback` | ownerId (ASC) | timestamp (DESC) | Collection |
+| `ai_logs` | ownerId (ASC) | timestamp (DESC) | Collection |
+| `check_ins` | ownerId (ASC) | scannedAt (DESC) | Collection |
+
+---
+
+# 📊 DATA FLOW DIAGRAMS
+
+## Guest Check-in Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    GUEST CHECK-IN FLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Tablet displays active booking                               │
+│                    │                                             │
+│                    ▼                                             │
+│  2. Guest scans ID document (OCR)                               │
+│                    │                                             │
+│                    ▼                                             │
+│  3. Create check_in document                                     │
+│                    │                                             │
+│                    ▼                                             │
+│  4. Add guest to bookings/{id}/guests                           │
+│                    │                                             │
+│                    ▼                                             │
+│  5. Display House Rules                                          │
+│                    │                                             │
+│                    ▼                                             │
+│  6. Capture signature                                            │
+│                    │                                             │
+│                    ▼                                             │
+│  7. Upload signature to Storage                                  │
+│                    │                                             │
+│                    ▼                                             │
+│  8. Create signature document                                    │
+│                    │                                             │
+│                    ▼                                             │
+│  9. Update booking.isScanned = true                             │
+│                    │                                             │
+│                    ▼                                             │
+│  10. Show Welcome Message                                        │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Cleaning Report Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   CLEANING REPORT FLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Cleaner enters PIN on tablet                                │
+│                    │                                             │
+│                    ▼                                             │
+│  2. Display cleaning checklist                                   │
+│                    │                                             │
+│                    ▼                                             │
+│  3. Cleaner marks tasks complete                                │
+│                    │                                             │
+│                    ▼                                             │
+│  4. Optional: Take photos                                        │
+│                    │                                             │
+│                    ▼                                             │
+│  5. Upload photos to Storage                                     │
+│                    │                                             │
+│                    ▼                                             │
+│  6. Create cleaning_log document                                 │
+│                    │                                             │
+│                    ▼                                             │
+│  7. Web Panel shows cleaning complete                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 📈 STATISTICS
+
+| Metric | Value |
+|--------|-------|
+| **Firestore Collections** | 17 |
+| **Cloud Functions** | 10 |
+| **Composite Indexes** | 8 |
+| **Storage Buckets** | 4 paths |
+| **Supported Languages** | 11 |
+| **Security Rule Lines** | 375 |
+
+---
+
+*Last Updated: January 9, 2026*
+*Version: 3.1*

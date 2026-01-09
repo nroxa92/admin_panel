@@ -1,388 +1,482 @@
-# 🏰 VillaOS - Admin Panel
+# 🏠 VillaOS Admin Panel v2.0
 
-**VillaOS** (Villa Operating System) je sveobuhvatni sustav za upravljanje vilama i rentalnim nekretninama. Projekt se sastoji od **Flutter Web Admin Panela** za vlasnike nekretnina, **Super Admin Panela** za upravljanje svim vlasnicima, te **Android tablet aplikacije** koja se koristi u kiosk modu direktno u smještajnim jedinicama.
+> **Professional Property Management System for Villa & Apartment Rentals**  
+> Flutter Web + Firebase Backend + Super Admin Console
 
-Backend infrastruktura je izgrađena na **Firebase** ekosustavu uključujući Cloud Functions, Firestore bazu podataka i Firebase Storage.
-
----
-
-# 📊 VillaOS Admin Panel - Kompletna Analiza Projekta
-
-**Datum analize:** Januar 2026  
-**GitHub:** https://github.com/nroxa92/admin_panel  
-**Ukupno linija koda:** ~21,000+
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Flutter](https://img.shields.io/badge/Flutter-3.32+-02569B?logo=flutter)
+![Firebase](https://img.shields.io/badge/Firebase-Backend-FFCA28?logo=firebase)
+![Languages](https://img.shields.io/badge/Languages-11-green)
+![Lines](https://img.shields.io/badge/Lines_of_Code-19,543-orange)
 
 ---
 
-# 📁 STRUKTURA PROJEKTA
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Project Structure](#-project-structure)
+- [Firebase Architecture](#-firebase-architecture)
+- [Firestore Collections](#-firestore-collections)
+- [Cloud Functions](#-cloud-functions)
+- [Security Rules](#-security-rules)
+- [Installation](#-installation)
+- [Deployment](#-deployment)
+- [Translations](#-translations)
+
+---
+
+## 🎯 Overview
+
+VillaOS Admin Panel is a comprehensive property management system designed for villa and apartment rental businesses. It provides:
+
+- **Web Admin Panel** - Central control for property owners
+- **Super Admin Console** - Multi-tenant management (master@admin.com)
+- **Tablet Integration** - On-site guest check-in via Android tablets
+- **Multi-language Support** - 11 languages out of the box
+
+### Architecture
 
 ```
-admin_panel/
-├── 📄 ROOT FILES
-│   ├── .firebaserc                 # Firebase projekt config
-│   ├── .gitattributes              # Git attributes
-│   ├── LICENSE                     # Proprietary license
-│   ├── README.md                   # Dokumentacija
-│   ├── analysis_options.yaml       # Dart linter rules
-│   ├── firebase.json          (56) # Firebase hosting/functions config
-│   ├── firestore.rules       (357) # Firestore security rules (16 kolekcija)
-│   ├── storage.rules         (160) # Storage security rules (APK + files)
-│   ├── pubspec.yaml           (57) # Flutter dependencies
-│   ├── pubspec.lock                # Locked versions
-│   └── villa_admin.iml             # IntelliJ config
-│
-├── 📁 lib/                         # FLUTTER SOURCE CODE
-│   ├── main.dart             (628) # Entry point + AuthWrapper + Super Admin routing
-│   ├── firebase_options.dart  (22) # Firebase config (auto-generated)
-│   │
-│   ├── 📁 config/
-│   │   ├── theme.dart        (143) # AppTheme + color schemes
-│   │   └── translations.dart(1759) # 11 jezika × 130+ ključeva
-│   │
-│   ├── 📁 models/
-│   │   ├── booking_model.dart(123) # Booking data model
-│   │   ├── cleaning_log_model.dart (93) # Cleaning log model
-│   │   ├── settings_model.dart(317) # VillaSettings (30+ polja)
-│   │   └── unit_model.dart   (125) # Unit data model
-│   │
-│   ├── 📁 providers/
-│   │   └── app_provider.dart (123) # Global state (theme, language, settings)
-│   │
-│   ├── 📁 screens/
-│   │   ├── analytics_screen.dart   (297) # 📊 Statistika (placeholder)
-│   │   ├── booking_screen.dart    (1344) # 📅 Booking kalendar
-│   │   ├── dashboard_screen.dart  (1295) # 🏠 Live monitor
-│   │   ├── digital_book_screen.dart(1783) # 📖 CMS za tablet
-│   │   ├── gallery_screen.dart     (789) # 🖼️ Galerija (placeholder)
-│   │   ├── login_screen.dart       (133) # 🔐 Login
-│   │   ├── settings_screen.dart   (1395) # ⚙️ Postavke
-│   │   ├── tenant_setup_screen.dart(414) # 🆕 Onboarding
-│   │   │
-│   │   │── 👑 SUPER ADMIN MODULE (NOVO!)
-│   │   ├── super_admin_screen.dart       (701) # 👑 Main + Owners Tab
-│   │   ├── super_admin_tablets.dart      (816) # 📱 Tablets + APK Updates
-│   │   └── super_admin_notifications.dart(737) # 📢 Activity Log + Notifications
-│   │
-│   ├── 📁 services/
-│   │   ├── auth_service.dart   (28) # Firebase Auth helper
-│   │   ├── booking_service.dart(375) # CRUD rezervacija + guests
-│   │   ├── cleaning_service.dart(72) # Cleaning logs
-│   │   ├── pdf_service.dart   (966) # 10 PDF tipova
-│   │   ├── settings_service.dart(67) # Settings CRUD
-│   │   └── units_service.dart (350) # Units CRUD + ID generator
-│   │
-│   └── 📁 widgets/
-│       ├── booking_calendar.dart(1355) # Drag&drop kalendar
-│       ├── unit_widgets.dart   (1426) # Unit cards, dialogs
-│       └── system_notification_banner.dart (274) # 📢 Owner notification banner
-│
-├── 📁 functions/                   # CLOUD FUNCTIONS (Node.js)
-│   ├── .gitignore
-│   ├── index.js              (740) # 10 Cloud Functions
-│   ├── package.json
-│   └── package-lock.json
-│
-├── 📁 web/                         # WEB CONFIG
-│   ├── favicon.png
-│   ├── icons/
-│   ├── index.html
-│   └── manifest.json
-│
-├── 📁 assets/
-│   └── icon/
-│       └── icon.png
-│
-└── 📁 [IGNORIRATI - cache/build]
-    ├── .dart_tool/
-    ├── .firebase/
-    ├── .idea/
-    └── build/
+┌─────────────────────────────────────────────────────────────────┐
+│                        VillaOS ECOSYSTEM                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │  WEB PANEL   │    │ SUPER ADMIN  │    │   TABLETS    │      │
+│  │   (Owners)   │    │  (Master)    │    │  (On-site)   │      │
+│  └──────┬───────┘    └──────┬───────┘    └──────┬───────┘      │
+│         │                   │                   │               │
+│         └───────────────────┼───────────────────┘               │
+│                             │                                    │
+│                    ┌────────▼────────┐                          │
+│                    │    FIREBASE     │                          │
+│                    │  ┌───────────┐  │                          │
+│                    │  │ Firestore │  │                          │
+│                    │  │  Storage  │  │                          │
+│                    │  │   Auth    │  │                          │
+│                    │  │ Functions │  │                          │
+│                    │  └───────────┘  │                          │
+│                    └─────────────────┘                          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-# 📄 DETALJNA ANALIZA SVAKOG FAJLA
+## ✨ Features
 
-## 🔷 ENTRY POINT
+### 🏢 Property Management
+- **Units Management** - Add/edit apartments, villas, rooms
+- **Zone Categorization** - Group units by building/floor/area
+- **Real-time Status** - Vacant, Check-in Expected, Occupied
 
-### `lib/main.dart` (628 linija)
-**Svrha:** Ulazna točka aplikacije + Super Admin routing
+### 📅 Booking System
+- **Interactive Calendar** - Drag & drop bookings
+- **Multi-source Support** - Booking.com, Airbnb, Private, etc.
+- **Guest Management** - Contact info, guest count, notes
 
-**Super Admin Logika:**
-```dart
-const String superAdminEmail = 'master@admin.com';
+### 📊 Analytics Dashboard
+- **Bookings Statistics** - Monthly/Yearly counts
+- **Occupancy Rate** - Last 30 days calculation
+- **Average Stay Duration** - Per booking analysis
+- **Guest Feedback** - Ratings and reviews
+- **AI Questions Log** - What guests are asking
 
-// U AuthWrapper:
-if (userEmail == superAdminEmail) {
-  return const SuperAdminScreen();  // 👑 Super Admin vidi SAMO svoj dashboard
+### 🖼️ Gallery & Screensaver
+- **Image Upload** - Firebase Storage integration
+- **Screensaver Config** - Delay, duration, transitions
+- **Multiple Effects** - Fade, Slide, Zoom, Rotate, Ken Burns
+
+### 📝 Digital Guest Book
+- **House Rules** - Multi-language support
+- **Welcome Message** - Customizable per unit
+- **Cleaner Checklist** - Task management
+- **AI Knowledge Base** - Concierge, Tech, Guide contexts
+
+### 🔐 Super Admin Console
+- **Owner Management** - Create/disable tenant accounts
+- **Tablet Management** - Remote device monitoring
+- **APK Deployment** - OTA updates for tablets
+- **System Notifications** - Broadcast to owners
+- **Activity Logs** - Audit trail
+
+---
+
+## 📁 Project Structure
+
+```
+villa_admin/                          # Root (19,543 lines total)
+├── lib/                              # Flutter source code
+│   ├── main.dart                (629)  # App entry, AuthWrapper routing
+│   │
+│   ├── config/                        # Configuration
+│   │   ├── translations.dart  (2,122) # 🌍 11 languages, 168 keys
+│   │   └── theme.dart          (143)  # 🎨 Theme definitions
+│   │
+│   ├── models/                  (341)  # Data models
+│   │   ├── booking_model.dart  (123)  # 📅 Reservation model
+│   │   ├── unit_model.dart     (125)  # 🏠 Property unit model
+│   │   └── cleaning_log_model.dart (93) # 🧹 Cleaning records
+│   │
+│   ├── providers/                     # State management
+│   │   └── app_provider.dart   (123)  # 🔄 Global app state
+│   │
+│   ├── screens/             (10,520)  # UI Screens
+│   │   ├── dashboard_screen.dart    (1,270) # 📊 Main dashboard
+│   │   ├── booking_screen.dart      (1,344) # 📅 Booking management
+│   │   ├── digital_book_screen.dart (1,783) # 📖 Guest book content
+│   │   ├── settings_screen.dart     (1,395) # ⚙️ Owner settings
+│   │   ├── gallery_screen.dart        (885) # 🖼️ Screensaver gallery
+│   │   ├── analytics_screen.dart      (444) # 📈 Statistics & insights
+│   │   ├── login_screen.dart          (133) # 🔑 Authentication
+│   │   ├── tenant_setup_screen.dart   (414) # 🆕 New tenant onboarding
+│   │   ├── super_admin_screen.dart    (854) # 👑 Owner management
+│   │   ├── super_admin_tablets.dart (1,037) # 📱 Device management
+│   │   └── super_admin_notifications.dart (961) # 📢 Broadcasts
+│   │
+│   ├── services/              (1,858)  # Business logic
+│   │   ├── pdf_service.dart    (966)  # 📄 PDF generation (10 types)
+│   │   ├── booking_service.dart (375) # 📅 Booking CRUD
+│   │   ├── units_service.dart  (350)  # 🏠 Units CRUD
+│   │   ├── settings_service.dart (67) # ⚙️ Settings management
+│   │   ├── cleaning_service.dart (72) # 🧹 Cleaning logs
+│   │   └── auth_service.dart    (28)  # 🔐 Authentication
+│   │
+│   └── widgets/               (3,068)  # Reusable components
+│       ├── unit_widgets.dart  (1,426) # 🏠 Unit cards & dialogs
+│       ├── booking_calendar.dart (1,355) # 📅 Calendar widget
+│       └── system_notification_banner.dart (287) # 📢 Notifications
+│
+├── functions/                   (739)  # Cloud Functions
+│   └── index.js                (739)  # ☁️ 10 serverless functions
+│
+├── firestore.rules             (375)  # 🔐 Security rules
+├── storage.rules                      # 📦 Storage security
+├── firebase.json                      # ⚙️ Firebase config
+└── pubspec.yaml                       # 📦 Dependencies
+```
+
+---
+
+## 🔥 Firebase Architecture
+
+### Authentication
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    AUTHENTICATION FLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  User Login (Email/Password)                                     │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────────────────────────────┐                    │
+│  │        Firebase Authentication          │                    │
+│  │  ┌─────────────────────────────────┐   │                    │
+│  │  │       Custom Claims (JWT)        │   │                    │
+│  │  │  ┌─────────────────────────────┐ │   │                    │
+│  │  │  │ ownerId: "TENANT123"        │ │   │                    │
+│  │  │  │ role: "owner" | "tablet"    │ │   │                    │
+│  │  │  │ unitId: "unit_abc" (tablet) │ │   │                    │
+│  │  │  └─────────────────────────────┘ │   │                    │
+│  │  └─────────────────────────────────┘   │                    │
+│  └─────────────────────────────────────────┘                    │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  Super Admin    │  │   Web Panel     │  │     Tablet      │ │
+│  │  email check    │  │  ownerId claim  │  │  role: tablet   │ │
+│  │ master@admin.com│  │  role: owner    │  │  unitId claim   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Tenant Isolation
+
+Every document contains `ownerId` field for multi-tenant isolation:
+
+```javascript
+// Example: Booking document
+{
+  id: "booking_abc123",
+  ownerId: "TENANT123",      // ← Tenant isolation key
+  unitId: "unit_xyz",
+  guestName: "John Doe",
+  startDate: Timestamp,
+  endDate: Timestamp,
+  status: "confirmed"
 }
 ```
 
 ---
 
-## 🔷 CONFIG
+## 📚 Firestore Collections
 
-### `lib/config/translations.dart` (1759 linija)
-**Podržani jezici (11):**
-| Kod | Jezik | Kod | Jezik |
-|-----|-------|-----|-------|
-| `en` | English | `fr` | Français |
-| `hr` | Hrvatski | `es` | Español |
-| `de` | Deutsch | `pl` | Polski |
-| `it` | Italiano | `cz` | Čeština |
-| `hu` | Magyar | `sl` | Slovenščina |
-| `sk` | Slovenčina | | |
+### Collection Overview (17 Collections)
 
----
+| # | Collection | Description | Access |
+|---|------------|-------------|--------|
+| 1 | `app_config` | API keys, APK version | Auth users (read), Super Admin (write) |
+| 2 | `tenant_links` | Owner accounts | Super Admin only |
+| 3 | `settings` | Owner preferences | Owner (own data) |
+| 4 | `units` | Properties/apartments | Owner (own data) |
+| 5 | `bookings` | Reservations | Owner + Tablet |
+| 6 | `bookings/{id}/guests` | Guest details | Owner + Tablet |
+| 7 | `signatures` | House rules signatures | Owner + Tablet |
+| 8 | `check_ins` | OCR scan events | Owner + Tablet |
+| 9 | `cleaning_logs` | Cleaner reports | Owner + Tablet |
+| 10 | `feedback` | Guest ratings | Owner + Tablet |
+| 11 | `gallery` | Legacy gallery | Owner |
+| 12 | `screensaver_images` | Tablet screensaver | Owner + Tablet |
+| 13 | `ai_logs` | AI chat history | Owner + Tablet |
+| 14 | `tablets` | Registered devices | Owner + Super Admin |
+| 15 | `archived_bookings` | Historical data | Owner |
+| 16 | `system_notifications` | Super Admin broadcasts | Super Admin → Owners |
+| 17 | `apk_updates` | APK deployment | Super Admin + Tablets |
+| 18 | `admin_logs` | Audit trail | Super Admin only |
 
-## 👑 SUPER ADMIN MODULE
+### Required Indexes
 
-### `lib/screens/super_admin_screen.dart` (701 linija)
-**Svrha:** Main Super Admin scaffold + Owners management
-
-**Features:**
-- 5-tab TabController (Owners, Tablets, APK Updates, Activity Log, Notifications)
-- Create Owner dialog (email, password, tenant ID)
-- Edit/Delete/Suspend owner
-- Password reset
-- Status toggle (Active/Suspended)
-
----
-
-### `lib/screens/super_admin_tablets.dart` (816 linija)
-**Svrha:** Tablet monitoring + APK Updates
-
-**Tablets Features:**
-- Real-time online/offline status (heartbeat)
-- App version tracking
-- Device info (model, OS)
-- Owner grouping
-- **Update status tracking:**
-  - 🟠 PENDING - Čeka download
-  - 🔵 DOWNLOADING - Skida se
-  - 🔵 DOWNLOADED - Skinuto, čeka install
-  - 🟢 INSTALLED - Instalirano uspješno
-  - 🔴 FAILED - Greška + poruka
-
-**APK Updates Features:**
-- Manual APK upload to Firebase Storage
-- Owner-based selection (checkboxes)
-- Force update toggle
-- Real-time tablet count
-- Update history
+| Collection | Fields | Order |
+|------------|--------|-------|
+| `screensaver_images` | ownerId, uploadedAt | ASC, DESC |
+| `bookings` | ownerId, startDate | ASC, DESC |
+| `cleaning_logs` | unitId, timestamp | ASC, DESC |
+| `feedback` | ownerId, timestamp | ASC, DESC |
+| `ai_logs` | ownerId, timestamp | ASC, DESC |
 
 ---
 
-### `lib/screens/super_admin_notifications.dart` (737 linija)
-**Svrha:** Activity Log + System Notifications
+## ☁️ Cloud Functions
 
-**Notifications Features:**
-- 4 priority levels (🔴 Red, 🟡 Yellow, 🟢 Green, 🔵 Blue)
-- AI translation to 11 languages (Gemini)
-- **Target selection:**
-  - All Owners
-  - Specific Owners (checkboxes)
-- Active/Inactive sections
-- Dismissible by owners
+### Functions Overview (10 Functions)
 
----
-
-## 🔷 CLOUD FUNCTIONS
-
-### `functions/index.js` (740 linija)
-**10 Backend Cloud Functions:**
-
-| # | Funkcija | Opis | Pristup |
-|---|----------|------|---------|
-| 1 | `createOwner` | Kreira novog vlasnika | Super Admin only |
-| 2 | `linkTenantId` | Aktivira tenant account | Public |
-| 3 | `listOwners` | Lista svih vlasnika | Super Admin only |
-| 4 | `deleteOwner` | Briše vlasnika | Super Admin only |
-| 5 | `resetOwnerPassword` | Resetira lozinku | Super Admin only |
-| 6 | `toggleOwnerStatus` | Active/Suspended toggle | Super Admin only |
-| 7 | `translateHouseRules` | AI prijevod (Gemini) | Authenticated |
-| 8 | `registerTablet` | Registrira novi tablet | Authenticated |
-| 9 | `tabletHeartbeat` | Tablet ping + update check | Tablet only |
-| 10 | `translateNotification` | Prijevod obavijesti (11 jezika) | Super Admin only |
-
-**Super Admin Check:**
 ```javascript
-if (!request.auth || request.auth.token.email !== 'master@admin.com') {
-  throw new Error('Unauthorized - Super Admin only');
+// functions/index.js (739 lines)
+
+// 🔐 OWNER MANAGEMENT
+exports.createOwner        // Create new tenant account
+exports.disableOwner       // Disable tenant account
+exports.refreshOwnerClaims // Refresh JWT claims
+
+// 📱 TABLET MANAGEMENT  
+exports.registerTablet     // Register new device
+exports.deactivateTablet   // Deactivate device
+
+// 🔄 APK DEPLOYMENT
+exports.deployApkToAll     // Push update to all tablets
+exports.deployApkToOwner   // Push update to owner's tablets
+exports.tabletHeartbeat    // Device health monitoring
+
+// 🌐 TRANSLATIONS
+exports.translateHouseRules // Auto-translate house rules
+
+// 🧹 MAINTENANCE
+exports.cleanupOldBookings  // Archive old reservations
+```
+
+### Function Triggers
+
+| Function | Trigger | Description |
+|----------|---------|-------------|
+| `createOwner` | HTTP Callable | Creates Firebase user + sets claims |
+| `registerTablet` | HTTP Callable | Creates tablet user + assigns to owner |
+| `translateHouseRules` | HTTP Callable | Translates via Google Translate API |
+| `cleanupOldBookings` | Scheduled (weekly) | Moves old bookings to archive |
+| `tabletHeartbeat` | HTTP Callable | Updates tablet status |
+
+---
+
+## 🔐 Security Rules
+
+### Firestore Rules Structure
+
+```javascript
+// firestore.rules (375 lines)
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() { ... }
+    function isSuperAdmin() { ... }      // email == 'master@admin.com'
+    function isWebPanel() { ... }        // has ownerId, not tablet
+    function isTablet() { ... }          // role == 'tablet'
+    function isResourceOwner() { ... }   // ownerId match
+    
+    // Collection Rules
+    match /units/{unitId} {
+      allow read: if isResourceOwner() || isSuperAdmin();
+      allow create: if (isWebPanel() && isRequestOwner()) || isSuperAdmin();
+      allow update, delete: if (isWebPanel() && isResourceOwner()) || isSuperAdmin();
+    }
+    
+    // ... (17 collections defined)
+    
+    // Catch-all: Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
 }
 ```
 
-**Region:** `europe-west3`  
-**Secrets:** `GEMINI_API_KEY`
-
----
-
-## 🔷 FIRESTORE SCHEMA
-
-### Owner Data kolekcije:
-```
-/settings/{tenantId}           - Owner postavke (30+ polja)
-/units/{unitId}                - Smještajne jedinice
-/bookings/{bookingId}          - Rezervacije
-/bookings/{id}/guests/{guestId} - Skenirani gosti (subcollection)
-/signatures/{signatureId}      - Potpisi pravila
-/cleaning_logs/{logId}         - Zapisnici čišćenja
-/check_ins/{checkInId}         - OCR scan events
-/feedback/{feedbackId}         - Guest ratings
-/gallery/{imageId}             - Screensaver images
-/ai_logs/{logId}               - AI chat history
-```
-
-### 👑 Super Admin kolekcije:
-```
-/tenant_links/{tenantId}       - Owner<->Firebase UID link
-├── tenantId, firebaseUid, email, displayName
-├── status: "pending" | "active" | "suspended"
-├── createdAt, linkedAt
-
-/tablets/{deviceId}
-├── tabletId, firebaseUid, ownerId, unitId
-├── ownerName, unitName, appVersion
-├── lastActiveAt, status, model, osVersion
-├── batteryLevel, isCharging
-├── pendingUpdate, pendingVersion, pendingApkUrl, forceUpdate
-├── updateStatus: "pending" | "downloading" | "downloaded" | "installed" | "failed"
-├── updateError, updatePushedAt, updateDownloadedAt, updateInstalledAt
-
-/system_notifications/{notificationId}
-├── message, priority: "red" | "yellow" | "green" | "blue"
-├── sourceLanguage, translations: {en: "...", hr: "...", ...}
-├── active, sendToAll, targetOwners: ["ROKSA123", ...]
-├── dismissedBy: [], createdAt, createdBy
-
-/apk_updates/{updateId}
-├── version, apkUrl, targetOwners: []
-├── forceUpdate, pushedAt, pushedBy, tabletCount
-
-/admin_logs/{logId}
-├── action, targetId, details, timestamp, performedBy
-
-/app_config/{configId}
-├── currentVersion, apkUrl, updatedAt, forceUpdate
-```
-
----
-
-## 🔷 FIREBASE STORAGE
-
-### Putanje:
-```
-/apk/{filename}                              # APK files (Super Admin upload)
-/apk/{version}/{filename}                    # Alternative versioned path
-/screensaver/{ownerId}/{imageId}             # Screensaver images
-/signatures/{ownerId}/{filename}             # Guest signatures
-/units/{ownerId}/{unitId}/{filename}         # Unit images
-/exports/{ownerId}/{filename}                # PDF exports
-```
-
----
-
-# 🔐 SIGURNOSNI MODEL
-
-## User Roles:
-
-| Role | Email/Claims | Pristup |
-|------|--------------|---------|
-| **Super Admin** | `master@admin.com` | Super Admin Dashboard SAMO |
-| **Owner** | `role: 'owner'` | Regular Dashboard (tenant-isolated) |
-| **Tablet** | `role: 'tablet'` | Read settings, Write guests/signatures |
-
-## Custom Claims Structure:
+### Storage Rules
 
 ```javascript
-// Super Admin (email-based)
-{ email: 'master@admin.com' }
+// storage.rules
 
-// Owner (Web Panel)
-{ ownerId: 'ROKSA123', role: 'owner' }
-
-// Tablet
-{ ownerId: 'ROKSA123', unitId: 'NR-PREM-SUNSET', role: 'tablet' }
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Screensaver images
+    match /screensaver/{ownerId}/{fileName} {
+      allow read: if request.auth.token.ownerId == ownerId;
+      allow write: if request.auth.token.ownerId == ownerId
+                   && request.auth.token.role != 'tablet';
+    }
+    
+    // APK files (Super Admin only)
+    match /apk/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.token.email == 'master@admin.com';
+    }
+  }
+}
 ```
 
 ---
 
-# 📊 STATISTIKA
+## 🚀 Installation
 
-| Kategorija | Fajlova | Linija |
-|------------|---------|--------|
-| **Screens** | 11 | 11,585 |
-| **Widgets** | 3 | 3,055 |
-| **Services** | 6 | 1,858 |
-| **Models** | 4 | 658 |
-| **Config** | 2 | 1,902 |
-| **Functions** | 1 | 740 |
-| **Rules** | 2 | 517 |
-| **UKUPNO** | **~32** | **~21,000** |
+### Prerequisites
 
----
+- Flutter SDK 3.32+
+- Node.js 18+
+- Firebase CLI
+- Firebase Project
 
-# 📱 TABLET APP INTEGRACIJA
+### Setup
 
-## Update Status Flow:
+```bash
+# 1. Clone repository
+git clone https://github.com/nroxa92/admin_panel.git
+cd admin_panel
 
-```
-Super Admin pushes update
-        │
-        ▼
-┌───────────────────┐
-│ pendingUpdate:true│
-└───────────────────┘
-        │
-        ▼ (Tablet heartbeat reports progress)
-┌───────────────────┐
-│ 'pending'         │
-│ 'downloading'     │
-│ 'downloaded'      │
-│ 'installed' ✅    │
-└───────────────────┘
-(or 'failed' ❌ with updateError)
+# 2. Install Flutter dependencies
+flutter pub get
+
+# 3. Install Cloud Functions dependencies
+cd functions
+npm install
+cd ..
+
+# 4. Configure Firebase
+firebase login
+firebase use --add
+
+# 5. Run locally
+flutter run -d chrome
 ```
 
 ---
 
-# 🎯 ZAKLJUČAK
+## 📦 Deployment
 
-**VillaOS Admin Panel** je production-ready web aplikacija s:
+### Deploy Everything
 
-### Core Features:
-- ✅ Multi-tenant arhitektura
-- ✅ 11-jezična podrška
-- ✅ 10 PDF tipova
-- ✅ Real-time Firestore sync
-- ✅ 10 Cloud Functions
+```bash
+# Build Flutter web
+flutter build web --release
 
-### 👑 Super Admin Features:
-- ✅ Owner Management (CRUD + Suspend)
-- ✅ Tablet Monitoring (status, battery, version)
-- ✅ APK Update System (owner selection, force update)
-- ✅ Update Status Tracking
-- ✅ System Notifications (4 prioriteta, 11 jezika, owner targeting)
-- ✅ Activity Log
+# Deploy all Firebase services
+firebase deploy
+```
 
-**Spremno za:** 
-- ✅ Produkcijsko korištenje
-- ✅ Tablet app integraciju
-- ✅ Multi-owner SaaS deployment
+### Deploy Specific Services
 
----
+```bash
+# Only hosting (web app)
+firebase deploy --only hosting
 
-## ⛔️ Licenca
+# Only Firestore rules
+firebase deploy --only firestore:rules
 
-**© Copyright 2024-2026 nroxa92. Sva prava pridržana.**
+# Only Cloud Functions
+firebase deploy --only functions
+
+# Only Storage rules
+firebase deploy --only storage
+```
 
 ---
 
-## 📬 Kontakt
+## 🌍 Translations
 
-- **GitHub**: [@nroxa92](https://github.com/nroxa92)
-- **E-Mail**: nevenroksa@gmail.com
+### Supported Languages (11)
+
+| Code | Language | Status |
+|------|----------|--------|
+| `en` | English | ✅ Complete (Master) |
+| `hr` | Hrvatski (Croatian) | ✅ Complete |
+| `sk` | Slovenčina (Slovak) | ✅ Complete |
+| `cs` | Čeština (Czech) | ✅ Complete |
+| `de` | Deutsch (German) | ✅ Complete |
+| `it` | Italiano (Italian) | ✅ Complete |
+| `es` | Español (Spanish) | ✅ Complete |
+| `fr` | Français (French) | ✅ Complete |
+| `pl` | Polski (Polish) | ✅ Complete |
+| `hu` | Magyar (Hungarian) | ✅ Complete |
+| `sl` | Slovenščina (Slovenian) | ✅ Complete |
+
+### Translation Keys: 168 keys across categories:
+- Navigation & Dashboard
+- Booking & Calendar
+- Settings & Configuration
+- Analytics & Gallery
+- Super Admin Console
+- Error Messages & Notifications
 
 ---
 
-**VillaOS** - Simplifying Property Management 🏰
+## 📊 Statistics
+
+| Metric | Value |
+|--------|-------|
+| **Total Lines of Code** | 19,543 |
+| **Flutter/Dart Files** | 25 |
+| **Cloud Functions** | 10 |
+| **Firestore Collections** | 17 |
+| **Translation Keys** | 168 |
+| **Supported Languages** | 11 |
+| **PDF Types** | 10 |
+
+---
+
+## ⚠️ License
+
+**PROPRIETARY & CONFIDENTIAL**
+
+This software is the exclusive property of VillaOS. All rights reserved.
+
+⛔ **STRICTLY PROHIBITED:**
+- Copying, modifying, or distributing this code
+- Reverse engineering or decompiling
+- Using any part of this codebase without written permission
+
+📜 **Legal action will be taken against any unauthorized use.**
+
+🔒 **Copyright © 2026 VillaOS. Sva prava pridržana.**
+
+---
+
+## 👨‍💻 Author
+
+**VillaOS Team**
+
+---
+
+*Last Updated: January 9, 2026*
