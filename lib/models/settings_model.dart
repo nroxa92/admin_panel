@@ -213,18 +213,15 @@ class VillaSettings {
       'aiHousekeeper': aiHousekeeper,
       'aiTech': aiTech,
       'aiGuide': aiGuide,
-      // Digital Book
-      'welcomeMessage': welcomeMessage,
+      // Digital Book (welcomeMessage REMOVED - use welcomeMessageTranslations)
       'welcomeMessageTranslations': welcomeMessageTranslations,
       'houseRulesTranslations': houseRulesTranslations,
       'cleanerChecklist': cleanerChecklist,
       'welcomeMessageDuration': welcomeMessageDuration,
       'houseRulesDuration': houseRulesDuration,
-      // Konfiguracija
+      // Konfiguracija (wifiSsid/wifiPass REMOVED - WiFi is per-unit)
       'checkInTime': checkInTime,
       'checkOutTime': checkOutTime,
-      'wifiSsid': wifiSsid,
-      'wifiPass': wifiPass,
       // Izgled
       'themeColor': themeColor,
       'themeMode': themeMode,

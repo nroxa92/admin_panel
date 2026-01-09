@@ -75,16 +75,14 @@ exports.createOwner = onCall(
         themeMode: 'dark1',
         appLanguage: 'en',
         houseRulesTranslations: {'en': 'No smoking.'},
+        welcomeMessageTranslations: {'en': 'Welcome to our Villa!'},
         cleanerChecklist: ['Check bedsheets', 'Clean bathroom'],
         aiConcierge: '',
         aiHousekeeper: '',
         aiTech: '',
         aiGuide: '',
-        welcomeMessage: 'Welcome to our Villa!',
         checkInTime: '15:00',
         checkOutTime: '10:00',
-        wifiSsid: '',
-        wifiPass: '',
       });
 
       return {

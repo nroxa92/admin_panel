@@ -89,7 +89,7 @@ class AuthWrapper extends StatelessWidget {
 
         // 4. REGULAR USER → Check Custom Claims
         return FutureBuilder<IdTokenResult>(
-          future: snapshot.data!.getIdTokenResult(),
+          future: snapshot.data!.getIdTokenResult(true), // ✅ FORCE REFRESH!
           builder: (context, tokenSnapshot) {
             // 4a. Loading Claims
             if (tokenSnapshot.connectionState == ConnectionState.waiting) {
