@@ -1,6 +1,6 @@
 // FILE: lib/main.dart
 // PROJECT: Vesta Lumina System (VLS)
-// VERSION: 4.0 - New Firebase Project
+// VERSION: 2.0.0 - Phase 1 Production Readiness
 // DATE: 2026-01-09
 
 import 'package:flutter/material.dart';
@@ -14,21 +14,45 @@ import 'screens/dashboard_screen.dart';
 import 'screens/tenant_setup_screen.dart';
 import 'screens/super_admin_screen.dart';
 import 'config/theme.dart';
+import 'config/app_config.dart';
 import 'firebase_options.dart';
 import 'providers/app_provider.dart';
 import 'services/settings_service.dart';
+import 'services/error_service.dart';
+import 'services/connectivity_service.dart';
+import 'services/security_service.dart';
 import 'models/settings_model.dart';
-
-// =============================================================================
-// 🔐 SUPER ADMIN EMAIL - Samo ovaj email vidi Super Admin Dashboard
-// =============================================================================
-const String superAdminEmail = 'vestaluminasystem@gmail.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Error Tracking (Sentry)
+  if (AppConfig.enableSentry) {
+    await ErrorService().initialize();
+  }
+
+  // Initialize Connectivity Monitoring
+  if (AppConfig.enableConnectivityMonitoring) {
+    await ConnectivityService().initialize();
+  }
+
+  // Print config in debug mode
+  AppConfig.printConfig();
+
+  // Setup global error handler
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    ErrorService().captureException(
+      details.exception,
+      stackTrace: details.stack,
+      context: 'FlutterError',
+    );
+  };
 
   runApp(
     MultiProvider(
@@ -48,19 +72,21 @@ class AdminApp extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
 
     return MaterialApp(
-      title: 'VLS Admin Panel',
+      title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.generateTheme(
         primaryColor: appProvider.primaryColor,
         backgroundColor: appProvider.backgroundColor,
       ),
-      home: const AuthWrapper(),
+      home: AppConfig.enableConnectivityMonitoring
+          ? const OfflineBanner(child: AuthWrapper())
+          : const AuthWrapper(),
     );
   }
 }
 
 // =============================================================================
-// AuthWrapper - Sa Super Admin Check + Tenant ID Check
+// AuthWrapper
 // =============================================================================
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -77,11 +103,14 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data == null) {
+          ErrorService().clearUserContext();
+          SecurityService().stopSessionMonitoring();
           return const LoginScreen();
         }
 
         final userEmail = snapshot.data!.email;
-        if (userEmail == superAdminEmail) {
+        if (AppConfig.isSuperAdmin(userEmail)) {
+          ErrorService().trackScreenView('SuperAdminScreen');
           return const SuperAdminScreen();
         }
 
@@ -95,6 +124,11 @@ class AuthWrapper extends StatelessWidget {
             }
 
             if (tokenSnapshot.hasError) {
+              ErrorService().captureException(
+                tokenSnapshot.error,
+                context: 'AuthWrapper.getIdTokenResult',
+              );
+
               return Scaffold(
                 body: Center(
                   child: Column(
@@ -121,8 +155,15 @@ class AuthWrapper extends StatelessWidget {
             final hasOwnerRole = claims?['role'] == 'owner';
 
             if (!hasOwnerRole) {
+              ErrorService().trackScreenView('TenantSetupScreen');
               return const TenantSetupScreen();
             }
+
+            ErrorService().setUserContext(
+              tenantId: claims?['ownerId'] as String?,
+              email: userEmail,
+              role: claims?['role'] as String?,
+            );
 
             return const OnboardingWrapper();
           },
@@ -132,9 +173,9 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
-// =====================================================
-// OnboardingWrapper - Provjera profila + Router
-// =====================================================
+// =============================================================================
+// OnboardingWrapper
+// =============================================================================
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
 
@@ -144,6 +185,8 @@ class OnboardingWrapper extends StatefulWidget {
 
 class _OnboardingWrapperState extends State<OnboardingWrapper> {
   final SettingsService _settingsService = SettingsService();
+  final SecurityService _securityService = SecurityService();
+
   bool _isLoading = true;
   bool _showOnboarding = false;
   late final GoRouter _router;
@@ -153,6 +196,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
     super.initState();
     _initRouter();
     _checkOnboardingStatus();
+    _startSessionMonitoring();
   }
 
   void _initRouter() {
@@ -181,6 +225,18 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
     );
   }
 
+  void _startSessionMonitoring() {
+    if (!AppConfig.enableSessionTimeout) return;
+
+    _securityService.startSessionMonitoring(
+      onExpired: () {
+        debugPrint('⏱️ Session expired, logging out');
+        SecurityAuditLog.log(SecurityEvent.logoutSessionExpired);
+        FirebaseAuth.instance.signOut();
+      },
+    );
+  }
+
   Future<void> _checkOnboardingStatus() async {
     try {
       final settings = await _settingsService.getSettingsStream().first;
@@ -195,10 +251,14 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _showOnboardingDialog();
           });
+        } else {
+          ErrorService().trackScreenView('DashboardScreen');
         }
       }
-    } catch (e) {
-      debugPrint("❌ Error checking onboarding: $e");
+    } catch (e, stackTrace) {
+      ErrorService().captureException(e,
+          stackTrace: stackTrace, context: 'checkOnboarding');
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -209,6 +269,8 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   }
 
   void _showOnboardingDialog() {
+    ErrorService().trackScreenView('OnboardingPopup');
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -218,9 +280,16 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
           setState(() {
             _showOnboarding = false;
           });
+          ErrorService().trackScreenView('DashboardScreen');
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _securityService.stopSessionMonitoring();
+    super.dispose();
   }
 
   @override
@@ -240,13 +309,18 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
       );
     }
 
-    return Router.withConfig(config: _router);
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => _securityService.recordActivity(),
+      onPanDown: (_) => _securityService.recordActivity(),
+      child: Router.withConfig(config: _router),
+    );
   }
 }
 
-// =====================================================
-// OnboardingPopup - Unos podataka vlasnika
-// =====================================================
+// =============================================================================
+// OnboardingPopup
+// =============================================================================
 class OnboardingPopup extends StatefulWidget {
   final VoidCallback onComplete;
 
@@ -291,18 +365,12 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
       setState(() => _errorMessage = "Please enter your last name");
       return;
     }
-    if (email.isEmpty) {
-      setState(() => _errorMessage = "Please enter your contact email");
+    if (email.isEmpty || !SecurityService().isValidEmail(email)) {
+      setState(() => _errorMessage = "Please enter a valid email address");
       return;
     }
     if (phone.isEmpty) {
       setState(() => _errorMessage = "Please enter your phone number");
-      return;
-    }
-
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(email)) {
-      setState(() => _errorMessage = "Please enter a valid email address");
       return;
     }
 
@@ -316,10 +384,10 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
 
       final newSettings = VillaSettings(
         ownerId: currentSettings.ownerId,
-        ownerFirstName: firstName,
-        ownerLastName: lastName,
+        ownerFirstName: SecurityService().sanitizeInput(firstName),
+        ownerLastName: SecurityService().sanitizeInput(lastName),
         contactEmail: email,
-        contactPhone: phone,
+        contactPhone: SecurityService().sanitizeInput(phone),
         companyName: '',
         themeColor: currentSettings.themeColor,
         themeMode: currentSettings.themeMode,
@@ -341,9 +409,13 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
       );
 
       await _settingsService.saveSettings(newSettings);
+
+      ErrorService().trackAction('Onboarding completed');
       widget.onComplete();
-    } catch (e) {
-      debugPrint("❌ Error saving onboarding: $e");
+    } catch (e, stackTrace) {
+      ErrorService().captureException(e,
+          stackTrace: stackTrace, context: 'saveOnboarding');
+
       setState(() {
         _errorMessage = "Error saving data. Please try again.";
         _isSaving = false;
@@ -433,34 +505,30 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                   ),
                 ),
               _buildTextField(
-                controller: _firstNameController,
-                label: "First Name *",
-                hint: "Ivan",
-                icon: Icons.person,
-              ),
+                  controller: _firstNameController,
+                  label: "First Name *",
+                  hint: "Ivan",
+                  icon: Icons.person),
               const SizedBox(height: 16),
               _buildTextField(
-                controller: _lastNameController,
-                label: "Last Name *",
-                hint: "Horvat",
-                icon: Icons.person_outline,
-              ),
+                  controller: _lastNameController,
+                  label: "Last Name *",
+                  hint: "Horvat",
+                  icon: Icons.person_outline),
               const SizedBox(height: 16),
               _buildTextField(
-                controller: _emailController,
-                label: "Contact Email *",
-                hint: "contact@example.com",
-                icon: Icons.email,
-                keyboardType: TextInputType.emailAddress,
-              ),
+                  controller: _emailController,
+                  label: "Contact Email *",
+                  hint: "contact@example.com",
+                  icon: Icons.email,
+                  keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 16),
               _buildTextField(
-                controller: _phoneController,
-                label: "Phone Number *",
-                hint: "+385 91 234 5678",
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
-              ),
+                  controller: _phoneController,
+                  label: "Phone Number *",
+                  hint: "+385 91 234 5678",
+                  icon: Icons.phone,
+                  keyboardType: TextInputType.phone),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -471,10 +539,9 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                     child: Text(
                       "Name cannot be changed after setup (used for legal documents)",
                       style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontStyle: FontStyle.italic,
-                      ),
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontStyle: FontStyle.italic),
                     ),
                   ),
                 ],
@@ -499,23 +566,19 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.black),
-                          ),
-                        )
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.black)))
                       : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.check_circle, size: 20),
                             SizedBox(width: 8),
-                            Text(
-                              "CONTINUE TO DASHBOARD",
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1),
-                            ),
+                            Text("CONTINUE TO DASHBOARD",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1)),
                           ],
                         ),
                 ),
@@ -537,14 +600,11 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -557,18 +617,88 @@ class _OnboardingPopupState extends State<OnboardingPopup> {
             filled: true,
             fillColor: Colors.black26,
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-            ),
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: Colors.white.withValues(alpha: 0.2))),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: _primaryColor, width: 2),
-            ),
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _primaryColor, width: 2)),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
         ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// OfflineBanner Widget
+// =============================================================================
+class OfflineBanner extends StatefulWidget {
+  final Widget child;
+
+  const OfflineBanner({super.key, required this.child});
+
+  @override
+  State<OfflineBanner> createState() => _OfflineBannerState();
+}
+
+class _OfflineBannerState extends State<OfflineBanner> {
+  final ConnectivityService _connectivity = ConnectivityService();
+  bool _isOffline = false;
+  bool _showReconnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isOffline = _connectivity.isOffline;
+    _connectivity.statusStream.listen(_onStatusChange);
+  }
+
+  void _onStatusChange(ConnectivityStatus status) {
+    final wasOffline = _isOffline;
+    final isNowOnline = status == ConnectivityStatus.online;
+
+    setState(() {
+      _isOffline = status == ConnectivityStatus.offline;
+    });
+
+    if (wasOffline && isNowOnline) {
+      setState(() => _showReconnected = true);
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _showReconnected = false);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: _isOffline ? 40 : (_showReconnected ? 40 : 0),
+          color: _isOffline ? Colors.red.shade700 : Colors.green.shade700,
+          child: _isOffline || _showReconnected
+              ? Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_isOffline ? Icons.wifi_off : Icons.wifi,
+                          color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        _isOffline ? 'No internet connection' : 'Back online!',
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                )
+              : null,
+        ),
+        Expanded(child: widget.child),
       ],
     );
   }

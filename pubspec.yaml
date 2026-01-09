@@ -1,7 +1,7 @@
 name: villa_admin
-description: Admin Panel for Villa AI Ecosystem.
+description: VLS Admin Panel - Vesta Lumina System
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -29,7 +29,7 @@ dependencies:
   file_picker: ^6.1.1
   image_network: ^2.6.0
 
-  # --- FIREBASE (✅ UPDATED!) ---
+  # --- FIREBASE ---
   firebase_core: ^3.8.1
   cloud_firestore: ^5.5.2
   firebase_auth: ^5.3.4
@@ -39,6 +39,11 @@ dependencies:
   # --- PDF & PRINTANJE ---
   pdf: ^3.10.4
   printing: ^5.11.0
+
+  # --- PHASE 1: PRODUCTION READINESS ---
+  sentry_flutter: ^8.0.0
+  connectivity_plus: ^6.0.0
+  shared_preferences: ^2.2.0
 
 dev_dependencies:
   flutter_test:
