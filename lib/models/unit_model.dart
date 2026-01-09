@@ -1,5 +1,6 @@
 // FILE: lib/models/unit_model.dart
-// STATUS: UPDATED - Added category field for unit grouping
+// VERSION: 2.0 - camelCase Migration
+// DATE: 2026-01-09
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -12,15 +13,7 @@ class Unit {
   final String wifiSsid;
   final String wifiPass;
   final Map<String, String> contactOptions;
-
-  // ========================================
-  // KATEGORIJA (NOVO!)
-  // ========================================
-  final String? category; // null = "Bez kategorije"
-
-  // ========================================
-  // OSTALI PODACI
-  // ========================================
+  final String? category;
   final String cleanerPin;
   final String reviewLink;
   final DateTime? createdAt;
@@ -34,7 +27,7 @@ class Unit {
     required this.wifiSsid,
     required this.wifiPass,
     required this.contactOptions,
-    this.category, // NOVO! (nullable)
+    this.category,
     this.cleanerPin = '',
     this.reviewLink = '',
     this.createdAt,
@@ -49,20 +42,13 @@ class Unit {
       ownerEmail: data['ownerEmail']?.toString() ?? '',
       name: data['name']?.toString() ?? 'Unknown Unit',
       address: data['address']?.toString() ?? '',
-      wifiSsid: data['wifi_ssid']?.toString() ?? '',
-      wifiPass: data['wifi_pass']?.toString() ?? '',
-
-      // FIX: Sigurno parsiranje Mape (sprječava crash ako je format krivi)
-      contactOptions: _parseContacts(data['contacts']),
-
-      // ✅ NOVO: Kategorija (null ako ne postoji ili je prazan string)
+      wifiSsid: data['wifiSsid']?.toString() ?? '',
+      wifiPass: data['wifiPass']?.toString() ?? '',
+      contactOptions: _parseContacts(data['contactOptions']),
       category: _parseCategory(data['category']),
-
-      cleanerPin: data['cleaner_pin']?.toString() ?? '',
-      reviewLink: data['review_link']?.toString() ?? '',
-
-      // FIX: Sigurno parsiranje datuma
-      createdAt: _parseDate(data['created_at']),
+      cleanerPin: data['cleanerPin']?.toString() ?? '',
+      reviewLink: data['reviewLink']?.toString() ?? '',
+      createdAt: _parseDate(data['createdAt']),
     );
   }
 
@@ -72,23 +58,19 @@ class Unit {
       'ownerEmail': ownerEmail,
       'name': name,
       'address': address,
-      'wifi_ssid': wifiSsid,
-      'wifi_pass': wifiPass,
-      'contacts': contactOptions,
-      // ✅ NOVO: Kategorija (sprema null ako nema)
+      'wifiSsid': wifiSsid,
+      'wifiPass': wifiPass,
+      'contactOptions': contactOptions,
       'category': category,
-      'cleaner_pin': cleanerPin,
-      'review_link': reviewLink,
-      'created_at': createdAt ?? FieldValue.serverTimestamp(),
+      'cleanerPin': cleanerPin,
+      'reviewLink': reviewLink,
+      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
     };
   }
 
-  // ========================================
-  // HELPER: Display name za kategoriju
-  // ========================================
   String get categoryDisplay => category ?? 'Bez kategorije';
 
-  // --- HELPERI ---
+  // --- HELPERS ---
 
   static DateTime? _parseDate(dynamic val) {
     if (val == null) return null;
@@ -105,7 +87,6 @@ class Unit {
     if (val == null) return {};
     if (val is Map) {
       try {
-        // Sigurna konverzija: pretvori ključeve i vrijednosti u String
         return val
             .map((key, value) => MapEntry(key.toString(), value.toString()));
       } catch (_) {
@@ -115,7 +96,6 @@ class Unit {
     return {};
   }
 
-  // ✅ NOVO: Parser za kategoriju
   static String? _parseCategory(dynamic val) {
     if (val == null) return null;
     final str = val.toString().trim();

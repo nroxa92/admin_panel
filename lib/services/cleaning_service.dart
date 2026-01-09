@@ -1,6 +1,6 @@
 // FILE: lib/services/cleaning_service.dart
-// OPIS: Servis za spremanje i dohvat izvještaja o čišćenju.
-// STATUS: FIXED (Koristi Tenant ID iz Custom Claims)
+// VERSION: 2.0 - camelCase Migration
+// DATE: 2026-01-09
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,7 +11,7 @@ class CleaningService {
       FirebaseFirestore.instance.collection('cleaning_logs');
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 🆕 HELPER: Dohvaća Tenant ID iz Custom Claims
+  // HELPER: Dohvaća Tenant ID iz Custom Claims
   Future<String?> _getTenantId() async {
     final user = _auth.currentUser;
     if (user == null) return null;
@@ -22,10 +22,6 @@ class CleaningService {
 
   // 1. SPREMI NOVI IZVJEŠTAJ (Zove čistačica)
   Future<void> saveCleaningLog(CleaningLog log) async {
-    // Čak i ako čistačica nije ulogirana kao Owner, log mora imati OwnerID.
-    // Ovdje pretpostavljamo da je log objekt već ispravno popunjen ownerId-om
-    // (kojeg ćemo dohvatiti iz Unit modela pri loginu čistačice).
-
     await _logsRef.add(log.toMap());
   }
 
@@ -38,10 +34,10 @@ class CleaningService {
     }
 
     yield* _logsRef
-        .where('ownerId', isEqualTo: tenantId) // ✅ Tenant ID
-        .where('unit_id', isEqualTo: unitId)
+        .where('ownerId', isEqualTo: tenantId)
+        .where('unitId', isEqualTo: unitId)
         .orderBy('timestamp', descending: true)
-        .limit(20) // Ne treba nam povijest od prije 5 godina
+        .limit(20)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -52,14 +48,12 @@ class CleaningService {
 
   // 3. DOHVATI ZADNJI STATUS (Za Dashboard semafor)
   Future<CleaningLog?> getLastLog(String unitId) async {
-    // Ovdje ne možemo ovisiti o Auth.currentUser ako ovo zovemo s javnog dijela,
-    // ali za Dashboard (Owner) možemo.
     final tenantId = await _getTenantId();
     if (tenantId == null) return null;
 
     final snapshot = await _logsRef
-        .where('ownerId', isEqualTo: tenantId) // ✅ Tenant ID
-        .where('unit_id', isEqualTo: unitId)
+        .where('ownerId', isEqualTo: tenantId)
+        .where('unitId', isEqualTo: unitId)
         .orderBy('timestamp', descending: true)
         .limit(1)
         .get();

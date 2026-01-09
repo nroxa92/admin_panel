@@ -1,5 +1,6 @@
 // FILE: lib/models/cleaning_log_model.dart
-// STATUS: FIXED (Safe Boolean Map Parsing & Null-Safety)
+// VERSION: 2.0 - camelCase Migration
+// DATE: 2026-01-09
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -11,7 +12,7 @@ class CleaningLog {
   final DateTime timestamp;
   final Map<String, bool> tasksCompleted;
   final String notes;
-  final String status; // "completed", "inspection_needed"
+  final String status;
 
   CleaningLog({
     required this.id,
@@ -29,16 +30,11 @@ class CleaningLog {
 
     return CleaningLog(
       id: doc.id,
-      unitId: data['unit_id']?.toString() ?? '',
+      unitId: data['unitId']?.toString() ?? '',
       ownerId: data['ownerId']?.toString() ?? '',
-      cleanerName: data['cleaner_name']?.toString() ?? 'Staff',
-
-      // FIX: Sigurno parsiranje datuma
+      cleanerName: data['cleanerName']?.toString() ?? 'Staff',
       timestamp: _parseDate(data['timestamp']),
-
-      // FIX: Sigurno parsiranje Mape zadataka (sprječava crash na non-bool vrijednostima)
-      tasksCompleted: _parseTasks(data['tasks_completed']),
-
+      tasksCompleted: _parseTasks(data['tasksCompleted']),
       notes: data['notes']?.toString() ?? '',
       status: data['status']?.toString() ?? 'completed',
     );
@@ -46,17 +42,17 @@ class CleaningLog {
 
   Map<String, dynamic> toMap() {
     return {
-      'unit_id': unitId,
+      'unitId': unitId,
       'ownerId': ownerId,
-      'cleaner_name': cleanerName,
+      'cleanerName': cleanerName,
       'timestamp': Timestamp.fromDate(timestamp),
-      'tasks_completed': tasksCompleted,
+      'tasksCompleted': tasksCompleted,
       'notes': notes,
       'status': status,
     };
   }
 
-  // --- HELPERI ---
+  // --- HELPERS ---
 
   static DateTime _parseDate(dynamic val) {
     if (val == null) return DateTime.now();
@@ -75,11 +71,9 @@ class CleaningLog {
       try {
         final Map<String, bool> safeMap = {};
         val.forEach((k, v) {
-          // Osiguraj da je ključ String, a vrijednost Bool
           if (v is bool) {
             safeMap[k.toString()] = v;
           } else {
-            // Fallback za čudne podatke (npr. 1/0 ili stringovi)
             safeMap[k.toString()] = false;
           }
         });

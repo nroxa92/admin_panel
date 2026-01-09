@@ -1,5 +1,6 @@
 // FILE: lib/services/booking_service.dart
-// STATUS: UPDATED - Custom Booking ID format: {unitId}_{YYMMDD}_{guestName}
+// VERSION: 2.0 - camelCase Migration
+// DATE: 2026-01-09
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,22 +12,21 @@ class BookingService {
       FirebaseFirestore.instance.collection('bookings');
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 🆕 HELPER: Dohvaća Tenant ID iz Custom Claims
+  // HELPER: Dohvaća Tenant ID iz Custom Claims
   Future<String?> _getTenantId() async {
     final user = _auth.currentUser;
     if (user == null) return null;
 
-    // ✅ FORCE REFRESH tokena!
     final tokenResult = await user.getIdTokenResult(true);
     return tokenResult.claims?['ownerId'] as String?;
   }
 
-  // --- HELPER: Local Date Normalization (00:00:00 LOCAL) ---
+  // HELPER: Local Date Normalization (00:00:00 LOCAL)
   DateTime _normalizeDate(DateTime dt) {
-    return DateTime(dt.year, dt.month, dt.day); // LOCAL midnight!
+    return DateTime(dt.year, dt.month, dt.day);
   }
 
-  // 🆕 NOVO: Kombinira datum + vrijeme (String "HH:mm")
+  // HELPER: Kombinira datum + vrijeme (String "HH:mm")
   DateTime _combineDateAndTime(DateTime date, String time) {
     final parts = time.split(':');
     final hour = int.tryParse(parts[0]) ?? 15;
@@ -41,28 +41,22 @@ class BookingService {
     );
   }
 
-  // =====================================================
-  // 🆕 HELPER: Generira custom Booking ID
+  // HELPER: Generira custom Booking ID
   // Format: {unitId}_{YYMMDD}_{guestName}
-  // Primjer: IPZAPA01_250115_IvanPeric
-  // =====================================================
   String _generateBookingId(
       String unitId, DateTime startDate, String guestName) {
-    // Format datuma: YYMMDD
     final yy = (startDate.year % 100).toString().padLeft(2, '0');
     final mm = startDate.month.toString().padLeft(2, '0');
     final dd = startDate.day.toString().padLeft(2, '0');
     final dateStr = '$yy$mm$dd';
 
-    // Očisti ime gosta: ukloni razmake, dijakritike i specijalne znakove
     final cleanName = _sanitizeName(guestName);
 
     return '${unitId}_${dateStr}_$cleanName';
   }
 
-  // 🆕 HELPER: Čisti ime (uklanja dijakritike, razmake, specijalne znakove)
+  // HELPER: Čisti ime (uklanja dijakritike, razmake, specijalne znakove)
   String _sanitizeName(String name) {
-    // Mapa dijakritika
     const diacritics = {
       'č': 'c',
       'ć': 'c',
@@ -109,37 +103,30 @@ class BookingService {
 
     String result = name;
 
-    // Zamijeni dijakritike
     diacritics.forEach((from, to) {
       result = result.replaceAll(from, to);
     });
 
-    // Ukloni sve što nije slovo ili broj, pretvori razmake u ništa
     result = result.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
 
     return result;
   }
 
-  // =====================================================
-  // 🆕 HELPER: Provjeri postoji li ID, ako da dodaj suffix
-  // =====================================================
+  // HELPER: Provjeri postoji li ID, ako da dodaj suffix
   Future<String> _getUniqueBookingId(String baseId) async {
-    // Provjeri postoji li već
     try {
       final doc = await _bookingRef.doc(baseId).get();
       if (!doc.exists) {
         return baseId;
       }
     } catch (e) {
-      // Ako je permission denied (dokument ne postoji), ID je slobodan
       debugPrint(
           '🔍 _getUniqueBookingId - doc check failed (probably doesnt exist): $e');
       return baseId;
     }
 
-    // Ako postoji, dodaj suffix (a, b, c...)
     for (int i = 0; i < 26; i++) {
-      final suffix = String.fromCharCode(97 + i); // a, b, c...
+      final suffix = String.fromCharCode(97 + i);
       final newId = '${baseId}_$suffix';
       try {
         final checkDoc = await _bookingRef.doc(newId).get();
@@ -147,12 +134,10 @@ class BookingService {
           return newId;
         }
       } catch (e) {
-        // Permission denied = dokument ne postoji = ID slobodan
         return newId;
       }
     }
 
-    // Fallback: dodaj timestamp
     return '${baseId}_${DateTime.now().millisecondsSinceEpoch}';
   }
 
@@ -165,8 +150,8 @@ class BookingService {
     }
 
     yield* _bookingRef
-        .where('ownerId', isEqualTo: tenantId) // ✅ Tenant ID
-        .orderBy('start_date', descending: false)
+        .where('ownerId', isEqualTo: tenantId)
+        .orderBy('startDate', descending: false)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) => Booking.fromFirestore(doc)).toList();
@@ -178,7 +163,6 @@ class BookingService {
     final tenantId = await _getTenantId();
     if (tenantId == null) return false;
 
-    // 🆕 Kombiniramo datum + vrijeme
     final newStart = _combineDateAndTime(
       _normalizeDate(newBooking.startDate),
       newBooking.checkInTime,
@@ -188,20 +172,17 @@ class BookingService {
       newBooking.checkOutTime,
     );
 
-    // Dohvati postojeće rezervacije za taj Unit
     try {
       final querySnapshot = await _bookingRef
-          .where('ownerId', isEqualTo: tenantId) // ✅ Tenant ID
-          .where('unit_id', isEqualTo: newBooking.unitId)
+          .where('ownerId', isEqualTo: tenantId)
+          .where('unitId', isEqualTo: newBooking.unitId)
           .get();
 
       for (var doc in querySnapshot.docs) {
         final existingBooking = Booking.fromFirestore(doc);
 
-        // Preskoči samog sebe (edit mode)
         if (existingBooking.id == newBooking.id) continue;
 
-        // 🆕 Kombiniraj datum + vrijeme za postojeći booking
         final exStart = _combineDateAndTime(
           _normalizeDate(existingBooking.startDate),
           existingBooking.checkInTime,
@@ -211,30 +192,26 @@ class BookingService {
           existingBooking.checkOutTime,
         );
 
-        // --- LOGIKA PREKLAPANJA (do minute!) ---
         bool overlap = newStart.isBefore(exEnd) && newEnd.isAfter(exStart);
 
         if (overlap) {
-          return true; // Preklapanje!
+          return true;
         }
       }
     } catch (e) {
       debugPrint('⚠️ checkOverlap - query failed: $e');
-      // Ako ne možemo provjeriti, pretpostavljamo da nema preklapanja
-      // (bolje dozvoliti nego blokirati zbog permission errora)
     }
 
-    return false; // Sve čisto
+    return false;
   }
 
   // 3. DODAJ NOVU REZERVACIJU
   Future<void> addBooking(Booking booking) async {
     final tenantId = await _getTenantId();
 
-    // 🔍 DETAILED DEBUG
     final user = _auth.currentUser;
     if (user != null) {
-      final tokenResult = await user.getIdTokenResult(true); // Force refresh!
+      final tokenResult = await user.getIdTokenResult(true);
       debugPrint('🔍 addBooking - User UID: ${user.uid}');
       debugPrint('🔍 addBooking - User Email: ${user.email}');
       debugPrint('🔍 addBooking - Token Claims: ${tokenResult.claims}');
@@ -251,7 +228,6 @@ class BookingService {
       throw Exception('Not authenticated or missing ownerId claim');
     }
 
-    // 1. Provjera preklapanja
     debugPrint('🔍 addBooking - Step 1: checking overlap...');
     bool hasOverlap = await checkOverlap(booking);
     debugPrint('🔍 addBooking - Step 1: overlap = $hasOverlap');
@@ -259,7 +235,6 @@ class BookingService {
       throw Exception("Unit is occupied during selected time.");
     }
 
-    // 2. Priprema podataka
     debugPrint('🔍 addBooking - Step 2: preparing dates...');
     final startWithTime = _combineDateAndTime(
       _normalizeDate(booking.startDate),
@@ -270,7 +245,6 @@ class BookingService {
       booking.checkOutTime,
     );
 
-    // 🆕 3. Generiraj custom ID
     debugPrint('🔍 addBooking - Step 3: generating ID...');
     final baseId = _generateBookingId(
       booking.unitId,
@@ -280,10 +254,9 @@ class BookingService {
     final bookingId = await _getUniqueBookingId(baseId);
     debugPrint('🔍 addBooking - Step 3: bookingId = $bookingId');
 
-    // Kreiraj novi booking sa pravim datumima
     final bookingToSave = Booking(
-      id: bookingId, // 🆕 Custom ID
-      ownerId: tenantId, // ✅ Tenant ID
+      id: bookingId,
+      ownerId: tenantId,
       unitId: booking.unitId,
       guestName: booking.guestName,
       startDate: startWithTime,
@@ -299,7 +272,6 @@ class BookingService {
     debugPrint('🔍 addBooking - Step 4: saving to Firestore...');
     debugPrint('🔍 addBooking - Document data: ${bookingToSave.toMap()}');
 
-    // 🆕 Koristi .doc(id).set() umjesto .add()
     try {
       await _bookingRef.doc(bookingId).set(bookingToSave.toMap());
       debugPrint('✅ addBooking - SUCCESS');
@@ -314,13 +286,11 @@ class BookingService {
     final tenantId = await _getTenantId();
     if (tenantId == null) return;
 
-    // 1. Provjera preklapanja
     bool hasOverlap = await checkOverlap(booking);
     if (hasOverlap) {
       throw Exception("Unit is occupied during selected time.");
     }
 
-    // 2. 🆕 Kombiniraj datum + vrijeme
     final startWithTime = _combineDateAndTime(
       _normalizeDate(booking.startDate),
       booking.checkInTime,
@@ -332,7 +302,7 @@ class BookingService {
 
     final bookingToSave = Booking(
       id: booking.id,
-      ownerId: tenantId, // ✅ Tenant ID
+      ownerId: tenantId,
       unitId: booking.unitId,
       guestName: booking.guestName,
       startDate: startWithTime,
@@ -355,7 +325,7 @@ class BookingService {
 
   // 6. OZNAČI KAO SKENIRANO
   Future<void> setScannedStatus(String bookingId, bool isScanned) async {
-    await _bookingRef.doc(bookingId).update({'is_scanned': isScanned});
+    await _bookingRef.doc(bookingId).update({'isScanned': isScanned});
   }
 
   // 7. DOHVATI GOSTE (Za PDF liste)
