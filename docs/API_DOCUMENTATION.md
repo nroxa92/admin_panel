@@ -1,525 +1,926 @@
-# VLS Cloud Functions API Documentation
-## Version: 5.0.0 - Phase 3
+# 📡 VillaOS API Documentation
 
-Base URL: `https://europe-west3-vls-admin.cloudfunctions.net`
+## ⚠️ LEGAL NOTICE
+
+```
+═══════════════════════════════════════════════════════════════════════════════
+                              PROPRIETARY SOFTWARE
+═══════════════════════════════════════════════════════════════════════════════
+
+This software and its API are PROPRIETARY and protected by copyright law.
+
+🔒 STRICTLY PROHIBITED:
+   • Copying, reproduction or distribution of code
+   • Reverse engineering or decompilation
+   • Commercial use without written permission
+   • Sharing access credentials or API keys
+   • Unauthorized API access or scraping
+
+⚖️ LEGAL CONSEQUENCES:
+   Unauthorized copying or use of this software is subject to:
+   • Civil liability for damages
+   • Criminal prosecution under Copyright Law
+   • Trade secret violation liability
+
+© 2024-2025 All rights reserved.
+═══════════════════════════════════════════════════════════════════════════════
+```
 
 ---
 
-## Authentication
+## 📋 Table of Contents
 
-All endpoints require Firebase Authentication. Include the Firebase ID token in requests.
-
-### Roles
-- **Super Admin**: Full system access (managed via `super_admins` collection)
-- **Owner**: Property owner with access to their own data
-- **Tablet**: Device authentication for guest check-in kiosks
+1. [Overview](#overview)
+2. [Authentication](#authentication)
+3. [Cloud Functions API](#cloud-functions-api)
+4. [Firestore Data Models](#firestore-data-models)
+5. [API Versioning](#api-versioning)
+6. [Error Handling](#error-handling)
+7. [Rate Limiting](#rate-limiting)
 
 ---
 
-## Owner Management (Super Admin Only)
+## 🎯 Overview
 
-### Create Owner
-Creates a new property owner account.
+VillaOS API is built on Firebase Cloud Functions with the following characteristics:
 
-**Endpoint:** `createOwner`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
+| Property | Value |
+|----------|-------|
+| **Runtime** | Node.js 20 |
+| **Region** | europe-west1 (default) |
+| **Auth Method** | Firebase Auth + Custom Claims |
+| **Current Version** | v2 (Phase 4) |
+| **Total Functions** | 20 |
 
-**Request:**
-```json
+### API Categories
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     CLOUD FUNCTIONS CATEGORIES                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  👤 OWNER MANAGEMENT (6)     │  🔄 TRANSLATION (2)                   │
+│  • createOwner               │  • translateHouseRules                │
+│  • linkTenantId              │  • translateNotification              │
+│  • listOwners                │                                       │
+│  • deleteOwner               │  📱 TABLET MANAGEMENT (2)             │
+│  • resetOwnerPassword        │  • registerTablet                     │
+│  • toggleOwnerStatus         │  • tabletHeartbeat                    │
+│                              │                                       │
+│  👨‍💼 SUPER ADMIN (4)          │  📧 EMAIL NOTIFICATIONS (4)          │
+│  • addSuperAdmin             │  • sendEmailNotification              │
+│  • removeSuperAdmin          │  • onBookingCreated                   │
+│  • listSuperAdmins           │  • sendCheckInReminders               │
+│  • getAdminLogs              │  • updateEmailSettings                │
+│                              │                                       │
+│  💾 BACKUP (2)               │                                       │
+│  • scheduledBackup           │                                       │
+│  • manualBackup              │                                       │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔐 Authentication
+
+### Firebase Auth + Custom Claims
+
+All API calls require Firebase Authentication with JWT tokens containing custom claims:
+
+```javascript
+// JWT Token Structure
 {
-  "email": "owner@example.com",
-  "password": "securePassword123",
-  "tenantId": "ABC123",
-  "displayName": "John Doe"
+  "uid": "firebase-user-id",
+  "email": "user@example.com",
+  "email_verified": true,
+  
+  // Custom Claims (set by Cloud Functions)
+  "ownerId": "tenant-uuid",        // Tenant isolation key
+  "role": "owner" | "superadmin" | "tablet",
+  
+  // Standard claims
+  "iat": 1704067200,
+  "exp": 1704070800
 }
 ```
 
-**Response:**
-```json
+### Role Hierarchy
+
+| Role | Access Level | Description |
+|------|--------------|-------------|
+| `superadmin` | Full system access | Can manage all tenants |
+| `owner` | Tenant-scoped | Only own data (units, bookings, etc.) |
+| `tablet` | Limited write | Check-in, cleaning logs, signatures |
+
+### Authentication Flow
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    AUTHENTICATION FLOW                            │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. CLIENT                                                        │
+│     └─→ signInWithEmailAndPassword(email, password)               │
+│                                                                   │
+│  2. FIREBASE AUTH                                                 │
+│     └─→ Returns ID Token with custom claims                       │
+│                                                                   │
+│  3. CLIENT                                                        │
+│     └─→ Attach token to Cloud Function call                       │
+│         httpsCallable('functionName').call(data)                  │
+│                                                                   │
+│  4. CLOUD FUNCTION                                                │
+│     └─→ Verify token: context.auth.token                          │
+│     └─→ Check claims: token.ownerId, token.role                   │
+│     └─→ Process request or reject                                 │
+│                                                                   │
+│  5. FIRESTORE                                                     │
+│     └─→ Security rules validate token.ownerId                     │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚡ Cloud Functions API
+
+### 1. Owner Management
+
+#### `createOwner`
+
+Creates a new owner (tenant) account.
+
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
 {
-  "success": true,
-  "tenantId": "ABC123",
-  "firebaseUid": "uid_xxx",
-  "email": "owner@example.com",
-  "message": "Owner created. They must login and enter tenant ID to activate."
+  email: "owner@example.com",
+  displayName: "Villa Owner Name",
+  password: "securePassword123"
+}
+
+// Response
+{
+  success: true,
+  ownerId: "generated-tenant-uuid",
+  message: "Owner created successfully"
 }
 ```
 
 **Errors:**
-- `Unauthorized - Super Admin only`: Caller is not a super admin
-- `Missing required fields`: email, password, or tenantId not provided
-- `Invalid tenant ID format`: tenantId must be 6-12 uppercase alphanumeric
-- `Tenant ID already exists`: tenantId is already in use
+| Code | Message |
+|------|---------|
+| `permission-denied` | Caller is not a super admin |
+| `already-exists` | Email already registered |
+| `invalid-argument` | Missing required fields |
 
 ---
 
-### List Owners
-Returns all registered property owners.
+#### `linkTenantId`
 
-**Endpoint:** `listOwners`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
+Links a tenant ID to an existing Firebase Auth user.
 
-**Response:**
-```json
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
 {
-  "success": true,
-  "owners": [
+  uid: "firebase-auth-uid",
+  tenantId: "tenant-uuid"
+}
+
+// Response
+{
+  success: true,
+  message: "Tenant ID linked successfully"
+}
+```
+
+---
+
+#### `listOwners`
+
+Returns all registered owners.
+
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
+{} // No parameters
+
+// Response
+{
+  owners: [
     {
-      "tenantId": "ABC123",
-      "email": "owner@example.com",
-      "displayName": "John Doe",
-      "firebaseUid": "uid_xxx",
-      "status": "active",
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "createdBy": "admin@example.com",
-      "linkedAt": "2024-01-15T11:00:00.000Z"
-    }
-  ]
-}
-```
-
----
-
-### Delete Owner
-Permanently removes an owner and their associated data.
-
-**Endpoint:** `deleteOwner`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
-
-**Request:**
-```json
-{
-  "tenantId": "ABC123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Owner deleted successfully",
-  "tenantId": "ABC123"
-}
-```
-
----
-
-### Reset Owner Password
-Resets an owner's password.
-
-**Endpoint:** `resetOwnerPassword`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
-
-**Request:**
-```json
-{
-  "tenantId": "ABC123",
-  "newPassword": "newSecurePassword456"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Password reset successfully",
-  "tenantId": "ABC123"
-}
-```
-
----
-
-### Toggle Owner Status
-Activates or suspends an owner account.
-
-**Endpoint:** `toggleOwnerStatus`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
-
-**Request:**
-```json
-{
-  "tenantId": "ABC123",
-  "status": "suspended"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Owner suspended",
-  "tenantId": "ABC123",
-  "status": "suspended"
-}
-```
-
-**Valid status values:** `active`, `suspended`
-
----
-
-## Tenant Linking
-
-### Link Tenant ID
-Links a Firebase user to their tenant account.
-
-**Endpoint:** `linkTenantId`  
-**Method:** `onCall`  
-**Auth:** Any authenticated user
-
-**Request:**
-```json
-{
-  "tenantId": "ABC123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "tenantId": "ABC123",
-  "message": "Account activated successfully!"
-}
-```
-
-**Errors:**
-- `Tenant ID not found`: No matching tenant record
-- `Tenant ID does not match your email`: Email mismatch
-- `Your account has been suspended`: Account is suspended
-
----
-
-## Super Admin Management (Primary Admin Only)
-
-### Add Super Admin
-Adds a new super admin. Only the primary admin can perform this action.
-
-**Endpoint:** `addSuperAdmin`  
-**Method:** `onCall`  
-**Auth:** Primary Admin only (vestaluminasystem@gmail.com)
-
-**Request:**
-```json
-{
-  "email": "newadmin@example.com",
-  "displayName": "Admin Name"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Super Admin newadmin@example.com added successfully"
-}
-```
-
----
-
-### Remove Super Admin
-Removes a super admin. Cannot remove the primary admin.
-
-**Endpoint:** `removeSuperAdmin`  
-**Method:** `onCall`  
-**Auth:** Primary Admin only
-
-**Request:**
-```json
-{
-  "email": "admin@example.com"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Super Admin admin@example.com removed successfully"
-}
-```
-
----
-
-### List Super Admins
-Returns all super admins.
-
-**Endpoint:** `listSuperAdmins`  
-**Method:** `onCall`  
-**Auth:** Any Super Admin
-
-**Response:**
-```json
-{
-  "success": true,
-  "admins": [
-    {
-      "email": "vestaluminasystem@gmail.com",
-      "displayName": "Primary Admin",
-      "active": true,
-      "addedAt": null,
-      "addedBy": "system"
+      uid: "user-uid-1",
+      email: "owner1@example.com",
+      displayName: "Owner 1",
+      ownerId: "tenant-uuid-1",
+      status: "active",
+      createdAt: "2024-01-01T00:00:00Z"
     },
-    {
-      "email": "admin@example.com",
-      "displayName": "Secondary Admin",
-      "active": true,
-      "addedAt": "2024-01-20T08:00:00.000Z",
-      "addedBy": "vestaluminasystem@gmail.com"
-    }
+    // ... more owners
   ]
 }
 ```
 
 ---
 
-## Translation
+#### `deleteOwner`
 
-### Translate House Rules
-Translates house rules to multiple languages using AI.
+Deletes an owner account and optionally their data.
 
-**Endpoint:** `translateHouseRules`  
-**Method:** `onCall`  
-**Auth:** Any authenticated owner
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
 
-**Request:**
-```json
+```javascript
+// Request
 {
-  "text": "No smoking allowed. Quiet hours from 10 PM to 8 AM.",
-  "sourceLang": "en",
-  "targetLangs": ["hr", "de", "it"]
+  uid: "firebase-auth-uid",
+  deleteData: true  // Optional: delete all tenant data
+}
+
+// Response
+{
+  success: true,
+  message: "Owner deleted successfully"
 }
 ```
 
-**Response:**
-```json
+---
+
+#### `resetOwnerPassword`
+
+Sends password reset email to owner.
+
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
 {
-  "success": true,
-  "translations": {
-    "hr": "Zabranjeno pušenje. Tihe sate od 22:00 do 08:00.",
-    "de": "Rauchen verboten. Ruhezeiten von 22:00 bis 08:00 Uhr.",
-    "it": "Vietato fumare. Ore di silenzio dalle 22:00 alle 08:00."
+  email: "owner@example.com"
+}
+
+// Response
+{
+  success: true,
+  message: "Password reset email sent"
+}
+```
+
+---
+
+#### `toggleOwnerStatus`
+
+Enables or disables an owner account.
+
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
+{
+  uid: "firebase-auth-uid",
+  disabled: true  // true = disable, false = enable
+}
+
+// Response
+{
+  success: true,
+  status: "disabled"
+}
+```
+
+---
+
+### 2. Translation
+
+#### `translateHouseRules`
+
+Translates house rules to all supported languages using Gemini AI.
+
+**Trigger:** `onCall`  
+**Authorization:** Owner or Super Admin  
+**Secret:** `GEMINI_API_KEY`
+
+```javascript
+// Request
+{
+  ownerId: "tenant-uuid",
+  sourceLanguage: "en",
+  sourceText: "No smoking inside the property..."
+}
+
+// Response
+{
+  success: true,
+  translations: {
+    en: "No smoking inside the property...",
+    hr: "Zabranjeno pušenje unutar objekta...",
+    de: "Rauchen ist im Objekt verboten...",
+    it: "Vietato fumare all'interno...",
+    // ... 11 languages total
   }
 }
 ```
 
+**Supported Languages:**
+`en`, `hr`, `sk`, `cs`, `de`, `it`, `es`, `fr`, `pl`, `hu`, `sl`
+
 ---
 
-### Translate Notification
-Translates system notifications (Super Admin only).
+#### `translateNotification`
 
-**Endpoint:** `translateNotification`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
+Translates a notification message to specified language.
 
-**Request:**
-```json
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
 {
-  "text": "System maintenance scheduled",
-  "sourceLanguage": "en",
-  "targetLanguages": ["hr", "de"]
+  text: "System maintenance scheduled",
+  targetLanguage: "hr"
 }
-```
 
-**Response:**
-```json
+// Response
 {
-  "translations": {
-    "en": "System maintenance scheduled",
-    "hr": "Zakazano održavanje sustava",
-    "de": "Systemwartung geplant"
-  }
+  success: true,
+  translation: "Zakazano održavanje sustava"
 }
 ```
 
 ---
 
-## Tablet Management
+### 3. Tablet Management
 
-### Register Tablet
-Registers a new tablet device for a unit.
+#### `registerTablet`
 
-**Endpoint:** `registerTablet`  
-**Method:** `onCall`  
-**Auth:** Any (uses tenantId from request)
+Registers a new tablet device for an owner.
 
-**Request:**
-```json
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
 {
-  "tenantId": "ABC123",
-  "unitId": "unit_xxx"
+  ownerId: "tenant-uuid",
+  unitId: "unit-uuid",
+  deviceId: "android-device-id"
 }
-```
 
-**Response:**
-```json
+// Response
 {
-  "success": true,
-  "tabletId": "tablet_xxx",
-  "firebaseUid": "uid_xxx",
-  "customToken": "eyJhbGciOiJS...",
-  "message": "Tablet registered successfully!"
-}
-```
-
----
-
-### Tablet Heartbeat
-Reports tablet status and checks for updates.
-
-**Endpoint:** `tabletHeartbeat`  
-**Method:** `onCall`  
-**Auth:** Tablet role only
-
-**Request:**
-```json
-{
-  "appVersion": "1.2.0",
-  "batteryLevel": 85,
-  "isCharging": true,
-  "updateStatus": "idle"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "pendingUpdate": false,
-  "pendingVersion": "",
-  "pendingApkUrl": "",
-  "forceUpdate": false
+  success: true,
+  tabletId: "generated-tablet-id",
+  authToken: "tablet-auth-token"
 }
 ```
 
 ---
 
-## Backup (Super Admin Only)
+#### `tabletHeartbeat`
 
-### Manual Backup
-Triggers an immediate backup of all collections.
+Records tablet health status and last seen time.
 
-**Endpoint:** `manualBackup`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
+**Trigger:** `onCall`  
+**Authorization:** Tablet role only
 
-**Response:**
-```json
+```javascript
+// Request
 {
-  "success": true,
-  "backupId": "manual_2024-01-20T10-30-00-000Z",
-  "totalDocuments": 1250,
-  "message": "Backup completed successfully"
+  tabletId: "tablet-uuid",
+  appVersion: "1.2.3",
+  batteryLevel: 85,
+  isCharging: true
+}
+
+// Response
+{
+  success: true,
+  serverTime: "2024-01-01T12:00:00Z",
+  updateAvailable: false
 }
 ```
 
 ---
 
-### Scheduled Backup
-Automatically runs daily at 3:00 AM (Europe/Zagreb timezone).
+### 4. Super Admin Functions
 
-**Endpoint:** `scheduledBackup`  
-**Method:** `onSchedule`  
-**Schedule:** `0 3 * * *`
+#### `addSuperAdmin`
 
-**Behavior:**
-- Backs up: `tenant_links`, `settings`, `units`, `bookings`, `tablets`, `super_admins`
-- Stores metadata in `backups` collection
-- Stores data if < 1MB
-- Cleans up backups older than 30 days
+Adds a new super admin user.
 
----
+**Trigger:** `onCall`  
+**Authorization:** Primary Super Admin only (`vestaluminasystem@gmail.com`)
 
-## Admin Logs
-
-### Get Admin Logs
-Returns admin activity logs.
-
-**Endpoint:** `getAdminLogs`  
-**Method:** `onCall`  
-**Auth:** Super Admin only
-
-**Request:**
-```json
+```javascript
+// Request
 {
-  "limit": 100
+  email: "newadmin@example.com"
+}
+
+// Response
+{
+  success: true,
+  message: "Super admin added"
 }
 ```
 
-**Response:**
-```json
+---
+
+#### `removeSuperAdmin`
+
+Removes a super admin user.
+
+**Trigger:** `onCall`  
+**Authorization:** Primary Super Admin only
+
+```javascript
+// Request
 {
-  "success": true,
-  "logs": [
+  email: "admin@example.com"
+}
+
+// Response
+{
+  success: true,
+  message: "Super admin removed"
+}
+```
+
+---
+
+#### `listSuperAdmins`
+
+Lists all super admin users.
+
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Response
+{
+  admins: [
     {
-      "id": "log_xxx",
-      "adminEmail": "admin@example.com",
-      "action": "CREATE_OWNER",
-      "details": {
-        "tenantId": "ABC123",
-        "ownerEmail": "owner@example.com"
-      },
-      "timestamp": "2024-01-20T10:30:00.000Z"
-    }
+      email: "vestaluminasystem@gmail.com",
+      addedAt: "2024-01-01T00:00:00Z",
+      primary: true
+    },
+    // ... more admins
   ]
 }
 ```
 
-**Logged Actions:**
-- `CREATE_OWNER`
-- `DELETE_OWNER`
-- `RESET_PASSWORD`
-- `TOGGLE_STATUS`
-- `ADD_SUPER_ADMIN`
-- `REMOVE_SUPER_ADMIN`
-- `MANUAL_BACKUP`
-
 ---
 
-## Error Handling
+#### `getAdminLogs`
 
-All endpoints return errors in the following format:
+Retrieves admin action audit logs.
 
-```json
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
 {
-  "code": "functions/invalid-argument",
-  "message": "Error description"
+  limit: 100,
+  startAfter: "last-log-id"  // Optional pagination
+}
+
+// Response
+{
+  logs: [
+    {
+      id: "log-id",
+      adminEmail: "admin@example.com",
+      action: "createOwner",
+      details: { email: "newowner@example.com" },
+      timestamp: "2024-01-01T12:00:00Z"
+    },
+    // ... more logs
+  ]
 }
 ```
 
-Common error codes:
-- `unauthenticated`: No valid authentication token
-- `permission-denied`: Insufficient permissions
-- `invalid-argument`: Invalid request parameters
-- `not-found`: Resource not found
-- `already-exists`: Resource already exists
-- `internal`: Internal server error
+---
+
+### 5. Backup Functions
+
+#### `scheduledBackup`
+
+Automatic daily backup of all Firestore data.
+
+**Trigger:** `onSchedule` - Daily at 03:00 UTC  
+**Authorization:** System (automated)
+
+```javascript
+// No request parameters - runs automatically
+
+// Creates backup document in /backups collection
+{
+  id: "backup-2024-01-01",
+  timestamp: "2024-01-01T03:00:00Z",
+  collections: ["units", "bookings", "settings", ...],
+  status: "completed",
+  size: "45MB"
+}
+```
 
 ---
 
-## Rate Limits
+#### `manualBackup`
 
-- **Translation endpoints**: 10 requests per minute per user
-- **Backup endpoints**: 1 request per 5 minutes
-- **Other endpoints**: 100 requests per minute per user
+Triggers immediate backup.
+
+**Trigger:** `onCall`  
+**Authorization:** Super Admin only
+
+```javascript
+// Request
+{
+  collections: ["units", "bookings"]  // Optional: specific collections
+}
+
+// Response
+{
+  success: true,
+  backupId: "backup-manual-uuid"
+}
+```
 
 ---
 
-## Changelog
+### 6. Email Notifications
 
-### Version 5.0.0 (Phase 3)
-- Added multiple super admin support
-- Added automatic scheduled backups
-- Added manual backup endpoint
-- Added admin activity logging
-- Updated all super admin checks to use Firestore
+#### `sendEmailNotification`
 
-### Version 4.0.0 (Phase 2)
-- Initial production release
-- 10 core Cloud Functions
-- Tablet management
-- AI translation
+Sends email notification to owner or guest.
+
+**Trigger:** `onCall`  
+**Authorization:** Owner or Super Admin  
+**Secrets:** `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`
+
+```javascript
+// Request
+{
+  to: "guest@example.com",
+  subject: "Booking Confirmation",
+  template: "booking_confirmation",
+  data: {
+    guestName: "John Doe",
+    checkIn: "2024-06-15",
+    checkOut: "2024-06-20",
+    unitName: "Villa Sunset"
+  }
+}
+
+// Response
+{
+  success: true,
+  messageId: "smtp-message-id"
+}
+```
+
+---
+
+#### `onBookingCreated`
+
+Triggered when new booking is created in Firestore.
+
+**Trigger:** `onDocumentCreated` - `/bookings/{bookingId}`  
+**Authorization:** System (automatic)
+
+```javascript
+// Automatic actions:
+// 1. Send confirmation email to owner
+// 2. Log booking creation
+// 3. Update analytics counters
+```
+
+---
+
+#### `sendCheckInReminders`
+
+Sends check-in reminder emails to guests.
+
+**Trigger:** `onSchedule` - Daily at 09:00 UTC  
+**Authorization:** System (automated)
+
+```javascript
+// Checks all bookings with checkIn = today + 1 day
+// Sends reminder email to guests with email on file
+```
+
+---
+
+#### `updateEmailSettings`
+
+Updates owner's email notification settings.
+
+**Trigger:** `onCall`  
+**Authorization:** Owner only
+
+```javascript
+// Request
+{
+  contactEmail: "owner@example.com",
+  emailNotifications: true,
+  reminderDaysBefore: 1
+}
+
+// Response
+{
+  success: true,
+  message: "Email settings updated"
+}
+```
+
+---
+
+## 📊 Firestore Data Models
+
+### Units Collection
+
+```typescript
+interface Unit {
+  id: string;
+  ownerId: string;          // Tenant isolation key
+  name: string;
+  address: string;
+  zone?: string;
+  wifiSSID?: string;
+  wifiPassword?: string;
+  cleanerPIN?: string;
+  reviewLink?: string;
+  status: 'active' | 'inactive';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+### Bookings Collection
+
+```typescript
+interface Booking {
+  id: string;
+  ownerId: string;          // Tenant isolation key
+  unitId: string;
+  guestName: string;
+  guestCount: number;
+  startDate: Timestamp;     // Check-in date
+  endDate: Timestamp;       // Check-out date
+  status: 'confirmed' | 'cancelled' | 'pending' | 'private';
+  notes?: string;
+  totalPrice?: number;
+  currency?: string;
+  source?: string;          // Booking source (Airbnb, Booking.com, Direct)
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Subcollection: /bookings/{bookingId}/guests
+interface Guest {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: Timestamp;
+  nationality?: string;
+  documentType?: string;
+  documentNumber?: string;
+  scannedAt?: Timestamp;
+}
+```
+
+### Settings Collection
+
+```typescript
+interface Settings {
+  ownerId: string;          // Document ID = ownerId
+  
+  // Personalization
+  language: string;         // 'en', 'hr', 'de', etc.
+  primaryColor: string;     // Hex color code
+  backgroundTone: string;
+  
+  // PINs
+  cleanerPIN?: string;
+  resetPIN?: string;
+  
+  // House Rules (multi-language)
+  houseRules: {
+    en?: string;
+    hr?: string;
+    de?: string;
+    // ... other languages
+  };
+  
+  // Cleaner Checklist
+  cleanerChecklist: string[];
+  
+  // AI Knowledge Base
+  aiKnowledge: {
+    concierge?: string;
+    housekeeper?: string;
+    tech?: string;
+    guide?: string;
+  };
+  
+  // Email Settings
+  contactEmail?: string;
+  ownerFirstName?: string;
+  ownerLastName?: string;
+  companyName?: string;
+  emailNotifications: boolean;
+}
+```
+
+### Cleaning Logs Collection
+
+```typescript
+interface CleaningLog {
+  id: string;
+  ownerId: string;
+  unitId: string;
+  cleanerName?: string;
+  status: 'needs_cleaning' | 'in_progress' | 'completed';
+  timestamp: Timestamp;
+  notes?: string;
+  photoUrls?: string[];
+}
+```
+
+### Tablets Collection
+
+```typescript
+interface Tablet {
+  id: string;
+  ownerId: string;
+  unitId: string;
+  deviceId: string;
+  appVersion: string;
+  lastHeartbeat: Timestamp;
+  batteryLevel?: number;
+  isOnline: boolean;
+  registeredAt: Timestamp;
+}
+```
+
+---
+
+## 🔄 API Versioning
+
+### Current Version: v2
+
+```javascript
+// functions/api_versioning.js
+const API_CONFIG = {
+  currentVersion: "v2",
+  supportedVersions: ["v1", "v2"],
+  deprecatedVersions: ["v1"],
+  sunsetDate: {
+    v1: "2025-06-01"
+  }
+};
+```
+
+### Version Headers
+
+```http
+X-API-Version: v2
+X-API-Deprecated: false
+```
+
+### Migration Guide
+
+| v1 Feature | v2 Replacement |
+|------------|----------------|
+| Array-based guests | Subcollection guests |
+| Single language rules | Multi-language houseRules |
+| No revenue tracking | Full revenue analytics |
+
+---
+
+## ⚠️ Error Handling
+
+### Standard Error Response
+
+```typescript
+interface ErrorResponse {
+  code: string;
+  message: string;
+  details?: any;
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `unauthenticated` | 401 | No valid auth token |
+| `permission-denied` | 403 | Insufficient permissions |
+| `not-found` | 404 | Resource not found |
+| `already-exists` | 409 | Resource already exists |
+| `invalid-argument` | 400 | Invalid request parameters |
+| `resource-exhausted` | 429 | Rate limit exceeded |
+| `internal` | 500 | Server error |
+
+### Error Handling Example
+
+```javascript
+try {
+  const result = await httpsCallable(functions, 'createOwner')(data);
+  console.log('Success:', result.data);
+} catch (error) {
+  if (error.code === 'functions/permission-denied') {
+    console.error('You are not authorized');
+  } else if (error.code === 'functions/already-exists') {
+    console.error('Email already registered');
+  } else {
+    console.error('Unknown error:', error.message);
+  }
+}
+```
+
+---
+
+## 🚦 Rate Limiting
+
+### Default Limits
+
+| Function Type | Limit |
+|---------------|-------|
+| `onCall` functions | 100 req/min per user |
+| `onDocumentCreated` | No limit (event-driven) |
+| `onSchedule` | Fixed schedule |
+
+### Quota Exceeded Response
+
+```javascript
+{
+  code: "resource-exhausted",
+  message: "Rate limit exceeded. Try again in 60 seconds."
+}
+```
+
+---
+
+## 📚 SDK Integration
+
+### Flutter/Dart
+
+```dart
+import 'package:cloud_functions/cloud_functions.dart';
+
+final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+
+Future<void> createOwner(String email, String name) async {
+  try {
+    final callable = functions.httpsCallable('createOwner');
+    final result = await callable.call({
+      'email': email,
+      'displayName': name,
+      'password': 'tempPassword123',
+    });
+    print('Owner created: ${result.data}');
+  } on FirebaseFunctionsException catch (e) {
+    print('Error: ${e.code} - ${e.message}');
+  }
+}
+```
+
+### JavaScript/Web
+
+```javascript
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+const functions = getFunctions(app, 'europe-west1');
+const createOwner = httpsCallable(functions, 'createOwner');
+
+try {
+  const result = await createOwner({
+    email: 'owner@example.com',
+    displayName: 'Villa Owner',
+    password: 'securePassword'
+  });
+  console.log('Success:', result.data);
+} catch (error) {
+  console.error('Error:', error.code, error.message);
+}
+```
+
+---
+
+```
+═══════════════════════════════════════════════════════════════════════════════
+                              © 2024-2025
+                         ALL RIGHTS RESERVED
+              UNAUTHORIZED COPYING IS LEGALLY PROSECUTED
+═══════════════════════════════════════════════════════════════════════════════
+```
