@@ -1,5 +1,5 @@
 // FILE: lib/screens/super_admin_screen.dart
-// VERSION: 3.1 - Fixed linter warnings
+// VERSION: 4.0 - Phase 4 with Email Notifications Toggle
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -67,6 +67,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
 
         int unitCount = 0;
         int bookingCount = 0;
+        bool emailNotifications = true; // Default true
+
         try {
           final unitsSnap = await _firestore
               .collection('units')
@@ -81,6 +83,14 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
               .get();
           bookingCount = bookingsSnap.size;
           totalBookings += bookingCount;
+
+          // Fetch email notifications setting
+          final settingsDoc =
+              await _firestore.collection('settings').doc(tenantId).get();
+          if (settingsDoc.exists) {
+            emailNotifications =
+                settingsDoc.data()?['emailNotifications'] ?? true;
+          }
         } catch (_) {}
 
         final status = data['status'] ?? 'pending';
@@ -97,6 +107,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
           'firebaseUid': data['firebaseUid'],
           'unitCount': unitCount,
           'bookingCount': bookingCount,
+          'emailNotifications': emailNotifications,
         });
       }
 
@@ -264,6 +275,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
                   _detailRow('Units', '${o['unitCount']}'),
                   _detailRow('Bookings', '${o['bookingCount']}'),
                   _detailRow('Created', _formatDate(o['createdAt'])),
+                  const Divider(color: Colors.grey, height: 24),
+                  _detailRow('Email Notifications',
+                      o['emailNotifications'] == true ? 'ON' : 'OFF',
+                      isEmail: true),
                 ]),
           ),
         ),
@@ -365,6 +380,77 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
             '${newStatus.toUpperCase()}_OWNER', tid, email, newStatus);
         if (mounted) {
           _showSnack('✅ $newStatus!', Colors.green);
+          _loadOwners();
+        }
+      } catch (e) {
+        if (mounted) _showError('Error: $e');
+      }
+    }
+  }
+
+  // ==================== EMAIL NOTIFICATIONS TOGGLE ====================
+  Future<void> _toggleEmailNotifications(
+      String tid, bool currentValue, String email) async {
+    final newValue = !currentValue;
+    final action = newValue ? 'Enable' : 'Disable';
+
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1E1E1E),
+              title: Text('$action Email Notifications?',
+                  style: const TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Tenant: $tid',
+                      style: const TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  Text(
+                    newValue
+                        ? '• Booking confirmations will be sent\n• Check-in reminders will be sent'
+                        : '• No booking confirmations\n• No check-in reminders',
+                    style: TextStyle(
+                      color: newValue ? Colors.green[300] : Colors.orange[300],
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel',
+                        style: TextStyle(color: Colors.grey))),
+                ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    icon: Icon(
+                        newValue
+                            ? Icons.notifications_active
+                            : Icons.notifications_off,
+                        size: 18),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            newValue ? Colors.green : Colors.orange),
+                    label: Text(action.toUpperCase())),
+              ],
+            ));
+
+    if (ok == true && mounted) {
+      try {
+        // Update directly in Firestore (settings collection)
+        await _firestore.collection('settings').doc(tid).update({
+          'emailNotifications': newValue,
+        });
+
+        await _logActivity('${action.toUpperCase()}_EMAIL_NOTIFICATIONS', tid,
+            email, 'Email notifications ${newValue ? 'enabled' : 'disabled'}');
+
+        if (mounted) {
+          _showSnack(
+              '✅ Email notifications ${newValue ? 'enabled' : 'disabled'}!',
+              Colors.green);
           _loadOwners();
         }
       } catch (e) {
@@ -532,7 +618,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
   }
 
   Widget _detailRow(String l, String v,
-      {bool isHighlight = false, bool isStatus = false, bool isMono = false}) {
+      {bool isHighlight = false,
+      bool isStatus = false,
+      bool isMono = false,
+      bool isEmail = false}) {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child:
@@ -540,6 +629,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
           Text(l, style: const TextStyle(color: Colors.grey)),
           if (isStatus)
             _statusBadge(v)
+          else if (isEmail)
+            _emailBadge(v == 'ON')
           else
             Flexible(
                 child: Text(v,
@@ -571,6 +662,27 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
         child: Text(s.toUpperCase(),
             style: TextStyle(
                 color: c, fontSize: 11, fontWeight: FontWeight.bold)));
+  }
+
+  Widget _emailBadge(bool enabled) {
+    final c = enabled ? Colors.green : Colors.grey;
+    return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+            color: c.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: c.withValues(alpha: 0.5))),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(enabled ? Icons.notifications_active : Icons.notifications_off,
+                size: 14, color: c),
+            const SizedBox(width: 4),
+            Text(enabled ? 'ON' : 'OFF',
+                style: TextStyle(
+                    color: c, fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ));
   }
 
   Widget _statCard(String t, String v, IconData i, Color c) {
@@ -780,6 +892,8 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
   }
 
   Widget _ownerRow(Map<String, dynamic> o) {
+    final emailEnabled = o['emailNotifications'] == true;
+
     return InkWell(
       onTap: () => _showOwnerDetailsDialog(o),
       child: Padding(
@@ -805,6 +919,24 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                       overflow: TextOverflow.ellipsis)
                 ])),
+            // Email notification indicator
+            Tooltip(
+              message: emailEnabled
+                  ? 'Email notifications ON'
+                  : 'Email notifications OFF',
+              child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                      color: (emailEnabled ? Colors.green : Colors.grey)
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Icon(
+                    emailEnabled ? Icons.email : Icons.email_outlined,
+                    size: 16,
+                    color: emailEnabled ? Colors.green : Colors.grey,
+                  )),
+            ),
+            const SizedBox(width: 8),
             Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -823,6 +955,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
                   if (v == 'toggle') {
                     _toggleStatus(o['tenantId'], o['status'], o['email']);
                   }
+                  if (v == 'email') {
+                    _toggleEmailNotifications(o['tenantId'],
+                        o['emailNotifications'] ?? true, o['email']);
+                  }
                   if (v == 'reset') _resetPassword(o['tenantId'], o['email']);
                   if (v == 'delete') _deleteOwner(o['tenantId'], o['email']);
                 },
@@ -838,6 +974,33 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
                                   ? '⏸️ Suspend'
                                   : '▶️ Activate',
                               style: const TextStyle(color: Colors.white))),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(
+                          value: 'email',
+                          child: Row(
+                            children: [
+                              Icon(
+                                emailEnabled
+                                    ? Icons.notifications_off
+                                    : Icons.notifications_active,
+                                size: 16,
+                                color:
+                                    emailEnabled ? Colors.orange : Colors.green,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                emailEnabled
+                                    ? 'Disable Emails'
+                                    : 'Enable Emails',
+                                style: TextStyle(
+                                  color: emailEnabled
+                                      ? Colors.orange
+                                      : Colors.green,
+                                ),
+                              ),
+                            ],
+                          )),
+                      const PopupMenuDivider(),
                       const PopupMenuItem(
                           value: 'reset',
                           child: Text('🔑 Reset PW',

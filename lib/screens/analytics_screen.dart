@@ -1,17 +1,32 @@
 // FILE: lib/screens/analytics_screen.dart
-// STATUS: UPDATED - Added booking statistics + translations
-// FEATURES: Monthly/Yearly bookings, Occupancy rate, Avg stay, Feedback, AI Questions
+// STATUS: PHASE 4 COMPLETE - Revenue Analytics + Calendar Export
+// FEATURES: Booking stats, Occupancy, Revenue, Calendar Export, Feedback, AI Questions
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../services/calendar_service.dart';
+import '../repositories/booking_repository.dart';
 
-class AnalyticsScreen extends StatelessWidget {
+class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
+
+  @override
+  State<AnalyticsScreen> createState() => _AnalyticsScreenState();
+}
+
+class _AnalyticsScreenState extends State<AnalyticsScreen> {
+  final CalendarService _calendarService = CalendarService();
+  final NumberFormat _currencyFormat =
+      NumberFormat.currency(symbol: '€', decimalDigits: 0);
+
+  bool _isExporting = false;
+  int _selectedYear = DateTime.now().year;
 
   Future<String?> _getTenantId() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -27,7 +42,8 @@ class AnalyticsScreen extends StatelessWidget {
 
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
-    final startOfYear = DateTime(now.year, 1, 1);
+    final startOfYear = DateTime(_selectedYear, 1, 1);
+    final endOfYear = DateTime(_selectedYear + 1, 1, 1);
 
     // 1. BOOKINGS - All bookings for this owner
     final bookingsSnapshot = await FirebaseFirestore.instance
@@ -40,15 +56,17 @@ class AnalyticsScreen extends StatelessWidget {
     // Filter bookings this month
     final bookingsThisMonth = allBookings.where((doc) {
       final data = doc.data();
-      final startDate = (data['startDate'] as Timestamp?)?.toDate();
-      return startDate != null && startDate.isAfter(startOfMonth);
+      final checkIn = (data['checkIn'] as Timestamp?)?.toDate();
+      return checkIn != null && checkIn.isAfter(startOfMonth);
     }).length;
 
     // Filter bookings this year
     final bookingsThisYear = allBookings.where((doc) {
       final data = doc.data();
-      final startDate = (data['startDate'] as Timestamp?)?.toDate();
-      return startDate != null && startDate.isAfter(startOfYear);
+      final checkIn = (data['checkIn'] as Timestamp?)?.toDate();
+      return checkIn != null &&
+          checkIn.isAfter(startOfYear) &&
+          checkIn.isBefore(endOfYear);
     }).length;
 
     // 2. UNITS - Count for occupancy calculation
@@ -59,29 +77,52 @@ class AnalyticsScreen extends StatelessWidget {
 
     final totalUnits = unitsSnapshot.docs.length;
 
-    // 3. OCCUPANCY RATE (last 30 days)
+    // 3. OCCUPANCY RATE & REVENUE (last 30 days / this year)
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
     int totalOccupiedNights = 0;
     int totalNights = 0;
     double avgStayNights = 0;
 
+    // Revenue calculation
+    double totalRevenue = 0;
+    double revenueThisMonth = 0;
+    Map<String, double> monthlyRevenue = {};
+
+    // Initialize monthly revenue
+    for (int i = 1; i <= 12; i++) {
+      monthlyRevenue[i.toString().padLeft(2, '0')] = 0;
+    }
+
     if (allBookings.isNotEmpty) {
       for (var doc in allBookings) {
         final data = doc.data();
-        final startDate = (data['startDate'] as Timestamp?)?.toDate();
-        final endDate = (data['endDate'] as Timestamp?)?.toDate();
+        final checkIn = (data['checkIn'] as Timestamp?)?.toDate();
+        final checkOut = (data['checkOut'] as Timestamp?)?.toDate();
+        final price = (data['totalPrice'] as num?)?.toDouble() ?? 0.0;
 
-        if (startDate != null && endDate != null) {
+        if (checkIn != null && checkOut != null) {
           // Calculate nights for this booking
-          final nights = endDate.difference(startDate).inDays;
+          final nights = checkOut.difference(checkIn).inDays;
           totalNights += nights;
 
           // Check if booking overlaps with last 30 days
-          if (endDate.isAfter(thirtyDaysAgo) && startDate.isBefore(now)) {
+          if (checkOut.isAfter(thirtyDaysAgo) && checkIn.isBefore(now)) {
             final overlapStart =
-                startDate.isBefore(thirtyDaysAgo) ? thirtyDaysAgo : startDate;
-            final overlapEnd = endDate.isAfter(now) ? now : endDate;
+                checkIn.isBefore(thirtyDaysAgo) ? thirtyDaysAgo : checkIn;
+            final overlapEnd = checkOut.isAfter(now) ? now : checkOut;
             totalOccupiedNights += overlapEnd.difference(overlapStart).inDays;
+          }
+
+          // Revenue calculation for selected year
+          if (checkIn.year == _selectedYear) {
+            totalRevenue += price;
+            final month = checkIn.month.toString().padLeft(2, '0');
+            monthlyRevenue[month] = (monthlyRevenue[month] ?? 0) + price;
+
+            // This month revenue
+            if (checkIn.month == now.month && checkIn.year == now.year) {
+              revenueThisMonth += price;
+            }
           }
         }
       }
@@ -98,6 +139,9 @@ class AnalyticsScreen extends StatelessWidget {
       occupancyRate = (totalOccupiedNights / (totalUnits * 30)) * 100;
       if (occupancyRate > 100) occupancyRate = 100;
     }
+
+    // ADR (Average Daily Rate)
+    double adr = totalNights > 0 ? totalRevenue / totalNights : 0;
 
     // 4. FEEDBACK (Last 50)
     final feedbackSnapshot = await FirebaseFirestore.instance
@@ -145,12 +189,23 @@ class AnalyticsScreen extends StatelessWidget {
       'average_rating': averageRating,
       'feedback_docs': feedbackDocs,
       'top_questions': sortedQuestions.take(5).toList(),
+      // Revenue data
+      'total_revenue': totalRevenue,
+      'revenue_this_month': revenueThisMonth,
+      'monthly_revenue': monthlyRevenue,
+      'adr': adr,
+      'total_units': totalUnits,
+      'total_nights': totalNights,
+      // For calendar export
+      'all_bookings': allBookings,
     };
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.read<AppProvider>().translate;
+    final provider = context.watch<AppProvider>();
+    final primaryColor = provider.primaryColor;
 
     return FadeInUp(
       duration: const Duration(milliseconds: 600),
@@ -158,7 +213,8 @@ class AnalyticsScreen extends StatelessWidget {
         future: _fetchAnalyticsData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+                child: CircularProgressIndicator(color: primaryColor));
           }
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
@@ -176,15 +232,22 @@ class AnalyticsScreen extends StatelessWidget {
           final topQuestions =
               stats['top_questions'] as List<MapEntry<String, int>>? ?? [];
 
+          // Revenue data
+          final totalRevenue = stats['total_revenue'] as double? ?? 0.0;
+          final revenueThisMonth =
+              stats['revenue_this_month'] as double? ?? 0.0;
+          final monthlyRevenue =
+              stats['monthly_revenue'] as Map<String, double>? ?? {};
+          final adr = stats['adr'] as double? ?? 0.0;
+          final totalNightsSold = stats['total_nights'] as int? ?? 0;
+          final allBookings =
+              stats['all_bookings'] as List<QueryDocumentSnapshot>? ?? [];
+
           return ListView(
             padding: const EdgeInsets.all(30),
             children: [
-              // HEADER
-              Text(t('analytics_title'),
-                  style: Theme.of(context).textTheme.displayMedium),
-              const SizedBox(height: 5),
-              Text(t('analytics_subtitle'),
-                  style: Theme.of(context).textTheme.bodyMedium),
+              // HEADER WITH YEAR SELECTOR
+              _buildHeader(context, t, primaryColor),
               const SizedBox(height: 30),
 
               // ROW 1: BOOKING STATS
@@ -237,8 +300,76 @@ class AnalyticsScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 40),
+
+              // ==================== REVENUE SECTION ====================
+              _buildSectionHeader(
+                  context, t('revenue_section'), Icons.euro, primaryColor),
               const SizedBox(height: 20),
 
+              // REVENUE STATS ROW
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('total_revenue'),
+                      _currencyFormat.format(totalRevenue),
+                      Icons.euro,
+                      primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('revenue_this_month'),
+                      _currencyFormat.format(revenueThisMonth),
+                      Icons.trending_up,
+                      Colors.teal,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('average_daily_rate'),
+                      _currencyFormat.format(adr),
+                      Icons.price_check,
+                      Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      t('total_nights_sold'),
+                      totalNightsSold.toString(),
+                      Icons.nightlight_round,
+                      Colors.deepPurple,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // MONTHLY REVENUE CHART
+              _buildRevenueChart(context, monthlyRevenue, primaryColor, t),
+              const SizedBox(height: 40),
+
+              // ==================== CALENDAR EXPORT SECTION ====================
+              _buildSectionHeader(context, t('calendar_export'),
+                  Icons.calendar_month, primaryColor),
+              const SizedBox(height: 20),
+              _buildCalendarExportCard(context, allBookings, t, primaryColor),
+              const SizedBox(height: 40),
+
+              // ==================== FEEDBACK SECTION ====================
               // ROW 3: FEEDBACK STATS
               Row(
                 children: [
@@ -281,6 +412,414 @@ class AnalyticsScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+      BuildContext context, String Function(String) t, Color primaryColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t('analytics_title'),
+                style: Theme.of(context).textTheme.displayMedium),
+            const SizedBox(height: 5),
+            Text(t('analytics_subtitle'),
+                style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+        // Year selector
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+          ),
+          child: DropdownButton<int>(
+            value: _selectedYear,
+            dropdownColor: Theme.of(context).cardColor,
+            style:
+                TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+            underline: const SizedBox(),
+            items: List.generate(5, (i) {
+              final year = DateTime.now().year - i;
+              return DropdownMenuItem(
+                value: year,
+                child: Text(year.toString()),
+              );
+            }),
+            onChanged: (year) {
+              if (year != null) {
+                setState(() => _selectedYear = year);
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(
+      BuildContext context, String title, IconData icon, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(width: 12),
+        Text(title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                )),
+      ],
+    );
+  }
+
+  Widget _buildRevenueChart(
+      BuildContext context,
+      Map<String, double> monthlyRevenue,
+      Color primaryColor,
+      String Function(String) t) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+
+    final maxRevenue = monthlyRevenue.values
+        .fold<double>(1, (max, val) => val > max ? val : max);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t('monthly_revenue_chart'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  )),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 180,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(12, (index) {
+                final monthKey = (index + 1).toString().padLeft(2, '0');
+                final revenue = monthlyRevenue[monthKey] ?? 0;
+                final heightRatio = maxRevenue > 0 ? revenue / maxRevenue : 0.0;
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (revenue > 0)
+                          Text(
+                            _currencyFormat.format(revenue),
+                            style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black54,
+                              fontSize: 8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        const SizedBox(height: 4),
+                        Tooltip(
+                          message:
+                              '${months[index]}: ${_currencyFormat.format(revenue)}',
+                          child: AnimatedContainer(
+                            duration:
+                                Duration(milliseconds: 300 + (index * 50)),
+                            height: (heightRatio * 120.0)
+                                .clamp(4.0, 120.0)
+                                .toDouble(),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  primaryColor,
+                                  primaryColor.withValues(alpha: 0.6),
+                                ],
+                              ),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          months[index].substring(0, 1),
+                          style: TextStyle(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarExportCard(
+      BuildContext context,
+      List<QueryDocumentSnapshot> bookings,
+      String Function(String) t,
+      Color primaryColor) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t('export_bookings_calendar'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  )),
+          const SizedBox(height: 8),
+          Text(t('export_calendar_description'),
+              style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.black54,
+                fontSize: 13,
+              )),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              // iCal Export Button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed:
+                      _isExporting ? null : () => _exportICal(bookings, t),
+                  icon: _isExporting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.download),
+                  label: Text(t('export_ical')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Google Calendar Button
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showCalendarOptions(bookings, t),
+                  icon: const Icon(Icons.calendar_month),
+                  label: Text(t('add_to_calendar')),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: primaryColor,
+                    side: BorderSide(color: primaryColor),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportICal(List<QueryDocumentSnapshot> bookingDocs,
+      String Function(String) t) async {
+    setState(() => _isExporting = true);
+
+    try {
+      // Convert to Booking objects
+      final bookings = bookingDocs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Booking(
+          id: doc.id,
+          ownerId: data['ownerId'] ?? '',
+          unitId: data['unitId'] ?? '',
+          unitName: data['unitName'] ?? '',
+          guestName: data['guestName'] ?? '',
+          guestEmail: data['guestEmail'],
+          guestPhone: data['guestPhone'],
+          checkIn: (data['checkIn'] as Timestamp).toDate(),
+          checkOut: (data['checkOut'] as Timestamp).toDate(),
+          guestCount: data['guestCount'] ?? 1,
+          status: data['status'] ?? 'confirmed',
+          notes: data['notes'],
+        );
+      }).toList();
+
+      final icalContent = _calendarService.generateICal(
+        bookings: bookings,
+        calendarName: 'VLS Bookings $_selectedYear',
+      );
+
+      // Copy to clipboard
+      await Clipboard.setData(ClipboardData(text: icalContent));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(t('ical_copied_clipboard')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${t('export_failed')}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isExporting = false);
+    }
+  }
+
+  void _showCalendarOptions(
+      List<QueryDocumentSnapshot> bookingDocs, String Function(String) t) {
+    final primaryColor = context.read<AppProvider>().primaryColor;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t('choose_calendar_app'),
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.calendar_month, color: Colors.blue),
+              ),
+              title: const Text('Google Calendar'),
+              subtitle: Text(t('open_in_browser')),
+              onTap: () {
+                Navigator.pop(context);
+                _openGoogleCalendarInstructions(t);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.mail, color: Colors.orange),
+              ),
+              title: const Text('Outlook'),
+              subtitle: Text(t('open_in_browser')),
+              onTap: () {
+                Navigator.pop(context);
+                _openOutlookInstructions(t);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.copy, color: primaryColor),
+              ),
+              title: Text(t('copy_ical_data')),
+              subtitle: Text(t('paste_in_any_calendar')),
+              onTap: () {
+                Navigator.pop(context);
+                _exportICal(bookingDocs, t);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openGoogleCalendarInstructions(String Function(String) t) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('google_calendar_instructions')),
+        content: Text(t('google_calendar_steps')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t('ok')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openOutlookInstructions(String Function(String) t) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('outlook_instructions')),
+        content: Text(t('outlook_steps')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t('ok')),
+          ),
+        ],
       ),
     );
   }
