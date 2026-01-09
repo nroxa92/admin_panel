@@ -1,7 +1,7 @@
 name: villa_admin
 description: VLS Admin Panel - Vesta Lumina System
 publish_to: 'none'
-version: 2.0.0+1
+version: 2.1.0+1
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -10,7 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # --- UI & DIZAJN ---
+  # ============================================
+  # UI & DESIGN
+  # ============================================
   google_fonts: ^6.1.0
   flutter_markdown: ^0.7.0
   cupertino_icons: ^1.0.6
@@ -18,32 +20,54 @@ dependencies:
   animate_do: ^3.3.4
   flutter_launcher_icons: ^0.13.1 
 
-  # --- LOGIKA & STANJE ---
+  # ============================================
+  # STATE & NAVIGATION
+  # ============================================
   provider: ^6.1.1
   go_router: ^14.6.3
   
-  # --- HTTP (za Cloud Functions pozive) ---
+  # ============================================
+  # NETWORKING
+  # ============================================
   http: ^1.2.0
 
-  # --- WEB SPECIFIČNO ---
+  # ============================================
+  # FILE HANDLING (Web)
+  # ============================================
   file_picker: ^6.1.1
   image_network: ^2.6.0
 
-  # --- FIREBASE ---
+  # ============================================
+  # FIREBASE CORE
+  # ============================================
   firebase_core: ^3.8.1
   cloud_firestore: ^5.5.2
   firebase_auth: ^5.3.4
   firebase_storage: ^12.3.6
   cloud_functions: ^5.2.3
   
-  # --- PDF & PRINTANJE ---
+  # ============================================
+  # PDF & PRINTING
+  # ============================================
   pdf: ^3.10.4
   printing: ^5.11.0
 
-  # --- PHASE 1: PRODUCTION READINESS ---
+  # ============================================
+  # PHASE 1-5: PRODUCTION & ENTERPRISE
+  # ============================================
+  # Error tracking
   sentry_flutter: ^8.0.0
+  # Offline detection & queue sync
   connectivity_plus: ^6.0.0
+  # Local storage for queue, cache, onboarding
   shared_preferences: ^2.2.0
+  
+  # ============================================
+  # FUTURE: OPTIONAL ENTERPRISE FEATURES
+  # ============================================
+  # Uncomment when needed:
+  # firebase_app_check: ^0.3.0      # Security hardening
+  # firebase_performance: ^0.10.0   # Full Firebase Performance SDK
 
 dev_dependencies:
   flutter_test:
