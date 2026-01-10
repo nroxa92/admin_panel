@@ -1,11 +1,13 @@
-# 🏨 VillaOS Admin Panel
+# 🏨 Vesta Lumina Admin Panel
 
-> **Enterprise-grade Property Management System**
+> **Enterprise Property Management System**
+> **Part of Vesta Lumina System**
 
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.32+-blue.svg)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-Backend-orange.svg)](https://firebase.google.com)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.0.9-blue.svg)]()
+[![Status](https://img.shields.io/badge/Status-Beta-yellow.svg)]()
 
 ---
 
@@ -35,6 +37,7 @@
 ║     ❌ Korištenje u komercijalne ili osobne svrhe                             ║
 ║     ❌ Distribucija ili dijeljenje bilo kojeg dijela                          ║
 ║     ❌ Kreiranje izvedenih djela                                              ║
+║     ❌ Korištenje za AI/ML treniranje                                         ║
 ║                                                                               ║
 ║  ⚖️ PRAVNE POSLJEDICE:                                                        ║
 ║     Neovlašteno korištenje podliježe građanskoj i kaznenoj odgovornosti      ║
@@ -51,30 +54,45 @@
 
 ## 📋 Sadržaj
 
-- [Pregled Projekta](#-pregled-projekta)
+- [O Projektu](#-o-projektu)
+- [Vesta Lumina System](#-vesta-lumina-system)
 - [Statistika Projekta](#-statistika-projekta)
 - [Tehnička Arhitektura](#-tehnička-arhitektura)
-- [Struktura Direktorija](#-struktura-direktorija)
+- [Kompletna Struktura Projekta](#-kompletna-struktura-projekta)
 - [Funkcionalnosti](#-funkcionalnosti)
 - [Cloud Functions API](#-cloud-functions-api)
 - [Sigurnosni Model](#-sigurnosni-model)
 - [Lokalizacija](#-lokalizacija)
-- [Verzije i Changelog](#-verzije-i-changelog)
+- [Teme i Personalizacija](#-teme-i-personalizacija)
+- [Verzije](#-verzije)
 
 ---
 
-## 🎯 Pregled Projekta
+## 🎯 O Projektu
 
-**VillaOS** (Vesta Lumina System) je enterprise-grade sustav za upravljanje smještajnim objektima koji omogućuje vlasnicima vila, apartmana i soba kompletno digitalno upravljanje poslovanjem.
+**Vesta Lumina Admin Panel** je enterprise-grade web aplikacija za upravljanje smještajnim objektima. Omogućuje vlasnicima vila, apartmana i soba kompletno digitalno upravljanje poslovanjem kroz intuitivno sučelje.
 
-### Komponente Sustava
+### Ključne Značajke
 
-| Komponenta | Tehnologija | Status |
-|------------|-------------|--------|
-| **Web Admin Panel** | Flutter Web 3.32+ | ✅ Production Ready |
-| **Firebase Backend** | Firestore, Auth, Storage, Functions | ✅ Production Ready |
-| **Cloud Functions** | Node.js 20, 20 funkcija | ✅ Production Ready |
-| **Android Tablet App** | Flutter Android (Kiosk Mode) | 🔄 Separate Repository |
+- Multi-tenant arhitektura s potpunom izolacijom podataka
+- Drag & Drop kalendar rezervacija
+- 10 tipova PDF dokumenata
+- Podrška za 11 jezika
+- 10 tema boja + 6 pozadinskih tonova (dark/light)
+- Real-time sinkronizacija s Firebase
+- Offline podrška s automatskom sinkronizacijom
+
+---
+
+## 🌟 Vesta Lumina System
+
+**Vesta Lumina System** je kompletni ekosustav za upravljanje smještajnim objektima koji se sastoji od:
+
+| Komponenta | Opis | Tehnologija | Status |
+|------------|------|-------------|--------|
+| **Vesta Lumina Admin Panel** | Web aplikacija za vlasnike | Flutter Web | ✅ Beta |
+| **Vesta Lumina Client Terminal** | Tablet aplikacija za goste (Kiosk mode) | Flutter Android | 🔄 U razvoju |
+| **Firebase Backend** | Cloud infrastruktura | Firebase (Firestore, Auth, Storage, Functions) | ✅ Aktivan |
 
 ### Live Demo
 
@@ -86,37 +104,60 @@
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
-║                         VillaOS ADMIN PANEL v2.2.0                            ║
-║                            PRODUCTION STATISTICS                               ║
+║                     VESTA LUMINA ADMIN PANEL v0.0.9                           ║
+║                          KOMPLETNA STATISTIKA                                 ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                               ║
-║  📁 IZVORNI KOD                                                               ║
-║  ─────────────────────────────────────────────────────────────────────────── ║
-║  │ Ukupno linija koda        │ ~21,000+                                      ║
-║  │ Flutter/Dart datoteke     │ ~50 datoteka                                  ║
-║  │ Cloud Functions           │ 1,265 linija (20 funkcija)                    ║
-║  │ Firebase Rules            │ 328 linija (Firestore + Storage)              ║
-║  │ Firestore Indexes         │ 11 kompozitnih indeksa                        ║
+║  📁 IZVORNI KOD (lib/)                                                        ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ Screens (13 datoteka)              │ 12,390 linija                        ║
+║  │ Services (19 datoteka)             │ 5,671 linija                         ║
+║  │ Widgets (7 datoteka)               │ 3,755 linija                         ║
+║  │ Config (3 datoteke)                │ 2,418 linija                         ║
+║  │ Repositories (3 datoteke)          │ 993 linija                           ║
+║  │ Utils (1 datoteka)                 │ 640 linija                           ║
+║  │ Models (4 datoteke)                │ 618 linija                           ║
+║  │ Providers (1 datoteka)             │ 126 linija                           ║
+║  │ Root (main.dart, firebase_options) │ 741 linija                           ║
+║  │                                                                           ║
+║  │ UKUPNO DART KOD                    │ 27,352 linija                        ║
 ║                                                                               ║
-║  🧪 TESTIRANJE                                                                ║
-║  ─────────────────────────────────────────────────────────────────────────── ║
-║  │ Test Suite                │ 2,918 linija                                  ║
-║  │ Broj testova              │ 138 unit/widget testova                       ║
-║  │ Test kategorije           │ Services, Models, Widgets, Integration        ║
+║  ⚡ CLOUD FUNCTIONS (functions/)                                              ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ index.js (20 funkcija)             │ 1,265 linija                         ║
+║  │ api_versioning.js                  │ 242 linija                           ║
+║  │                                                                           ║
+║  │ UKUPNO JS KOD                      │ 1,507 linija                         ║
+║                                                                               ║
+║  🧪 TESTOVI (test/)                                                           ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ Test datoteke (14 datoteka)        │ 3,908 linija                         ║
+║  │ Broj testova                       │ 138 testova                          ║
 ║                                                                               ║
 ║  🌍 LOKALIZACIJA                                                              ║
-║  ─────────────────────────────────────────────────────────────────────────── ║
-║  │ Podržani jezici           │ 11 (EN, HR, DE, IT, ES, FR, PL, SK, CS, HU, SL)║
-║  │ Prijevodni ključevi       │ ~150 po jeziku                                ║
-║  │ Ukupno prijevoda          │ ~1,650                                        ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ Podržani jezici                    │ 11 jezika                            ║
+║  │ Prijevodni ključevi                │ 178 ključeva                         ║
+║  │ Ukupno prijevoda                   │ 1,958 prijevoda                      ║
 ║                                                                               ║
 ║  📄 PDF GENERIRANJE                                                           ║
-║  ─────────────────────────────────────────────────────────────────────────── ║
-║  │ Tipovi dokumenata         │ 10 različitih PDF formata                     ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ Tipovi dokumenata                  │ 10 tipova                            ║
 ║                                                                               ║
 ║  🎨 TEME                                                                      ║
-║  ─────────────────────────────────────────────────────────────────────────── ║
-║  │ Paleta boja               │ 10 primarnih + 6 pozadinskih tonova           ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ Primarne boje                      │ 10 boja                              ║
+║  │ Pozadinski tonovi                  │ 6 (3 dark + 3 light)                 ║
+║                                                                               ║
+║  ☁️ FIREBASE                                                                  ║
+║  ───────────────────────────────────────────────────────────────────────────  ║
+║  │ Cloud Functions                    │ 20 funkcija                          ║
+║  │ Firestore kolekcije                │ 16 kolekcija                         ║
+║  │ Kompozitni indeksi                 │ 11 indeksa                           ║
+║                                                                               ║
+║  ═══════════════════════════════════════════════════════════════════════════  ║
+║  │ UKUPNO LINIJA KODA                 │ 32,767+ linija                       ║
+║  │ UKUPNO DATOTEKA                    │ 75+ datoteka                         ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 ```
@@ -143,15 +184,15 @@
 ### Multi-Tenant Architecture
 
 ```
-                                    ┌─────────────────┐
-                                    │   Super Admin   │
-                                    │  master@admin   │
-                                    └────────┬────────┘
-                                             │
-                    ┌────────────────────────┼────────────────────────┐
-                    │                        │                        │
-                    ▼                        ▼                        ▼
-           ┌───────────────┐        ┌───────────────┐        ┌───────────────┐
+                                    ┌─────────────────────────┐
+                                    │      Super Admin        │
+                                    │ vestaluminasystem@gmail │
+                                    └───────────┬─────────────┘
+                                                │
+                    ┌───────────────────────────┼───────────────────────────┐
+                    │                           │                           │
+                    ▼                           ▼                           ▼
+           ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
            │   Owner A     │        │   Owner B     │        │   Owner C     │
            │  (Tenant 1)   │        │  (Tenant 2)   │        │  (Tenant 3)   │
            └───────┬───────┘        └───────┬───────┘        └───────┬───────┘
@@ -165,80 +206,160 @@
 
 ---
 
-## 📁 Struktura Direktorija
+## 📁 Kompletna Struktura Projekta
 
 ```
-admin_panel/
+vesta-lumina-admin-panel/
 │
-├── 📂 lib/                          # Flutter izvorni kod (~21,000 linija)
-│   ├── 📂 config/                   # Konfiguracija
-│   │   ├── app_config.dart          # App konstante
-│   │   ├── theme.dart               # Tema definicije
-│   │   └── translations.dart        # 11 jezika (~2,100 linija)
-│   │
-│   ├── 📂 models/                   # Data modeli
-│   │   ├── booking_model.dart       # Rezervacije
-│   │   ├── cleaning_log_model.dart  # Čišćenje log
-│   │   ├── settings_model.dart      # Postavke
-│   │   └── unit_model.dart          # Smještajne jedinice
-│   │
-│   ├── 📂 providers/                # State management
-│   │   └── app_provider.dart        # Glavni provider
-│   │
-│   ├── 📂 screens/                  # UI ekrani (12 ekrana)
-│   │   ├── dashboard_screen.dart    # Dashboard + Navigation
-│   │   ├── booking_screen.dart      # Kalendar rezervacija
-│   │   ├── settings_screen.dart     # Postavke
-│   │   ├── analytics_screen.dart    # Analitika i statistike
-│   │   ├── digital_book_screen.dart # Info knjiga za goste
-│   │   ├── gallery_screen.dart      # Galerija slika
-│   │   ├── login_screen.dart        # Firebase Auth login
-│   │   ├── tenant_setup_screen.dart # Onboarding wizard
-│   │   ├── super_admin_screen.dart  # Owner management
-│   │   ├── super_admin_tablets.dart # Tablet deployment
-│   │   └── super_admin_notifications.dart
-│   │
-│   ├── 📂 services/                 # Business logika (19 servisa)
-│   │   ├── auth_service.dart        # Enterprise Auth (475 linija)
-│   │   ├── booking_service.dart     # CRUD rezervacija
-│   │   ├── pdf_service.dart         # 10 PDF tipova
-│   │   ├── revenue_service.dart     # Revenue analytics
-│   │   ├── cache_service.dart       # Offline persistence
-│   │   ├── super_admin_service.dart # Admin operacije
-│   │   └── ... (13 dodatnih servisa)
-│   │
-│   ├── 📂 widgets/                  # Reusable komponente
-│   │   ├── booking_calendar.dart    # Drag&Drop kalendar
-│   │   └── unit_widgets.dart        # Unit kartice
-│   │
-│   ├── 📂 utils/                    # Utilities
-│   │   └── performance_utils.dart   # Debouncer, Throttler, etc.
-│   │
-│   ├── firebase_options.dart        # Firebase config
-│   └── main.dart                    # Entry point
+├── 📄 .firebaserc                           # Firebase project config
+├── 📄 .gitattributes                        # Git attributes
+├── 📄 .gitignore                            # Git ignore rules
+├── 📄 LICENSE                               # Proprietary license
+├── 📄 README.md                             # Ovaj dokument
+├── 📄 analysis_options.yaml                 # Dart linter config
+├── 📄 devtools_options.yaml                 # DevTools config
+├── 📄 firebase.json                         # Firebase deploy config
+├── 📄 firestore.indexes.json                # Firestore composite indexes (11)
+├── 📄 firestore.rules                       # Firestore security rules (235 lines)
+├── 📄 pubspec.lock                          # Locked dependencies
+├── 📄 pubspec.yaml                          # Flutter dependencies
+├── 📄 storage.rules                         # Storage security rules (93 lines)
 │
-├── 📂 functions/                    # Cloud Functions (1,265 linija)
-│   ├── index.js                     # 20 funkcija
-│   └── package.json                 # Node dependencies
+├── 📂 assets/
+│   └── 📂 icon/
+│       └── 📄 icon.png                      # App icon
 │
-├── 📂 test/                         # Test Suite (2,918 linija)
-│   ├── 📂 services/                 # Service testovi
-│   ├── 📂 models/                   # Model testovi
-│   ├── 📂 widgets/                  # Widget testovi
-│   ├── 📂 integration/              # Integration testovi
-│   └── 📂 helpers/                  # Test utilities
+├── 📂 docs/
+│   ├── 📄 API_DOCUMENTATION.md              # API reference
+│   ├── 📄 CHANGELOG.md                      # Version history
+│   ├── 📄 FIREBASE_DOCUMENTATION.md         # Firebase setup guide
+│   └── 📄 PROJECT_ANALYSIS.md               # Project analysis
 │
-├── 📂 docs/                         # Dokumentacija
-│   ├── API_DOCUMENTATION.md         # API referenca
-│   ├── FIREBASE_DOCUMENTATION.md    # Firebase setup
-│   └── CHANGELOG.md                 # Version history
+├── 📂 functions/                            # Cloud Functions (1,507 lines)
+│   ├── 📄 .gitignore                        # Functions gitignore
+│   ├── 📄 api_versioning.js                 # API v1/v2 routing (242 lines)
+│   ├── 📄 index.js                          # 20 Cloud Functions (1,265 lines)
+│   ├── 📄 package-lock.json                 # Locked dependencies
+│   └── 📄 package.json                      # Node.js dependencies
 │
-├── firestore.rules                  # Firestore sigurnost (235 linija)
-├── firestore.indexes.json           # DB indeksi (11 indeksa)
-├── storage.rules                    # Storage sigurnost (93 linija)
-├── firebase.json                    # Firebase deploy config
-├── LICENSE                          # Proprietary License
-└── README.md                        # Ovaj dokument
+├── 📂 lib/                                  # Flutter source (27,352 lines)
+│   │
+│   ├── 📄 firebase_options.dart             # Firebase config (25 lines)
+│   ├── 📄 main.dart                         # App entry point (716 lines)
+│   │
+│   ├── 📂 config/                           # Configuration (2,418 lines)
+│   │   ├── 📄 app_config.dart               # App constants (181 lines)
+│   │   ├── 📄 theme.dart                    # Theme definitions (143 lines)
+│   │   └── 📄 translations.dart             # 11 languages, 178 keys (2,094 lines)
+│   │
+│   ├── 📂 models/                           # Data models (618 lines)
+│   │   ├── 📄 booking_model.dart            # Booking model (112 lines)
+│   │   ├── 📄 cleaning_log_model.dart       # Cleaning log model (87 lines)
+│   │   ├── 📄 settings_model.dart           # Settings model (314 lines)
+│   │   └── 📄 unit_model.dart               # Unit model (105 lines)
+│   │
+│   ├── 📂 providers/                        # State management (126 lines)
+│   │   └── 📄 app_provider.dart             # Main provider (126 lines)
+│   │
+│   ├── 📂 repositories/                     # Data access layer (993 lines)
+│   │   ├── 📄 base_repository.dart          # Base repository (315 lines)
+│   │   ├── 📄 booking_repository.dart       # Booking repository (484 lines)
+│   │   └── 📄 units_repository.dart         # Units repository (194 lines)
+│   │
+│   ├── 📂 screens/                          # UI screens (12,390 lines)
+│   │   │
+│   │   ├── 📂 analytics/                    # Analytics submodule (1,113 lines)
+│   │   │   ├── 📄 analytics_screen.dart     # Analytics main (490 lines)
+│   │   │   └── 📄 revenue_screen.dart       # Revenue details (623 lines)
+│   │   │
+│   │   ├── 📄 analytics_screen.dart         # Analytics overview (983 lines)
+│   │   ├── 📄 booking_screen.dart           # Booking calendar (1,344 lines)
+│   │   ├── 📄 dashboard_screen.dart         # Main dashboard (1,288 lines)
+│   │   ├── 📄 digital_book_screen.dart      # Digital guest book (1,783 lines)
+│   │   ├── 📄 gallery_screen.dart           # Image gallery (885 lines)
+│   │   ├── 📄 login_screen.dart             # Login screen (181 lines)
+│   │   ├── 📄 settings_screen.dart          # Settings (1,395 lines)
+│   │   ├── 📄 super_admin_notifications.dart # System notifications (961 lines)
+│   │   ├── 📄 super_admin_screen.dart       # Owner management (1,017 lines)
+│   │   ├── 📄 super_admin_tablets.dart      # Tablet management (1,037 lines)
+│   │   └── 📄 tenant_setup_screen.dart      # Onboarding wizard (403 lines)
+│   │
+│   ├── 📂 services/                         # Business logic (5,671 lines)
+│   │   ├── 📄 analytics_service.dart        # Analytics service (488 lines)
+│   │   ├── 📄 app_check_service.dart        # App Check stub (55 lines)
+│   │   ├── 📄 auth_service.dart             # Authentication (479 lines)
+│   │   ├── 📄 booking_service.dart          # Booking CRUD (345 lines)
+│   │   ├── 📄 cache_service.dart            # Offline cache (413 lines)
+│   │   ├── 📄 calendar_service.dart         # iCal export (364 lines)
+│   │   ├── 📄 cleaning_service.dart         # Cleaning workflow (66 lines)
+│   │   ├── 📄 connectivity_service.dart     # Network status (197 lines)
+│   │   ├── 📄 error_service.dart            # Error handling (258 lines)
+│   │   ├── 📄 health_service.dart           # System health (430 lines)
+│   │   ├── 📄 offline_queue_service.dart    # Offline sync queue (375 lines)
+│   │   ├── 📄 onboarding_service.dart       # User onboarding (363 lines)
+│   │   ├── 📄 pdf_service.dart              # PDF generation (966 lines)
+│   │   ├── 📄 performance_service.dart      # Performance metrics (318 lines)
+│   │   ├── 📄 revenue_service.dart          # Revenue analytics (566 lines)
+│   │   ├── 📄 security_service.dart         # Security utilities (285 lines)
+│   │   ├── 📄 settings_service.dart         # Settings CRUD (67 lines)
+│   │   ├── 📄 super_admin_service.dart      # Admin operations (333 lines)
+│   │   └── 📄 units_service.dart            # Units CRUD (303 lines)
+│   │
+│   ├── 📂 utils/                            # Utilities (640 lines)
+│   │   └── 📄 performance_utils.dart        # Debouncer, Throttler, RetryHelper, Memoizer, BatchProcessor (640 lines)
+│   │
+│   └── 📂 widgets/                          # Reusable components (3,755 lines)
+│       │
+│       ├── 📂 analytics/                    # Analytics widgets (687 lines)
+│       │   ├── 📄 booking_chart.dart        # Booking chart (134 lines)
+│       │   ├── 📄 occupancy_chart.dart      # Occupancy chart (211 lines)
+│       │   ├── 📄 stat_card.dart            # Statistics card (118 lines)
+│       │   └── 📄 upcoming_bookings_card.dart # Upcoming bookings (224 lines)
+│       │
+│       ├── 📄 booking_calendar.dart         # Drag & Drop calendar (1,355 lines)
+│       ├── 📄 system_notification_banner.dart # System notifications (287 lines)
+│       └── 📄 unit_widgets.dart             # Unit components (1,426 lines)
+│
+├── 📂 test/                                 # Test suite (3,908 lines)
+│   │
+│   ├── 📄 all_tests.dart                    # Test runner (51 lines)
+│   ├── 📄 services_test.dart                # Legacy service tests (163 lines)
+│   ├── 📄 widget_test.dart                  # Legacy widget tests (235 lines)
+│   │
+│   ├── 📂 config/
+│   │   └── 📄 app_config_test.dart          # Config tests (162 lines)
+│   │
+│   ├── 📂 helpers/
+│   │   └── 📄 test_helpers.dart             # Test utilities (291 lines)
+│   │
+│   ├── 📂 integration/
+│   │   └── 📄 auth_flow_test.dart           # Auth integration tests (323 lines)
+│   │
+│   ├── 📂 models/
+│   │   ├── 📄 booking_model_test.dart       # Booking model tests (401 lines)
+│   │   └── 📄 unit_model_test.dart          # Unit model tests (383 lines)
+│   │
+│   ├── 📂 repositories/
+│   │   └── 📄 booking_repository_test.dart  # Repository tests (214 lines)
+│   │
+│   ├── 📂 services/
+│   │   ├── 📄 auth_service_test.dart        # Auth service tests (291 lines)
+│   │   ├── 📄 cache_service_test.dart       # Cache service tests (337 lines)
+│   │   ├── 📄 revenue_service_test.dart     # Revenue service tests (421 lines)
+│   │   └── 📄 security_service_test.dart    # Security service tests (183 lines)
+│   │
+│   └── 📂 widgets/
+│       └── 📄 login_screen_test.dart        # Login widget tests (453 lines)
+│
+└── 📂 web/                                  # Web specific files
+    ├── 📄 favicon.png                       # Browser favicon
+    ├── 📄 index.html                        # HTML entry point
+    ├── 📄 manifest.json                     # PWA manifest
+    └── 📂 icons/
+        ├── 📄 Icon-192.png                  # PWA icon 192x192
+        ├── 📄 Icon-512.png                  # PWA icon 512x512
+        ├── 📄 Icon-maskable-192.png         # Maskable icon 192x192
+        └── 📄 Icon-maskable-512.png         # Maskable icon 512x512
 ```
 
 ---
@@ -247,47 +368,61 @@ admin_panel/
 
 ### 📅 Booking Management
 - Drag & Drop kalendar s vizualnim pregledom
-- Status praćenje (confirmed, pending, cancelled, private)
+- Status praćenje (confirmed, pending, cancelled, private, blocked)
 - Zone grupiranje jedinica
 - iCal Export/Import
 - Overlap detection
+- Booking history s filterima
 
 ### 🏠 Unit Management
 - Multi-tenant arhitektura s potpunom izolacijom
 - WiFi/PIN konfiguracija
 - QR kod generiranje
 - Zone assignment
+- Category grouping
 
 ### 📊 Analytics & Revenue
 - Revenue tracking po periodu
 - Occupancy rate kalkulacija
 - Guest insights
 - AI Questions logging
+- Export u CSV/PDF
 
 ### 📄 PDF Generation (10 tipova)
-| Tip | Opis |
-|-----|------|
-| eVisitor Data | Skenirani podaci gostiju |
-| House Rules | Potpisana kućna pravila |
-| Cleaning Log | Dnevnik čišćenja |
-| Unit Schedule | Raspored jedinice |
-| Text List (Full/Anon) | Tekstualne liste |
-| Graphic View (Full/Anon) | Grafički prikazi |
-| Cleaning Schedule | Raspored čišćenja |
-| Booking History | Povijest rezervacija |
+
+| # | Tip | Opis |
+|---|-----|------|
+| 1 | eVisitor Data | Skenirani podaci gostiju za eVisitor prijavu |
+| 2 | House Rules | Kućna pravila s potpisom gosta |
+| 3 | Cleaning Log | Dnevnik čišćenja s checklistom |
+| 4 | Unit Schedule | Raspored jedinice (30 dana) |
+| 5 | Text List Full | Tekstualna lista rezervacija (puni podaci) |
+| 6 | Text List Anonymous | Tekstualna lista rezervacija (anonimizirano) |
+| 7 | Cleaning Schedule | Raspored čišćenja za sve jedinice |
+| 8 | Graphic Full | Grafički prikaz kalendara (puni podaci) |
+| 9 | Graphic Anonymous | Grafički prikaz kalendara (anonimizirano) |
+| 10 | Booking History | Kompletna povijest rezervacija |
 
 ### 🧹 Cleaning Workflow
 - Task management s checklistama
 - PIN autentikacija za čistače
 - Status workflow (pending → in_progress → completed)
-- Photo upload
+- Photo upload za dokaz čišćenja
 
 ### 👨‍💼 Super Admin Panel
 - Owner CRUD operacije
 - Tablet deployment management
-- System notifications
-- Audit logging
+- System notifications (broadcast)
+- Audit logging (admin_logs)
 - APK update distribution
+- Manual/Scheduled backups
+
+### 📱 Digital Guest Book
+- Welcome message (multi-language)
+- House rules (multi-language)
+- Emergency contacts
+- Tablet display timers
+- AI Knowledge base za concierge
 
 ---
 
@@ -295,28 +430,28 @@ admin_panel/
 
 ### 20 Serverless Funkcija
 
-| Kategorija | Funkcija | Opis |
-|------------|----------|------|
-| **Owner Management (6)** | `createOwner` | Kreiranje novog vlasnika |
-| | `linkTenantId` | Povezivanje tenant ID-a |
-| | `listOwners` | Lista svih vlasnika |
-| | `deleteOwner` | Brisanje vlasnika |
-| | `resetOwnerPassword` | Reset lozinke |
-| | `toggleOwnerStatus` | Aktivacija/deaktivacija |
-| **Translation (2)** | `translateHouseRules` | AI prijevod pravila |
-| | `translateNotification` | Prijevod notifikacija |
-| **Tablet (2)** | `registerTablet` | Registracija tableta |
-| | `tabletHeartbeat` | Health check |
-| **Super Admin (4)** | `addSuperAdmin` | Dodavanje admina |
-| | `removeSuperAdmin` | Uklanjanje admina |
-| | `listSuperAdmins` | Lista admina |
-| | `getAdminLogs` | Audit logovi |
-| **Backup (2)** | `scheduledBackup` | Automatski backup |
-| | `manualBackup` | Ručni backup |
-| **Email (4)** | `sendEmailNotification` | Slanje emaila |
-| | `onBookingCreated` | Trigger na rezervaciju |
-| | `sendCheckInReminders` | Check-in podsjetnici |
-| | `updateEmailSettings` | Email postavke |
+| # | Kategorija | Funkcija | Opis |
+|---|------------|----------|------|
+| 1 | Owner | `createOwner` | Kreiranje novog vlasnika |
+| 2 | Owner | `linkTenantId` | Povezivanje tenant ID-a |
+| 3 | Owner | `listOwners` | Lista svih vlasnika |
+| 4 | Owner | `deleteOwner` | Brisanje vlasnika |
+| 5 | Owner | `resetOwnerPassword` | Reset lozinke |
+| 6 | Owner | `toggleOwnerStatus` | Aktivacija/deaktivacija |
+| 7 | Translation | `translateHouseRules` | AI prijevod kućnih pravila |
+| 8 | Translation | `translateNotification` | AI prijevod notifikacija |
+| 9 | Tablet | `registerTablet` | Registracija tablet uređaja |
+| 10 | Tablet | `tabletHeartbeat` | Health check tableta |
+| 11 | Super Admin | `addSuperAdmin` | Dodavanje super admina |
+| 12 | Super Admin | `removeSuperAdmin` | Uklanjanje super admina |
+| 13 | Super Admin | `listSuperAdmins` | Lista super admina |
+| 14 | Super Admin | `getAdminLogs` | Dohvat audit logova |
+| 15 | Backup | `scheduledBackup` | Automatski dnevni backup (3 AM) |
+| 16 | Backup | `manualBackup` | Ručni backup na zahtjev |
+| 17 | Email | `sendEmailNotification` | Slanje email notifikacija |
+| 18 | Email | `onBookingCreated` | Trigger na novu rezervaciju |
+| 19 | Email | `sendCheckInReminders` | Automatski check-in podsjetnici |
+| 20 | Email | `updateEmailSettings` | Ažuriranje email postavki |
 
 **API Base URL:** `https://europe-west3-vls-admin.cloudfunctions.net/`
 
@@ -349,18 +484,20 @@ User Login → Firebase Auth → JWT Token with Custom Claims
 | **Super Admin** | Sve funkcije, svi tenanti | Email/Password + superadmin claim |
 | **Owner** | Samo vlastiti podaci | Email/Password + ownerId claim |
 | **Cleaner** | Cleaning workflow | PIN autentikacija |
-| **Guest** | Tablet app (read-only) | Booking reference |
+| **Guest** | Client Terminal (read-only) | Booking reference |
 
 ### Security Features
 
-- ✅ JWT Authentication with Custom Claims
-- ✅ Multi-tenant Data Isolation
-- ✅ Firestore Security Rules (235 lines)
-- ✅ Storage Security Rules (93 lines)
-- ✅ Server-side Input Validation
-- ✅ Rate Limiting on Cloud Functions
-- ✅ Audit Logging (admin_logs collection)
-- ✅ 11 Composite Firestore Indexes
+| Feature | Status | Opis |
+|---------|--------|------|
+| JWT Authentication | ✅ | Firebase Auth + Custom Claims |
+| Tenant Isolation | ✅ | ownerId claim u svakom requestu |
+| Firestore Rules | ✅ | 235 linija sigurnosnih pravila |
+| Storage Rules | ✅ | 93 linija, size/type validation |
+| Rate Limiting | ✅ | Cloud Functions throttling |
+| Input Validation | ✅ | Server-side validation |
+| Audit Logging | ✅ | admin_logs kolekcija |
+| Composite Indexes | ✅ | 11 optimiziranih indeksa |
 
 ---
 
@@ -368,53 +505,84 @@ User Login → Firebase Auth → JWT Token with Custom Claims
 
 ### Podržani jezici (11)
 
-| Kod | Jezik | Status |
-|-----|-------|--------|
-| 🇬🇧 EN | English | ✅ Master |
-| 🇭🇷 HR | Hrvatski | ✅ Complete |
-| 🇩🇪 DE | Deutsch | ✅ Complete |
-| 🇮🇹 IT | Italiano | ✅ Complete |
-| 🇪🇸 ES | Español | ✅ Complete |
-| 🇫🇷 FR | Français | ✅ Complete |
-| 🇵🇱 PL | Polski | ✅ Complete |
-| 🇸🇰 SK | Slovenčina | ✅ Complete |
-| 🇨🇿 CS | Čeština | ✅ Complete |
-| 🇭🇺 HU | Magyar | ✅ Complete |
-| 🇸🇮 SL | Slovenščina | ✅ Complete |
+| # | Kod | Jezik | Status |
+|---|-----|-------|--------|
+| 1 | 🇬🇧 EN | English | ✅ Master |
+| 2 | 🇭🇷 HR | Hrvatski | ✅ Kompletno |
+| 3 | 🇩🇪 DE | Deutsch | ✅ Kompletno |
+| 4 | 🇮🇹 IT | Italiano | ✅ Kompletno |
+| 5 | 🇪🇸 ES | Español | ✅ Kompletno |
+| 6 | 🇫🇷 FR | Français | ✅ Kompletno |
+| 7 | 🇵🇱 PL | Polski | ✅ Kompletno |
+| 8 | 🇸🇰 SK | Slovenčina | ✅ Kompletno |
+| 9 | 🇨🇿 CS | Čeština | ✅ Kompletno |
+| 10 | 🇭🇺 HU | Magyar | ✅ Kompletno |
+| 11 | 🇸🇮 SL | Slovenščina | ✅ Kompletno |
 
-**~150 translation keys × 11 languages = ~1,650 translations**
+**178 translation keys × 11 languages = 1,958 translations**
 
 ---
 
-## 📌 Verzije i Changelog
+## 🎨 Teme i Personalizacija
 
-### Trenutna verzija: 2.2.0 (Siječanj 2026)
+### Primarne Boje (10)
+
+| # | Naziv | Hex | Tip |
+|---|-------|-----|-----|
+| 1 | Gold | #D4AF37 | Luxury |
+| 2 | Bronze | #CD7F32 | Luxury |
+| 3 | Royal Blue | #1B4F72 | Luxury |
+| 4 | Burgundy | #800020 | Luxury |
+| 5 | Emerald | #2E8B57 | Luxury |
+| 6 | Slate | #708090 | Luxury |
+| 7 | Neon Green | #39FF14 | Neon |
+| 8 | Cyan | #00FFFF | Neon |
+| 9 | Hot Pink | #FF69B4 | Neon |
+| 10 | Electric Orange | #FF4500 | Neon |
+
+### Pozadinski Tonovi (6)
+
+| # | Naziv | Hex | Tip |
+|---|-------|-----|-----|
+| 1 | dark1 | #000000 | Dark (Pure Black - OLED) |
+| 2 | dark2 | #121212 | Dark (Material Dark) |
+| 3 | dark3 | #1E1E1E | Dark (Soft Dark) |
+| 4 | light1 | #E0E0E0 | Light (Soft Grey) |
+| 5 | light2 | #F5F5F5 | Light (Off White) |
+| 6 | light3 | #FFFFFF | Light (Pure White) |
+
+---
+
+## 📌 Verzije
+
+### Trenutna verzija: 0.0.9 (Siječanj 2026)
 
 ```
-v2.2.0 - Production Ready Release
+v0.0.9 - Beta Release (Siječanj 2026)
 ═══════════════════════════════════════════════════════════════
-✅ Enterprise Auth Service (475 lines)
-✅ Comprehensive Test Suite (138 tests, 2,918 lines)
+✅ Enterprise Auth Service (479 linija)
+✅ Comprehensive Test Suite (138 testova, 3,908 linija)
 ✅ Fixed tenant activation flow
 ✅ Fixed translations bug (argument order)
-✅ Added missing Firestore indexes
+✅ Added missing Firestore indexes (11 total)
 ✅ Performance utilities (Debouncer, Throttler, RetryHelper)
+✅ Complete documentation update
 
-v2.1.0 - Enterprise Hardening
+v0.0.8 - Enterprise Hardening
 ═══════════════════════════════════════════════════════════════
 ✅ Offline Queue Service + Auto-Sync
 ✅ Performance Monitoring
 ✅ API Versioning (v1/v2)
 ✅ Health Dashboard Service
 
-v2.0.0 - Advanced Features
+v0.0.7 - Advanced Features
 ═══════════════════════════════════════════════════════════════
 ✅ Revenue Analytics Dashboard
 ✅ iCal Calendar Export
 ✅ Email Notifications System
-✅ 11-language Support
+✅ 11-language Support (178 keys)
 
-v1.0.0 - Core System
+v0.0.1 - Core System
 ═══════════════════════════════════════════════════════════════
 ✅ Multi-tenant Architecture
 ✅ Booking Calendar (Drag & Drop)
@@ -447,8 +615,12 @@ Za upite o licenciranju ili poslovnu suradnju:
 
 <div align="center">
 
-**VillaOS Admin Panel** | Enterprise Property Management System
+**Vesta Lumina Admin Panel** | Part of **Vesta Lumina System**
+
+*Enterprise Property Management*
 
 *Built with Flutter & Firebase*
+
+v0.0.9 Beta
 
 </div>

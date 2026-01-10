@@ -3,8 +3,9 @@
 ║                     VLASNIČKA LICENCA SOFTVERA                                ║
 ║                     PROPRIETARY SOFTWARE LICENSE                              ║
 ║                                                                               ║
-║                           VillaOS Admin Panel                                 ║
-║                           Version 2.2.0                                       ║
+║                        Vesta Lumina Admin Panel                               ║
+║                      Part of Vesta Lumina System                              ║
+║                           Version 0.0.9 Beta                                  ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 
@@ -23,10 +24,18 @@ Ovaj softver je PRIVATNO VLASNIŠTVO. Ovo NIJE softver otvorenog koda (open
 source). Repozitorij je javno vidljiv ISKLJUČIVO u svrhu demonstracije 
 portfelja i tehničkih sposobnosti autora.
 
+Vesta Lumina System sastoji se od:
+• Vesta Lumina Admin Panel - Web aplikacija za vlasnike (ovaj repozitorij)
+• Vesta Lumina Client Terminal - Tablet aplikacija za goste (zasebni repozitorij)
+
 🇬🇧 ENGLISH:
 This software is PROPRIETARY. This is NOT open source software. The repository 
 is publicly visible SOLELY for the purpose of portfolio demonstration and 
 showcasing the author's technical capabilities.
+
+Vesta Lumina System consists of:
+• Vesta Lumina Admin Panel - Web application for owners (this repository)
+• Vesta Lumina Client Terminal - Tablet application for guests (separate repository)
 
 ════════════════════════════════════════════════════════════════════════════════
                          STROGE ZABRANE / STRICT PROHIBITIONS
@@ -42,57 +51,135 @@ ACTIVITIES ARE STRICTLY PROHIBITED WITHOUT PRIOR WRITTEN PERMISSION:
 │                                                                             │
 │  1. KOPIRANJE I REPRODUKCIJA / COPYING AND REPRODUCTION                     │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
 │  ❌ Preuzimanje, kloniranje, forkanje ili kopiranje bilo kojeg dijela      │
-│  ❌ Downloading, cloning, forking or copying any part of this codebase     │
+│     Downloading, cloning, forking or copying any part of this codebase     │
+│                                                                             │
 │  ❌ Uzimanje snimaka zaslona ili snimanje izvornog koda                    │
-│  ❌ Taking screenshots or recording source code                             │
+│     Taking screenshots or recording source code                             │
+│                                                                             │
 │  ❌ Reproduciranje bilo kojeg dijela u bilo kojem obliku ili mediju        │
-│  ❌ Reproducing any part in any form or medium                              │
+│     Reproducing any part in any form or medium                              │
+│                                                                             │
+│  ❌ Kopiranje strukture projekta, arhitekture ili dizajna                  │
+│     Copying project structure, architecture or design                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
 │  2. IZMJENE I IZVEDENA DJELA / MODIFICATIONS AND DERIVATIVE WORKS           │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
 │  ❌ Mijenjanje, prilagođavanje ili preinaka izvornog koda                  │
-│  ❌ Modifying, adapting or altering the source code                         │
+│     Modifying, adapting or altering the source code                         │
+│                                                                             │
 │  ❌ Stvaranje izvedenih djela temeljenih na ovom softveru                  │
-│  ❌ Creating derivative works based on this software                        │
+│     Creating derivative works based on this software                        │
+│                                                                             │
 │  ❌ Prevođenje ili pretvaranje koda u druge programske jezike              │
-│  ❌ Translating or converting code to other programming languages           │
+│     Translating or converting code to other programming languages           │
+│                                                                             │
+│  ❌ Korištenje dizajna, UI/UX elemenata ili vizualnog identiteta           │
+│     Using design, UI/UX elements or visual identity                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
 │  3. DISTRIBUCIJA I DIJELJENJE / DISTRIBUTION AND SHARING                    │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
 │  ❌ Redistribucija softvera u bilo kojem obliku                            │
-│  ❌ Redistributing the software in any form                                 │
+│     Redistributing the software in any form                                 │
+│                                                                             │
 │  ❌ Dijeljenje isječaka koda, datoteka ili dokumentacije                   │
-│  ❌ Sharing code snippets, files or documentation                           │
+│     Sharing code snippets, files or documentation                           │
+│                                                                             │
 │  ❌ Objavljivanje ili postavljanje bilo kojeg dijela drugdje               │
-│  ❌ Publishing or posting any part elsewhere                                │
+│     Publishing or posting any part elsewhere                                │
+│                                                                             │
+│  ❌ Slanje koda putem emaila, chata ili drugih komunikacijskih kanala      │
+│     Sending code via email, chat or other communication channels            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
 │  4. KOMERCIJALNA I OSOBNA UPOTREBA / COMMERCIAL AND PERSONAL USE            │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
 │  ❌ Korištenje softvera u bilo koju komercijalnu svrhu                     │
-│  ❌ Using this software for any commercial purpose                          │
+│     Using this software for any commercial purpose                          │
+│                                                                             │
 │  ❌ Korištenje softvera za osobne projekte                                 │
-│  ❌ Using this software for personal projects                               │
+│     Using this software for personal projects                               │
+│                                                                             │
 │  ❌ Uključivanje bilo kojeg koda u druge aplikacije                        │
-│  ❌ Incorporating any code into other applications                          │
+│     Incorporating any code into other applications                          │
+│                                                                             │
 │  ❌ Korištenje algoritama, arhitektura ili implementacija                  │
-│  ❌ Using algorithms, architectures or implementations from this project    │
+│     Using algorithms, architectures or implementations from this project    │
+│                                                                             │
+│  ❌ Korištenje kao referenca ili inspiracija za vlastite projekte          │
+│     Using as reference or inspiration for your own projects                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
 │  5. OBRNUTI INŽENJERING / REVERSE ENGINEERING                               │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
 │  ❌ Dekompilacija ili rastavljanje softvera                                │
-│  ❌ Decompiling or disassembling the software                               │
+│     Decompiling or disassembling the software                               │
+│                                                                             │
 │  ❌ Pokušaj izvođenja izvornog koda iz kompiliranih verzija                │
-│  ❌ Attempting to derive source code from compiled versions                 │
+│     Attempting to derive source code from compiled versions                 │
+│                                                                             │
 │  ❌ Analiziranje koda radi repliciranja funkcionalnosti                    │
-│  ❌ Analyzing code to replicate functionality                               │
+│     Analyzing code to replicate functionality                               │
+│                                                                             │
+│  ❌ Proučavanje koda radi kreiranja konkurentskog proizvoda                │
+│     Studying code to create a competing product                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
 │  6. AI/ML TRENING / AI/ML TRAINING                                          │
 │  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
 │  ❌ Korištenje koda za treniranje AI/ML modela                             │
-│  ❌ Using code for training AI/ML models                                    │
+│     Using code for training AI/ML models                                    │
+│                                                                             │
 │  ❌ Uključivanje u dataset za machine learning                             │
-│  ❌ Including in datasets for machine learning                              │
+│     Including in datasets for machine learning                              │
+│                                                                             │
+│  ❌ Korištenje za fine-tuning jezičnih modela                              │
+│     Using for fine-tuning language models                                   │
+│                                                                             │
+│  ❌ Ekstrakcija podataka za bilo kakvu automatiziranu obradu               │
+│     Data extraction for any automated processing                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  7. PRISTUP I SIGURNOST / ACCESS AND SECURITY                               │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ❌ Neovlašteni pristup Firebase konzoli ili API-ju                        │
+│     Unauthorized access to Firebase console or API                          │
+│                                                                             │
+│  ❌ Pokušaji kompromitiranja sigurnosti aplikacije                         │
+│     Attempts to compromise application security                             │
+│                                                                             │
+│  ❌ Skeniranje ranjivosti ili penetracijski testovi                        │
+│     Vulnerability scanning or penetration testing                           │
+│                                                                             │
+│  ❌ Korištenje API ključeva ili pristupnih podataka                        │
+│     Using API keys or access credentials                                    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -106,28 +193,48 @@ UNAUTHORIZED USE OF THIS SOFTWARE CONSTITUTES:
 • Kršenje autorskih prava prema međunarodnim zakonima uključujući:
   Copyright infringement under international laws including:
   
-  - Bernsku konvenciju za zaštitu književnih i umjetničkih djela
-    Berne Convention for the Protection of Literary and Artistic Works
-  - WIPO ugovor o autorskom pravu
-    WIPO Copyright Treaty
-  - Zakon o autorskim pravima u digitalnom tisućljeću (DMCA) - SAD
-    Digital Millennium Copyright Act (DMCA) - USA
-  - Direktivu EU o autorskim pravima 2019/790
-    EU Copyright Directive 2019/790
-  - Zakon o autorskom pravu i srodnim pravima - Republika Hrvatska
-    Croatian Copyright and Related Rights Act
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │ • Bernska konvencija za zaštitu književnih i umjetničkih djela           │
+  │   Berne Convention for the Protection of Literary and Artistic Works     │
+  │                                                                           │
+  │ • WIPO ugovor o autorskom pravu                                          │
+  │   WIPO Copyright Treaty                                                   │
+  │                                                                           │
+  │ • Zakon o autorskim pravima u digitalnom tisućljeću (DMCA) - SAD         │
+  │   Digital Millennium Copyright Act (DMCA) - USA                          │
+  │                                                                           │
+  │ • Direktiva EU o autorskim pravima 2019/790                              │
+  │   EU Copyright Directive 2019/790                                        │
+  │                                                                           │
+  │ • Zakon o autorskom pravu i srodnim pravima - Republika Hrvatska         │
+  │   Croatian Copyright and Related Rights Act                               │
+  │                                                                           │
+  │ • Computer Fraud and Abuse Act (CFAA) - SAD                              │
+  │   Computer Fraud and Abuse Act (CFAA) - USA                              │
+  └───────────────────────────────────────────────────────────────────────────┘
 
 • Potencijalno kazneno djelo kažnjivo:
   Potential criminal offense punishable by:
   
-  - Novčanim kaznama do 150.000 USD po kršenju (nadležnost SAD-a)
-    Fines up to $150,000 per infringement (US jurisdiction)
-  - Novčanim kaznama do 50.000 EUR (nadležnost EU)
-    Fines up to €50,000 (EU jurisdiction)
-  - Zatvorskom kaznom u teškim slučajevima
-    Imprisonment in severe cases
-  - Građanskom parnicom za naknadu štete i izgubljene dobiti
-    Civil lawsuit for damages and lost profits
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │ • Novčanim kaznama do 150.000 USD po kršenju (nadležnost SAD-a)          │
+  │   Fines up to $150,000 per infringement (US jurisdiction)                │
+  │                                                                           │
+  │ • Novčanim kaznama do 50.000 EUR (nadležnost EU)                         │
+  │   Fines up to €50,000 (EU jurisdiction)                                  │
+  │                                                                           │
+  │ • Novčanim kaznama do 100.000 HRK (nadležnost RH)                        │
+  │   Fines up to 100,000 HRK (Croatian jurisdiction)                        │
+  │                                                                           │
+  │ • Zatvorskom kaznom do 5 godina u teškim slučajevima                     │
+  │   Imprisonment up to 5 years in severe cases                              │
+  │                                                                           │
+  │ • Građanskom parnicom za naknadu štete i izgubljene dobiti               │
+  │   Civil lawsuit for damages and lost profits                              │
+  │                                                                           │
+  │ • Naknadom stvarne štete i troškova postupka                             │
+  │   Recovery of actual damages and legal costs                              │
+  └───────────────────────────────────────────────────────────────────────────┘
 
 ════════════════════════════════════════════════════════════════════════════════
                          AKTIVNI NADZOR / ACTIVE MONITORING
@@ -139,12 +246,33 @@ SVE DOSTUPNE PRAVNE LIJEKOVE PROTIV PREKRŠITELJA:
 THE COPYRIGHT HOLDER ACTIVELY MONITORS FOR UNAUTHORIZED USE AND WILL PURSUE 
 ALL AVAILABLE LEGAL REMEDIES AGAINST INFRINGERS:
 
-  → DMCA zahtjeve za uklanjanje sadržaja / DMCA takedown requests
-  → Naloge za prestanak i odustajanje / Cease and desist orders
-  → Građanske tužbe za naknadu štete / Civil lawsuits for damages
-  → Kazneni progon gdje je primjenjivo / Criminal prosecution where applicable
-  → Naplatu pravnih troškova i naknada / Recovery of legal costs and fees
-  → Prijave GitHub-u za kršenje ToS-a / GitHub ToS violation reports
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  → DMCA zahtjeve za uklanjanje sadržaja                                    │
+│    DMCA takedown requests                                                   │
+│                                                                             │
+│  → Naloge za prestanak i odustajanje (Cease and Desist)                    │
+│    Cease and desist orders                                                  │
+│                                                                             │
+│  → Građanske tužbe za naknadu štete                                        │
+│    Civil lawsuits for damages                                               │
+│                                                                             │
+│  → Kazneni progon gdje je primjenjivo                                      │
+│    Criminal prosecution where applicable                                    │
+│                                                                             │
+│  → Naplatu pravnih troškova i naknada                                      │
+│    Recovery of legal costs and fees                                         │
+│                                                                             │
+│  → Prijave GitHub-u za kršenje Uvjeta korištenja                           │
+│    GitHub Terms of Service violation reports                                │
+│                                                                             │
+│  → Prijave hosting providerima i registrarima domena                       │
+│    Reports to hosting providers and domain registrars                       │
+│                                                                             │
+│  → Prijave nacionalnim tijelima za zaštitu intelektualnog vlasništva       │
+│    Reports to national intellectual property authorities                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 
 ════════════════════════════════════════════════════════════════════════════════
                            BEZ JAMSTVA / NO WARRANTY
@@ -166,18 +294,59 @@ THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY ARISING FROM THE ACCESS TO OR VIEWING OF THIS SOFTWARE.
 
 ════════════════════════════════════════════════════════════════════════════════
+                     OGRANIČENA DOZVOLA / LIMITED PERMISSION
+════════════════════════════════════════════════════════════════════════════════
+
+Pristup ovom repozitoriju odobrava se isključivo za:
+Access to this repository is granted solely for:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ✅ Pregled koda u web pregledniku na GitHub.com                           │
+│     Viewing code in a web browser on GitHub.com                             │
+│                                                                             │
+│  ✅ Evaluaciju tehničkih sposobnosti autora                                │
+│     Evaluation of the author's technical capabilities                       │
+│                                                                             │
+│  ✅ Razmatranje za potencijalne poslovne prilike                           │
+│     Consideration for potential business opportunities                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
                               KONTAKT / CONTACT
 ════════════════════════════════════════════════════════════════════════════════
 
-Za upite o licenciranju ili zahtjeve za dopuštenje:
-For licensing inquiries or permission requests:
+Za upite o licenciranju, komercijalnoj suradnji ili zahtjeve za dopuštenje:
+For licensing inquiries, commercial collaboration or permission requests:
 
-  📧 Email: nevenroksa@gmail.com
-  🐙 GitHub: @nroxa92
-  🌐 Project: https://github.com/nroxa92/admin_panel
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  📧 Email: nevenroksa@gmail.com                                            │
+│                                                                             │
+│  🐙 GitHub: @nroxa92                                                       │
+│                                                                             │
+│  🌐 Project: https://github.com/nroxa92/admin_panel                        │
+│                                                                             │
+│  🏢 Live Demo: https://vls-admin.web.app                                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 
 Neovlaštena upotreba bit će procesuirana u najvećoj mjeri dopuštenoj zakonom.
 Unauthorized use will be prosecuted to the fullest extent permitted by law.
+
+════════════════════════════════════════════════════════════════════════════════
+                         VERZIJA LICENCE / LICENSE VERSION
+════════════════════════════════════════════════════════════════════════════════
+
+Verzija licence: 2.1
+License version: 2.1
+
+Datum izdavanja: Siječanj 2026
+Issue date: January 2026
+
+Zadnje ažurirano: 10. siječnja 2026.
+Last updated: January 10, 2026
 
 ════════════════════════════════════════════════════════════════════════════════
 
@@ -187,5 +356,11 @@ Unauthorized use will be prosecuted to the fullest extent permitted by law.
 
 ════════════════════════════════════════════════════════════════════════════════
 
-Zadnje ažurirano / Last updated: Siječanj / January 2026
-Verzija licence / License version: 2.0
+                        VESTA LUMINA SYSTEM
+                     Vesta Lumina Admin Panel
+                    Vesta Lumina Client Terminal
+
+                    Enterprise Property Management
+                      Built with Flutter & Firebase
+
+════════════════════════════════════════════════════════════════════════════════
