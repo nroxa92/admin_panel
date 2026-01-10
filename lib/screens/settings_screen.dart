@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 import '../services/settings_service.dart';
@@ -53,6 +54,14 @@ class _SettingsScreenState extends State<SettingsScreen>
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _masterPinFocusNodes =
       List.generate(6, (_) => FocusNode());
+
+  // 🆕 KIOSK PIN KONTROLERI - 6 boxes
+  final List<TextEditingController> _kioskPinControllers =
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _kioskPinFocusNodes =
+      List.generate(6, (_) => FocusNode());
+  bool _isSavingKioskPin = false;
+  bool _isLockingTablets = false;
 
   // PASSWORD KONTROLERI
   final _currentPasswordController = TextEditingController();
@@ -108,6 +117,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     for (var node in _masterPinFocusNodes) {
       node.dispose();
     }
+    // Kiosk PIN
+    for (var ctrl in _kioskPinControllers) {
+      ctrl.dispose();
+    }
+    for (var node in _kioskPinFocusNodes) {
+      node.dispose();
+    }
     // Password
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
@@ -148,6 +164,13 @@ class _SettingsScreenState extends State<SettingsScreen>
           for (int i = 0; i < 6; i++) {
             _masterPinControllers[i].text =
                 i < masterPin.length ? masterPin[i] : '';
+          }
+
+          // Load Kiosk Exit PIN (6 digits)
+          final kioskPin = settings.kioskExitPin.padRight(6, '');
+          for (int i = 0; i < 6; i++) {
+            _kioskPinControllers[i].text =
+                i < kioskPin.length ? kioskPin[i] : '';
           }
         });
       }
@@ -406,6 +429,115 @@ class _SettingsScreenState extends State<SettingsScreen>
       }
     } finally {
       if (mounted) setState(() => _isSavingMasterPin = false);
+    }
+  }
+
+  // ==================== SAVE KIOSK EXIT PIN ====================
+  Future<void> _saveKioskPin() async {
+    for (var ctrl in _kioskPinControllers) {
+      if (ctrl.text.isEmpty) {
+        _showError("Please fill all 6 digits for Kiosk Exit PIN");
+        return;
+      }
+    }
+
+    final kioskPin = _kioskPinControllers.map((c) => c.text).join();
+
+    if (!mounted) return;
+    setState(() => _isSavingKioskPin = true);
+
+    try {
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      final ownerId = provider.settings.ownerId;
+      if (ownerId.isEmpty) return;
+
+      await FirebaseFirestore.instance
+          .collection('settings')
+          .doc(ownerId)
+          .update({'kioskExitPin': kioskPin});
+
+      if (mounted) {
+        setState(() => _isSavingKioskPin = false);
+        _showSuccess("Kiosk Exit PIN Saved!");
+      }
+    } catch (e) {
+      debugPrint("❌ Error saving kiosk PIN: $e");
+      if (mounted) {
+        setState(() => _isSavingKioskPin = false);
+        _showError("Failed to save Kiosk Exit PIN");
+      }
+    }
+  }
+
+  // ==================== LOCK ALL TABLETS ====================
+  Future<void> _lockAllTablets() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Row(
+          children: [
+            Icon(Icons.lock, color: Colors.orange),
+            SizedBox(width: 12),
+            Text('Lock All Tablets?', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          'This will enable kiosk mode on ALL your tablets. '
+          'Guests will not be able to exit the app.\n\n'
+          '⚠️ Only an Admin can remotely unlock tablets after this.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child:
+                const Text('Lock All', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    if (!mounted) return;
+    setState(() => _isLockingTablets = true);
+
+    try {
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      final ownerId = provider.settings.ownerId;
+      if (ownerId.isEmpty) return;
+
+      final tabletsSnapshot = await FirebaseFirestore.instance
+          .collection('tablets')
+          .where('ownerId', isEqualTo: ownerId)
+          .get();
+
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in tabletsSnapshot.docs) {
+        batch.update(doc.reference, {
+          'kioskModeEnabled': true,
+          'kioskLockedAt': FieldValue.serverTimestamp(),
+          'kioskLockedBy': 'owner',
+        });
+      }
+      await batch.commit();
+
+      if (mounted) {
+        setState(() => _isLockingTablets = false);
+        _showSuccess("${tabletsSnapshot.docs.length} tablet(s) locked!");
+      }
+    } catch (e) {
+      debugPrint("❌ Error locking tablets: $e");
+      if (mounted) {
+        setState(() => _isLockingTablets = false);
+        _showError("Failed to lock tablets");
+      }
     }
   }
 
@@ -827,6 +959,126 @@ class _SettingsScreenState extends State<SettingsScreen>
                         size: 18, color: isDark ? Colors.black : Colors.white),
                 label: Text(t('btn_save'),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+            Divider(color: textColor.withValues(alpha: 0.2)),
+            const SizedBox(height: 20),
+
+            // ===== KIOSK EXIT PIN =====
+            Row(
+              children: [
+                const Icon(Icons.screen_lock_portrait,
+                    color: Colors.orange, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  "Kiosk Exit PIN (6 digits)",
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "PIN to exit kiosk mode on tablets (local unlock)",
+              style: TextStyle(
+                color: textColor.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(6, (index) {
+                return Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: isSmallScreen ? 3 : 6),
+                  child: _buildPinBox(
+                    controller: _kioskPinControllers[index],
+                    focusNode: _kioskPinFocusNodes[index],
+                    nextFocusNode:
+                        index < 5 ? _kioskPinFocusNodes[index + 1] : null,
+                    textColor: textColor,
+                    primaryColor: Colors.orange,
+                    cardColor: cardColor,
+                    isSmallScreen: isSmallScreen,
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Lock All Tablets Button
+                ElevatedButton.icon(
+                  onPressed: _isLockingTablets ? null : _lockAllTablets,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.withValues(alpha: 0.2),
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                  ),
+                  icon: _isLockingTablets
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.orange))
+                      : const Icon(Icons.lock, size: 18),
+                  label: const Text("Lock All Tablets",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                // Save PIN Button
+                ElevatedButton.icon(
+                  onPressed: _isSavingKioskPin ? null : _saveKioskPin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                  ),
+                  icon: _isSavingKioskPin
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save, size: 18),
+                  label: Text(t('btn_save'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      color: Colors.orange, size: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Once locked, only an Admin can remotely unlock tablets. "
+                      "Local unlock requires this PIN.",
+                      style: TextStyle(
+                        color: Colors.orange.withValues(alpha: 0.8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

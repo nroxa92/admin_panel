@@ -1,5 +1,6 @@
 // FILE: lib/models/settings_model.dart
-// STATUS: FIXED - Owner Info i Emergency Contact su POTPUNO ODVOJENI
+// STATUS: UPDATED - Added kioskExitPin for Kiosk Mode control
+// VERSION: 2.0 - January 2026
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -33,8 +34,9 @@ class VillaSettings {
   // ========================================
   // SIGURNOST
   // ========================================
-  final String cleanerPin;
-  final String hardResetPin;
+  final String cleanerPin; // 4 digits - for cleaning staff
+  final String hardResetPin; // 6 digits - for factory reset
+  final String kioskExitPin; // 6 digits - for exiting kiosk mode on tablets
 
   // ========================================
   // AI ZNANJE
@@ -87,7 +89,8 @@ class VillaSettings {
     this.categories = const [],
     // Sigurnost
     this.cleanerPin = '0000',
-    this.hardResetPin = '1234',
+    this.hardResetPin = '123456',
+    this.kioskExitPin = '000000', // 🆕 Default: unlocked (000000)
     // AI
     this.aiConcierge = '',
     this.aiHousekeeper = '',
@@ -144,7 +147,10 @@ class VillaSettings {
           '0000',
       hardResetPin: data['hardResetPin']?.toString() ??
           data['hard_reset_pin']?.toString() ??
-          '1234',
+          '123456',
+      kioskExitPin: data['kioskExitPin']?.toString() ??
+          data['kiosk_exit_pin']?.toString() ??
+          '000000', // 🆕
       // AI
       aiConcierge: data['aiConcierge']?.toString() ??
           data['ai_concierge']?.toString() ??
@@ -208,6 +214,7 @@ class VillaSettings {
       // Sigurnost
       'cleanerPin': cleanerPin,
       'hardResetPin': hardResetPin,
+      'kioskExitPin': kioskExitPin, // 🆕
       // AI
       'aiConcierge': aiConcierge,
       'aiHousekeeper': aiHousekeeper,
@@ -227,6 +234,82 @@ class VillaSettings {
       'themeMode': themeMode,
       'appLanguage': appLanguage,
     };
+  }
+
+  // ========================================
+  // HELPER: Copy with modifications
+  // ========================================
+  VillaSettings copyWith({
+    String? ownerId,
+    String? ownerFirstName,
+    String? ownerLastName,
+    String? contactEmail,
+    String? contactPhone,
+    String? companyName,
+    String? emergencyCall,
+    String? emergencySms,
+    String? emergencyWhatsapp,
+    String? emergencyViber,
+    String? emergencyEmail,
+    List<String>? categories,
+    String? cleanerPin,
+    String? hardResetPin,
+    String? kioskExitPin,
+    String? aiConcierge,
+    String? aiHousekeeper,
+    String? aiTech,
+    String? aiGuide,
+    String? welcomeMessage,
+    Map<String, String>? welcomeMessageTranslations,
+    Map<String, String>? houseRulesTranslations,
+    List<String>? cleanerChecklist,
+    int? welcomeMessageDuration,
+    int? houseRulesDuration,
+    String? checkInTime,
+    String? checkOutTime,
+    String? wifiSsid,
+    String? wifiPass,
+    String? themeColor,
+    String? themeMode,
+    String? appLanguage,
+  }) {
+    return VillaSettings(
+      ownerId: ownerId ?? this.ownerId,
+      ownerFirstName: ownerFirstName ?? this.ownerFirstName,
+      ownerLastName: ownerLastName ?? this.ownerLastName,
+      contactEmail: contactEmail ?? this.contactEmail,
+      contactPhone: contactPhone ?? this.contactPhone,
+      companyName: companyName ?? this.companyName,
+      emergencyCall: emergencyCall ?? this.emergencyCall,
+      emergencySms: emergencySms ?? this.emergencySms,
+      emergencyWhatsapp: emergencyWhatsapp ?? this.emergencyWhatsapp,
+      emergencyViber: emergencyViber ?? this.emergencyViber,
+      emergencyEmail: emergencyEmail ?? this.emergencyEmail,
+      categories: categories ?? this.categories,
+      cleanerPin: cleanerPin ?? this.cleanerPin,
+      hardResetPin: hardResetPin ?? this.hardResetPin,
+      kioskExitPin: kioskExitPin ?? this.kioskExitPin,
+      aiConcierge: aiConcierge ?? this.aiConcierge,
+      aiHousekeeper: aiHousekeeper ?? this.aiHousekeeper,
+      aiTech: aiTech ?? this.aiTech,
+      aiGuide: aiGuide ?? this.aiGuide,
+      welcomeMessage: welcomeMessage ?? this.welcomeMessage,
+      welcomeMessageTranslations:
+          welcomeMessageTranslations ?? this.welcomeMessageTranslations,
+      houseRulesTranslations:
+          houseRulesTranslations ?? this.houseRulesTranslations,
+      cleanerChecklist: cleanerChecklist ?? this.cleanerChecklist,
+      welcomeMessageDuration:
+          welcomeMessageDuration ?? this.welcomeMessageDuration,
+      houseRulesDuration: houseRulesDuration ?? this.houseRulesDuration,
+      checkInTime: checkInTime ?? this.checkInTime,
+      checkOutTime: checkOutTime ?? this.checkOutTime,
+      wifiSsid: wifiSsid ?? this.wifiSsid,
+      wifiPass: wifiPass ?? this.wifiPass,
+      themeColor: themeColor ?? this.themeColor,
+      themeMode: themeMode ?? this.themeMode,
+      appLanguage: appLanguage ?? this.appLanguage,
+    );
   }
 
   // ========================================

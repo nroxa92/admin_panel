@@ -1,5 +1,5 @@
 // FILE: lib/screens/super_admin_tablets.dart
-// VERSION: 3.1 - Fixed linter warnings
+// VERSION: 4.0 - Kiosk Remote Control
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -71,6 +71,13 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
           'updatePushedAt': data['updatePushedAt'],
           'updateDownloadedAt': data['updateDownloadedAt'],
           'updateInstalledAt': data['updateInstalledAt'],
+          // 🆕 KIOSK FIELDS
+          'kioskModeEnabled': data['kioskModeEnabled'] ?? false,
+          'kioskExitPin': data['kioskExitPin'] ?? '000000',
+          'kioskLockedAt': data['kioskLockedAt'],
+          'kioskLockedBy': data['kioskLockedBy'] ?? '',
+          'kioskUnlockedAt': data['kioskUnlockedAt'],
+          'kioskUnlockedBy': data['kioskUnlockedBy'] ?? '',
         });
       }
 
@@ -99,6 +106,13 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
     }
     if (_filter == 'pending') {
       return _tablets.where((t) => t['pendingUpdate'] == true).toList();
+    }
+    // 🆕 KIOSK FILTERS
+    if (_filter == 'locked') {
+      return _tablets.where((t) => t['kioskModeEnabled'] == true).toList();
+    }
+    if (_filter == 'unlocked') {
+      return _tablets.where((t) => t['kioskModeEnabled'] != true).toList();
     }
     return _tablets;
   }
@@ -144,6 +158,17 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
                   '${_tablets.where((t) => t['pendingUpdate'] == true).length}',
                   Icons.system_update,
                   Colors.orange),
+              // 🆕 KIOSK STATS
+              _statCard(
+                  'Locked',
+                  '${_tablets.where((t) => t['kioskModeEnabled'] == true).length}',
+                  Icons.lock,
+                  Colors.purple),
+              _statCard(
+                  'Unlocked',
+                  '${_tablets.where((t) => t['kioskModeEnabled'] != true).length}',
+                  Icons.lock_open,
+                  Colors.cyan),
             ],
           ),
           const SizedBox(height: 24),
@@ -154,6 +179,9 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
               _filterChip('Online', 'online'),
               _filterChip('Offline', 'offline'),
               _filterChip('Pending Update', 'pending'),
+              // 🆕 KIOSK FILTERS
+              _filterChip('🔒 Locked', 'locked'),
+              _filterChip('🔓 Unlocked', 'unlocked'),
             ],
           ),
           const SizedBox(height: 24),
@@ -263,6 +291,9 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
     final updateStatus = t['updateStatus'] as String? ?? '';
     final updateError = t['updateError'] as String? ?? '';
 
+    // 🆕 KIOSK STATE
+    final kioskEnabled = t['kioskModeEnabled'] == true;
+
     // Determine update status color and icon
     Color updateColor = Colors.orange;
     IconData updateIcon = Icons.pending;
@@ -292,7 +323,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
     }
 
     return Container(
-      width: 220,
+      width: 250,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF2A2A2A),
@@ -305,6 +336,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Row
           Row(
             children: [
               Icon(isOnline ? Icons.wifi : Icons.wifi_off,
@@ -317,6 +349,15 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
                           fontWeight: FontWeight.bold,
                           fontSize: 13),
                       overflow: TextOverflow.ellipsis)),
+              // 🆕 EDIT BUTTON
+              IconButton(
+                icon: const Icon(Icons.settings, size: 16),
+                color: Colors.grey,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => _showEditTabletDialog(t),
+                tooltip: 'Edit Tablet',
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -328,7 +369,59 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
           Text(isOnline ? '🟢 Online' : '⚫ ${_timeAgo(t['lastHeartbeat'])}',
               style: TextStyle(
                   color: isOnline ? Colors.green : Colors.grey, fontSize: 10)),
-          // Update Status
+
+          // 🆕 KIOSK STATUS & TOGGLE
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: kioskEnabled
+                  ? Colors.purple.withValues(alpha: 0.2)
+                  : Colors.cyan.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: kioskEnabled
+                    ? Colors.purple.withValues(alpha: 0.5)
+                    : Colors.cyan.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      kioskEnabled ? Icons.lock : Icons.lock_open,
+                      color: kioskEnabled ? Colors.purple : Colors.cyan,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      kioskEnabled ? 'LOCKED' : 'UNLOCKED',
+                      style: TextStyle(
+                        color: kioskEnabled ? Colors.purple : Colors.cyan,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                // Toggle Switch
+                SizedBox(
+                  height: 20,
+                  child: Switch(
+                    value: kioskEnabled,
+                    onChanged: (value) => _toggleKioskMode(t, value),
+                    activeThumbColor: Colors.purple,
+                    inactiveThumbColor: Colors.cyan,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Update Status (existing)
           if (hasPending || updateStatus.isNotEmpty) ...[
             const SizedBox(height: 8),
             Container(
@@ -417,6 +510,316 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
         SizedBox(height: 16),
         Text('No tablets registered', style: TextStyle(color: Colors.grey)),
       ])),
+    );
+  }
+
+  // ==================== KIOSK CONTROL ====================
+
+  Future<void> _toggleKioskMode(
+      Map<String, dynamic> tablet, bool enable) async {
+    final deviceId = tablet['deviceId'] as String;
+    final unitName = tablet['unitName'] as String;
+
+    // If disabling (unlocking), show confirmation
+    if (!enable) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_open, color: Colors.cyan),
+              SizedBox(width: 12),
+              Text('Unlock Tablet?', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Text(
+            'This will disable kiosk mode on "$unitName".\n\n'
+            'Users will be able to exit the app and access the device.',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
+              child:
+                  const Text('Unlock', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+    }
+
+    try {
+      await _firestore.collection('tablets').doc(deviceId).update({
+        'kioskModeEnabled': enable,
+        'kioskLockedAt': enable ? FieldValue.serverTimestamp() : null,
+        'kioskLockedBy': enable ? 'admin' : null,
+        'kioskUnlockedAt': enable ? null : FieldValue.serverTimestamp(),
+        'kioskUnlockedBy': enable ? null : 'admin',
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(enable
+              ? 'Tablet "$unitName" locked!'
+              : 'Tablet "$unitName" unlocked!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      _loadTablets();
+    } catch (e) {
+      debugPrint('❌ Error toggling kiosk: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to ${enable ? 'lock' : 'unlock'} tablet'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showEditTabletDialog(Map<String, dynamic> tablet) async {
+    final deviceId = tablet['deviceId'] as String;
+    final unitName = tablet['unitName'] as String;
+    final kioskEnabled = tablet['kioskModeEnabled'] == true;
+    final kioskPin = tablet['kioskExitPin'] as String? ?? '000000';
+
+    final pinController = TextEditingController(text: kioskPin);
+    bool currentKioskState = kioskEnabled;
+
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: Row(
+            children: [
+              const Icon(Icons.tablet_android, color: Color(0xFFD4AF37)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Edit Tablet',
+                        style: TextStyle(color: Colors.white, fontSize: 18)),
+                    Text(unitName,
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 350,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status Info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A2A2A),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _infoRow(
+                          'Device ID',
+                          deviceId.length > 20
+                              ? '${deviceId.substring(0, 20)}...'
+                              : deviceId),
+                      _infoRow('Version', 'v${tablet['appVersion']}'),
+                      _infoRow('Model', tablet['model']),
+                      _infoRow(
+                          'Status',
+                          tablet['isOnline'] == true
+                              ? '🟢 Online'
+                              : '⚫ Offline'),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Kiosk Settings Section
+                const Text('🔒 KIOSK SETTINGS',
+                    style: TextStyle(
+                        color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+
+                // Kiosk Mode Toggle
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: currentKioskState
+                        ? Colors.purple.withValues(alpha: 0.2)
+                        : Colors.cyan.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: currentKioskState ? Colors.purple : Colors.cyan,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            currentKioskState ? Icons.lock : Icons.lock_open,
+                            color:
+                                currentKioskState ? Colors.purple : Colors.cyan,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Kiosk Mode',
+                            style: TextStyle(
+                              color: currentKioskState
+                                  ? Colors.purple
+                                  : Colors.cyan,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: currentKioskState,
+                        onChanged: (v) =>
+                            setDialogState(() => currentKioskState = v),
+                        activeThumbColor: Colors.purple,
+                        inactiveThumbColor: Colors.cyan,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Exit PIN
+                const Text('Exit PIN (6 digits)',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: pinController,
+                  style: const TextStyle(color: Colors.white, letterSpacing: 8),
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFF2A2A2A),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                    ),
+                    counterText: '',
+                    hintText: '000000',
+                    hintStyle:
+                        TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '⚠️ This PIN overrides owner master PIN for this tablet',
+                  style: TextStyle(
+                      color: Colors.orange.withValues(alpha: 0.7),
+                      fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (pinController.text.isNotEmpty &&
+                    pinController.text.length != 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('PIN must be exactly 6 digits'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx, {
+                  'kioskModeEnabled': currentKioskState,
+                  'kioskExitPin': pinController.text.isEmpty
+                      ? '000000'
+                      : pinController.text,
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD4AF37),
+              ),
+              child: const Text('Save', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      try {
+        await _firestore.collection('tablets').doc(deviceId).update({
+          'kioskModeEnabled': result['kioskModeEnabled'],
+          'kioskExitPin': result['kioskExitPin'],
+          'kioskUpdatedAt': FieldValue.serverTimestamp(),
+          'kioskUpdatedBy': 'admin',
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tablet settings saved!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadTablets();
+      } catch (e) {
+        debugPrint('❌ Error saving tablet: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save tablet settings'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text(value,
+              style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ],
+      ),
     );
   }
 }
