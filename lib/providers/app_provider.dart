@@ -1,6 +1,7 @@
 // FILE: lib/providers/app_provider.dart
-// OPIS: Globalno stanje aplikacije. Sadrži logiku za boje, jezik i postavke.
-// STATUS: VERIFIED (Koristi SettingsService koji je već fixan sa Tenant ID)
+// PROJECT: VillaOS Admin Panel
+// STATUS: ✅ FIXED - Corrected translate method argument order
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import '../models/settings_model.dart';
@@ -24,7 +25,6 @@ class AppProvider with ChangeNotifier {
     _initStream();
   }
 
-  // ✅ FIXED: Dodao error handling za sigurnost
   void _initStream() {
     _settingsService.getSettingsStream().listen(
       (newSettings) {
@@ -35,7 +35,6 @@ class AppProvider with ChangeNotifier {
         notifyListeners();
       },
       onError: (error) {
-        // Ako dođe do greške (npr. permission denied), postavi default
         debugPrint("AppProvider Stream Error: $error");
         _settings = VillaSettings(ownerId: '');
         notifyListeners();
@@ -56,8 +55,12 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ✅ FIXED: Corrected argument order - was get(currentLanguage, key)
+  //          Now correctly: get(key, currentLanguage)
+  // ═══════════════════════════════════════════════════════════════════════════
   String translate(String key) {
-    return AppTranslations.get(currentLanguage, key);
+    return AppTranslations.get(key, currentLanguage);
   }
 
   // --- LOGIKA BOJA (PALETA) ---
