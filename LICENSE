@@ -1,94 +1,191 @@
-VLASNIČKA LICENCA SOFTVERA
-=============================
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║                     VLASNIČKA LICENCA SOFTVERA                                ║
+║                     PROPRIETARY SOFTWARE LICENSE                              ║
+║                                                                               ║
+║                           VillaOS Admin Panel                                 ║
+║                           Version 2.2.0                                       ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
 
-Autorsko pravo (c) 2025-2026 nroxa92. Sva prava pridržana.
+Autorsko pravo (c) 2025-2026 Neven Roksa (@nroxa92)
+Copyright (c) 2025-2026 Neven Roksa (@nroxa92)
 
-NAPOMENA: OVO NIJE SOFTVER OTVORENOG KODA (OPEN SOURCE)
+Sva prava pridržana. / All rights reserved.
 
-Ovaj softver, uključujući sav izvorni kod, dokumentaciju, resurse i povezane 
-datoteke sadržane u ovom repozitoriju ("Softver"), isključivo je intelektualno 
-vlasništvo nositelja autorskog prava. Ovaj Softver je javno vidljiv na 
-GitHubu ISKLJUČIVO u svrhu demonstracije portfelja.
+════════════════════════════════════════════════════════════════════════════════
+                              VAŽNA NAPOMENA
+                             IMPORTANT NOTICE
+════════════════════════════════════════════════════════════════════════════════
 
-================================================================================
-                              STROGE ZABRANE
-================================================================================
+🇭🇷 HRVATSKI:
+Ovaj softver je PRIVATNO VLASNIŠTVO. Ovo NIJE softver otvorenog koda (open 
+source). Repozitorij je javno vidljiv ISKLJUČIVO u svrhu demonstracije 
+portfelja i tehničkih sposobnosti autora.
+
+🇬🇧 ENGLISH:
+This software is PROPRIETARY. This is NOT open source software. The repository 
+is publicly visible SOLELY for the purpose of portfolio demonstration and 
+showcasing the author's technical capabilities.
+
+════════════════════════════════════════════════════════════════════════════════
+                         STROGE ZABRANE / STRICT PROHIBITIONS
+════════════════════════════════════════════════════════════════════════════════
 
 PRISTUPANJEM OVOM REPOZITORIJU POTVRĐUJETE I SLAŽETE SE DA SU SLJEDEĆE 
 AKTIVNOSTI STROGO ZABRANJENE BEZ PRETHODNOG PISANOG ODOBRENJA:
 
-1. KOPIRANJE I REPRODUKCIJA
-   - Preuzimanje, kloniranje, forkanje ili kopiranje bilo kojeg dijela ove baze koda
-   - Uzimanje snimaka zaslona ili snimanje izvornog koda
-   - Reproduciranje bilo kojeg dijela ovog Softvera u bilo kojem obliku ili mediju
+BY ACCESSING THIS REPOSITORY YOU ACKNOWLEDGE AND AGREE THAT THE FOLLOWING 
+ACTIVITIES ARE STRICTLY PROHIBITED WITHOUT PRIOR WRITTEN PERMISSION:
 
-2. IZMJENE I IZVEDENA DJELA
-   - Mijenjanje, prilagođavanje ili preinaka izvornog koda
-   - Stvaranje izvedenih djela temeljenih na ovom Softveru
-   - Prevođenje ili pretvaranje koda u druge programske jezike
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  1. KOPIRANJE I REPRODUKCIJA / COPYING AND REPRODUCTION                     │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  ❌ Preuzimanje, kloniranje, forkanje ili kopiranje bilo kojeg dijela      │
+│  ❌ Downloading, cloning, forking or copying any part of this codebase     │
+│  ❌ Uzimanje snimaka zaslona ili snimanje izvornog koda                    │
+│  ❌ Taking screenshots or recording source code                             │
+│  ❌ Reproduciranje bilo kojeg dijela u bilo kojem obliku ili mediju        │
+│  ❌ Reproducing any part in any form or medium                              │
+│                                                                             │
+│  2. IZMJENE I IZVEDENA DJELA / MODIFICATIONS AND DERIVATIVE WORKS           │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  ❌ Mijenjanje, prilagođavanje ili preinaka izvornog koda                  │
+│  ❌ Modifying, adapting or altering the source code                         │
+│  ❌ Stvaranje izvedenih djela temeljenih na ovom softveru                  │
+│  ❌ Creating derivative works based on this software                        │
+│  ❌ Prevođenje ili pretvaranje koda u druge programske jezike              │
+│  ❌ Translating or converting code to other programming languages           │
+│                                                                             │
+│  3. DISTRIBUCIJA I DIJELJENJE / DISTRIBUTION AND SHARING                    │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  ❌ Redistribucija softvera u bilo kojem obliku                            │
+│  ❌ Redistributing the software in any form                                 │
+│  ❌ Dijeljenje isječaka koda, datoteka ili dokumentacije                   │
+│  ❌ Sharing code snippets, files or documentation                           │
+│  ❌ Objavljivanje ili postavljanje bilo kojeg dijela drugdje               │
+│  ❌ Publishing or posting any part elsewhere                                │
+│                                                                             │
+│  4. KOMERCIJALNA I OSOBNA UPOTREBA / COMMERCIAL AND PERSONAL USE            │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  ❌ Korištenje softvera u bilo koju komercijalnu svrhu                     │
+│  ❌ Using this software for any commercial purpose                          │
+│  ❌ Korištenje softvera za osobne projekte                                 │
+│  ❌ Using this software for personal projects                               │
+│  ❌ Uključivanje bilo kojeg koda u druge aplikacije                        │
+│  ❌ Incorporating any code into other applications                          │
+│  ❌ Korištenje algoritama, arhitektura ili implementacija                  │
+│  ❌ Using algorithms, architectures or implementations from this project    │
+│                                                                             │
+│  5. OBRNUTI INŽENJERING / REVERSE ENGINEERING                               │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  ❌ Dekompilacija ili rastavljanje softvera                                │
+│  ❌ Decompiling or disassembling the software                               │
+│  ❌ Pokušaj izvođenja izvornog koda iz kompiliranih verzija                │
+│  ❌ Attempting to derive source code from compiled versions                 │
+│  ❌ Analiziranje koda radi repliciranja funkcionalnosti                    │
+│  ❌ Analyzing code to replicate functionality                               │
+│                                                                             │
+│  6. AI/ML TRENING / AI/ML TRAINING                                          │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  ❌ Korištenje koda za treniranje AI/ML modela                             │
+│  ❌ Using code for training AI/ML models                                    │
+│  ❌ Uključivanje u dataset za machine learning                             │
+│  ❌ Including in datasets for machine learning                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-3. DISTRIBUCIJA I DIJELJENJE
-   - Redistribucija Softvera u bilo kojem obliku
-   - Dijeljenje isječaka koda, datoteka ili dokumentacije
-   - Objavljivanje ili postavljanje bilo kojeg dijela drugdje
-
-4. KOMERCIJALNA I OSOBNA UPOTREBA
-   - Korištenje ovog Softvera u bilo koju komercijalnu svrhu
-   - Korištenje ovog Softvera za osobne projekte
-   - Uključivanje bilo kojeg koda u druge aplikacije
-   - Korištenje algoritama, arhitektura ili implementacija iz ovog projekta
-
-5. OBRNUTI INŽENJERING (REVERSE ENGINEERING)
-   - Dekompilacija ili rastavljanje (disassembliranje) Softvera
-   - Pokušaj izvođenja izvornog koda iz kompiliranih verzija
-   - Analiziranje koda radi repliciranja funkcionalnosti
-
-================================================================================
-                              PRAVNE POSLJEDICE
-================================================================================
+════════════════════════════════════════════════════════════════════════════════
+                    PRAVNE POSLJEDICE / LEGAL CONSEQUENCES
+════════════════════════════════════════════════════════════════════════════════
 
 NEOVLAŠTENO KORIŠTENJE OVOG SOFTVERA PREDSTAVLJA:
+UNAUTHORIZED USE OF THIS SOFTWARE CONSTITUTES:
 
-• Kršenje autorskih prava prema međunarodnim zakonima o autorskim pravima uključujući:
+• Kršenje autorskih prava prema međunarodnim zakonima uključujući:
+  Copyright infringement under international laws including:
+  
   - Bernsku konvenciju za zaštitu književnih i umjetničkih djela
+    Berne Convention for the Protection of Literary and Artistic Works
   - WIPO ugovor o autorskom pravu
-  - Zakon o autorskim pravima u digitalnom tisućljeću (DMCA)
-  - Direktivu EU o autorskim pravima
+    WIPO Copyright Treaty
+  - Zakon o autorskim pravima u digitalnom tisućljeću (DMCA) - SAD
+    Digital Millennium Copyright Act (DMCA) - USA
+  - Direktivu EU o autorskim pravima 2019/790
+    EU Copyright Directive 2019/790
+  - Zakon o autorskom pravu i srodnim pravima - Republika Hrvatska
+    Croatian Copyright and Related Rights Act
 
 • Potencijalno kazneno djelo kažnjivo:
+  Potential criminal offense punishable by:
+  
   - Novčanim kaznama do 150.000 USD po kršenju (nadležnost SAD-a)
+    Fines up to $150,000 per infringement (US jurisdiction)
+  - Novčanim kaznama do 50.000 EUR (nadležnost EU)
+    Fines up to €50,000 (EU jurisdiction)
   - Zatvorskom kaznom u teškim slučajevima
+    Imprisonment in severe cases
   - Građanskom parnicom za naknadu štete i izgubljene dobiti
+    Civil lawsuit for damages and lost profits
+
+════════════════════════════════════════════════════════════════════════════════
+                         AKTIVNI NADZOR / ACTIVE MONITORING
+════════════════════════════════════════════════════════════════════════════════
 
 NOSITELJ AUTORSKOG PRAVA AKTIVNO NADZIRE NEOVLAŠTENU UPOTREBU I PODUZET ĆE 
-SVE DOSTUPNE PRAVNE LIJEKOVE PROTIV PREKRŠITELJA, UKLJUČUJUĆI ALI NE 
-OGRANIČAVAJUĆI SE NA:
+SVE DOSTUPNE PRAVNE LIJEKOVE PROTIV PREKRŠITELJA:
 
-  → DMCA zahtjeve za uklanjanje sadržaja
-  → Naloge za prestanak i odustajanje (Cease and Desist)
-  → Građanske tužbe za naknadu štete
-  → Kazneni progon gdje je primjenjivo
-  → Naplatu pravnih troškova i naknada
+THE COPYRIGHT HOLDER ACTIVELY MONITORS FOR UNAUTHORIZED USE AND WILL PURSUE 
+ALL AVAILABLE LEGAL REMEDIES AGAINST INFRINGERS:
 
-================================================================================
-                              BEZ JAMSTVA
-================================================================================
+  → DMCA zahtjeve za uklanjanje sadržaja / DMCA takedown requests
+  → Naloge za prestanak i odustajanje / Cease and desist orders
+  → Građanske tužbe za naknadu štete / Civil lawsuits for damages
+  → Kazneni progon gdje je primjenjivo / Criminal prosecution where applicable
+  → Naplatu pravnih troškova i naknada / Recovery of legal costs and fees
+  → Prijave GitHub-u za kršenje ToS-a / GitHub ToS violation reports
+
+════════════════════════════════════════════════════════════════════════════════
+                           BEZ JAMSTVA / NO WARRANTY
+════════════════════════════════════════════════════════════════════════════════
 
 OVAJ SOFTVER SE DAJE "KAKAV JEST" BEZ JAMSTVA BILO KOJE VRSTE, IZRIČITOG ILI 
-IMPLICIRANOG. NOSITELJ AUTORSKOG PRAVA NEĆE BITI ODGOVORAN ZA BILO KAKAV 
-ZAHTJEV, ŠTETU ILI DRUGU ODGOVORNOST KOJA PROIZLAZI IZ PRISTUPA ILI 
-PREGLEDAVANJA OVOG SOFTVERA.
+IMPLICIRANOG, UKLJUČUJUĆI ALI NE OGRANIČAVAJUĆI SE NA JAMSTVA O PODOBNOSTI 
+ZA ODREĐENU SVRHU, NEKRŠENJU PRAVA I UTRŽIVOSTI.
 
-================================================================================
-                              KONTAKT
-================================================================================
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+NOSITELJ AUTORSKOG PRAVA NEĆE BITI ODGOVORAN ZA BILO KAKAV ZAHTJEV, ŠTETU 
+ILI DRUGU ODGOVORNOST KOJA PROIZLAZI IZ PRISTUPA ILI PREGLEDAVANJA OVOG 
+SOFTVERA.
+
+THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY ARISING FROM THE ACCESS TO OR VIEWING OF THIS SOFTWARE.
+
+════════════════════════════════════════════════════════════════════════════════
+                              KONTAKT / CONTACT
+════════════════════════════════════════════════════════════════════════════════
 
 Za upite o licenciranju ili zahtjeve za dopuštenje:
-GitHub: @nroxa92
-EMail: nevenroksa@gmail.com
+For licensing inquiries or permission requests:
+
+  📧 Email: nevenroksa@gmail.com
+  🐙 GitHub: @nroxa92
+  🌐 Project: https://github.com/nroxa92/admin_panel
 
 Neovlaštena upotreba bit će procesuirana u najvećoj mjeri dopuštenoj zakonom.
+Unauthorized use will be prosecuted to the fullest extent permitted by law.
 
-================================================================================
+════════════════════════════════════════════════════════════════════════════════
 
-Zadnje ažurirano: Siječanj 2026.
+                    © 2025-2026 Neven Roksa (@nroxa92)
+                         SVA PRAVA PRIDRŽANA
+                         ALL RIGHTS RESERVED
+
+════════════════════════════════════════════════════════════════════════════════
+
+Zadnje ažurirano / Last updated: Siječanj / January 2026
+Verzija licence / License version: 2.0
