@@ -1,6 +1,9 @@
 // FILE: lib/screens/tenant_setup_screen.dart
-// OPIS: Screen za prvi login - vlasnik linkuje svoj Tenant ID.
-// STATUS: ✅ FIXED (Direct HTTP call - bypassing Int64 bug!)
+// PROJECT: Vesta Lumina System
+// VERSION: 2.1.0 - FIXED Cloud Functions URL
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIX: Changed URL from villa-ai-admin to vesta-lumina-system
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,13 +32,13 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
   Future<void> _linkTenantId() async {
     final tenantId = _tenantIdController.text.trim().toUpperCase();
 
-    // ✅ VALIDACIJA 1: Prazan input
+    // Validacija 1: Prazan input
     if (tenantId.isEmpty) {
       setState(() => _errorMessage = "Please enter your Tenant ID");
       return;
     }
 
-    // ✅ VALIDACIJA 2: Format (6-12 uppercase letters/numbers)
+    // Validacija 2: Format (6-12 uppercase letters/numbers)
     if (!RegExp(r'^[A-Z0-9]{6,12}$').hasMatch(tenantId)) {
       setState(() =>
           _errorMessage = "Invalid format (6-12 uppercase letters/numbers)");
@@ -47,17 +50,16 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
       _errorMessage = null;
     });
 
-    // ✅ DEBUG: Log početak poziva
     debugPrint("🔵 Starting linkTenantId call for: $tenantId");
 
     try {
-      // ✅ KRITIČNO: Dohvati JWT token
+      // Dohvati JWT token
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         throw Exception("User not logged in");
       }
 
-      // ✅ Force refresh token (uvijek najnoviji!)
+      // Force refresh token
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
         throw Exception("Failed to get authentication token");
@@ -65,9 +67,11 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
 
       debugPrint("🔵 Got JWT token, making HTTP request...");
 
-      // ✅ DIREKTAN HTTP POZIV (zaobilazi Int64 bug!)
+      // ═══════════════════════════════════════════════════════════════════════
+      // ✅ FIXED URL - vesta-lumina-system
+      // ═══════════════════════════════════════════════════════════════════════
       final url = Uri.parse(
-          'https://europe-west3-villa-ai-admin.cloudfunctions.net/linkTenantId');
+          'https://europe-west3-vls-admin.cloudfunctions.net/linkTenantId');
 
       debugPrint("🔵 Calling: $url");
 
@@ -92,18 +96,14 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
       debugPrint("🔵 Response status: ${response.statusCode}");
       debugPrint("🔵 Response body: ${response.body}");
 
-      // ✅ Parse response
+      // Parse response
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
-        // Cloud Functions v2 callable response format:
-        // {"result": {"success": true, "message": "...", "tenantId": "..."}}
         final result = data['result'];
 
         if (result['success'] == true) {
           debugPrint("✅ Cloud Function success: $result");
 
-          // ✅ SUCCESS MESSAGE
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -114,21 +114,14 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
             );
           }
 
-          // ✅ Pričekaj 2 sekunde da user vidi poruku
           await Future.delayed(const Duration(seconds: 2));
 
-          // ✅ LOGOUT (AuthWrapper će detektirati i ponovno učitati Claims!)
           debugPrint("🔵 Logging out to refresh claims...");
           await FirebaseAuth.instance.signOut();
-
-          // AuthWrapper automatski:
-          // 1. Vidi logout → LoginScreen
-          // 2. User se logira → Nova Custom Claims → Dashboard ✅
         } else {
           throw Exception(result['message'] ?? 'Activation failed');
         }
       } else {
-        // ✅ Parse error response
         try {
           final errorData = json.decode(response.body);
           final errorMessage =
@@ -139,7 +132,6 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
         }
       }
     } on http.ClientException catch (e) {
-      // ✅ NETWORK ERRORI
       debugPrint("❌ Network Error: $e");
 
       if (mounted) {
@@ -149,12 +141,10 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
         });
       }
     } on Exception catch (e) {
-      // ✅ GENERIČKI ERRORI
       debugPrint("❌ Error: $e");
 
       String userMessage = e.toString().replaceFirst('Exception: ', '');
 
-      // ✅ User-friendly error messages
       if (userMessage.contains('Invalid tenant ID')) {
         userMessage = "Tenant ID not found";
       } else if (userMessage.contains('does not match')) {
@@ -174,7 +164,6 @@ class _TenantSetupScreenState extends State<TenantSetupScreen> {
         });
       }
     } catch (e) {
-      // ✅ NEOČEKIVANI ERRORI
       debugPrint("❌ Unexpected Error: $e");
 
       if (mounted) {
