@@ -1,6 +1,10 @@
 // FILE: lib/services/pdf_service.dart
-// FINAL - Simple rectangles with vertical line for overlap days
-// Copy/paste cijeli file!
+// VERSION: 2.0 - Enhanced eVisitor with MRZ support
+// DATE: 2026-01-11
+// CHANGES:
+//   - Enhanced printEvisitorForm() with professional layout
+//   - Handles multiple field name formats (MRZ + legacy)
+//   - Added helper methods for robust field extraction
 
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
@@ -244,7 +248,7 @@ class PdfService {
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Text(
-                    '🧹 CLEANING SCHEDULE',
+                    'CLEANING SCHEDULE',
                     style: pw.TextStyle(
                         fontSize: 24, fontWeight: pw.FontWeight.bold),
                   ),
@@ -401,8 +405,6 @@ class PdfService {
                         unitLabelWidth,
                         headerHeight,
                       ),
-
-                      // Booking blokovi
                       ..._buildBookingBlocks(
                         bookings,
                         units,
@@ -414,8 +416,6 @@ class PdfService {
                         headerHeight,
                         anonymous,
                       ),
-
-                      // 🆕 OVERLAP LINIJE (vertikalne kroz sredinu dana)
                       ..._buildOverlapLines(
                         bookings,
                         units,
@@ -549,7 +549,6 @@ class PdfService {
     );
   }
 
-  // Booking blokovi (obični rounded rectangles)
   static List<pw.Widget> _buildBookingBlocks(
     List<Booking> bookings,
     List<Unit> units,
@@ -629,7 +628,6 @@ class PdfService {
     return blocks;
   }
 
-  // 🆕 OVERLAP LINIJE - vertikalna crta kroz sredinu dana!
   static List<pw.Widget> _buildOverlapLines(
     List<Booking> bookings,
     List<Unit> units,
@@ -642,7 +640,6 @@ class PdfService {
   ) {
     final List<pw.Widget> lines = [];
 
-    // Za svaki unit, detektiraj overlap dane
     for (var unit in units) {
       final unitIndex = units.indexOf(unit);
       final unitBookings = bookings.where((b) => b.unitId == unit.id).toList()
@@ -655,11 +652,9 @@ class PdfService {
         final currentEnd = _stripTime(currentBooking.endDate);
         final nextStart = _stripTime(nextBooking.startDate);
 
-        // Overlap dan = isti dan check-out i check-in
         if (_isSameDay(currentEnd, nextStart)) {
           final dayOffset = currentEnd.difference(pageStart).inDays;
 
-          // Provjeri je li u ovom page range-u
           if (dayOffset >= 0 && dayOffset < pageDays) {
             final double x =
                 unitLabelWidth + (dayOffset * cellWidth) + (cellWidth / 2);
@@ -667,7 +662,7 @@ class PdfService {
 
             lines.add(
               pw.Positioned(
-                left: x - 1, // -1 da bude centrirana (širina 2px)
+                left: x - 1,
                 top: y + 4,
                 child: pw.Container(
                   width: 2,
@@ -719,6 +714,9 @@ class PdfService {
   // RECEPCIJA PDF-ovi (#1-4)
   // =============================================
 
+  /// Print eVisitor form with scanned guest data (MRZ)
+  /// Handles both legacy fields (name, address, idNumber) and
+  /// MRZ standard fields (firstName, lastName, documentNumber, etc.)
   static Future<void> printEvisitorForm(
     String unitName,
     List<Map<String, dynamic>> guestData,
@@ -726,46 +724,360 @@ class PdfService {
     final pdf = pw.Document();
 
     pdf.addPage(
-      pw.Page(
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text('📋 eVISITOR SCANNED DATA',
-                style:
-                    pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 8),
-            pw.Text(
-                'Unit: $unitName | Date: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}'),
-            pw.Divider(thickness: 2),
-            pw.SizedBox(height: 16),
-            ...guestData.map((guest) {
-              return pw.Container(
-                margin: const pw.EdgeInsets.only(bottom: 16),
-                padding: const pw.EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey),
-                  borderRadius:
-                      const pw.BorderRadius.all(pw.Radius.circular(8)),
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) => pw.Container(
+          margin: const pw.EdgeInsets.only(bottom: 16),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'eVisitor - Guest Registration',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue900,
                 ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Guest ${guestData.indexOf(guest) + 1}:',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.SizedBox(height: 4),
-                    pw.Text('Name: ${guest['name'] ?? 'N/A'}'),
-                    pw.Text('Address: ${guest['address'] ?? 'N/A'}'),
-                    pw.Text('ID Number: ${guest['idNumber'] ?? 'N/A'}'),
-                  ],
-                ),
-              );
-            }),
-          ],
+              ),
+              pw.Text(
+                'Page ${context.pageNumber}/${context.pagesCount}',
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              ),
+            ],
+          ),
         ),
+        footer: (context) => pw.Container(
+          margin: const pw.EdgeInsets.only(top: 16),
+          padding: const pw.EdgeInsets.only(top: 8),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300)),
+          ),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Generated: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
+              ),
+              pw.Text(
+                'VillaOS eVisitor System',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
+              ),
+            ],
+          ),
+        ),
+        build: (context) => [
+          // Header info box
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.blue50,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              border: pw.Border.all(color: PdfColors.blue200),
+            ),
+            child: pw.Row(
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Property: $unitName',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Scan Date: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: const pw.BoxDecoration(
+                    color: PdfColors.blue800,
+                    borderRadius:
+                        pw.BorderRadius.all(pw.Radius.circular(4)),
+                  ),
+                  child: pw.Text(
+                    '${guestData.length} Guest${guestData.length != 1 ? 's' : ''}',
+                    style: const pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 20),
+
+          // Guest cards
+          ...guestData.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final guest = entry.value;
+
+            // Extract guest name (handle multiple formats)
+            final String guestName = _extractGuestName(guest);
+
+            // Extract all available fields
+            final String? dateOfBirth =
+                _getField(guest, ['dateOfBirth', 'dob', 'birthDate']);
+            final String? nationality =
+                _getField(guest, ['nationality', 'nat', 'country']);
+            final String? documentType =
+                _getField(guest, ['documentType', 'docType', 'type']);
+            final String? documentNumber = _getField(guest,
+                ['documentNumber', 'idNumber', 'docNumber', 'passportNumber']);
+            final String? sex = _getField(guest, ['sex', 'gender']);
+            final String? placeOfBirth =
+                _getField(guest, ['placeOfBirth', 'birthPlace']);
+            final String? countryOfBirth =
+                _getField(guest, ['countryOfBirth', 'birthCountry']);
+            final String? issuingCountry =
+                _getField(guest, ['issuingCountry', 'issuer']);
+            final String? expiryDate =
+                _getField(guest, ['expiryDate', 'expiry', 'validUntil']);
+            final String? address =
+                _getField(guest, ['address', 'residence', 'residenceAddress']);
+            final String? residenceCity =
+                _getField(guest, ['residenceCity', 'city']);
+            final String? residenceCountry =
+                _getField(guest, ['residenceCountry']);
+
+            return pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 16),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey400),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // Guest header
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(10),
+                    decoration: const pw.BoxDecoration(
+                      color: PdfColors.grey200,
+                      borderRadius: pw.BorderRadius.only(
+                        topLeft: pw.Radius.circular(7),
+                        topRight: pw.Radius.circular(7),
+                      ),
+                    ),
+                    child: pw.Row(
+                      children: [
+                        pw.Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const pw.BoxDecoration(
+                            color: PdfColors.blue800,
+                            shape: pw.BoxShape.circle,
+                          ),
+                          child: pw.Center(
+                            child: pw.Text(
+                              '${idx + 1}',
+                              style: const pw.TextStyle(
+                                fontSize: 12,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        pw.SizedBox(width: 10),
+                        pw.Expanded(
+                          child: pw.Text(
+                            guestName,
+                            style: pw.TextStyle(
+                              fontSize: 14,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (nationality != null)
+                          pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: const pw.BoxDecoration(
+                              color: PdfColors.blue100,
+                              borderRadius: pw.BorderRadius.all(
+                                  pw.Radius.circular(4)),
+                            ),
+                            child: pw.Text(
+                              nationality,
+                              style: pw.TextStyle(
+                                fontSize: 10,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.blue900,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Guest details
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(12),
+                    child: pw.Column(
+                      children: [
+                        // Row 1: Document info
+                        pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Expanded(
+                              child: _buildPdfInfoField(
+                                  'Document Type', documentType ?? '-'),
+                            ),
+                            pw.SizedBox(width: 16),
+                            pw.Expanded(
+                              child: _buildPdfInfoField(
+                                  'Document Number', documentNumber ?? '-'),
+                            ),
+                            pw.SizedBox(width: 16),
+                            pw.Expanded(
+                              child: _buildPdfInfoField(
+                                  'Expiry Date', expiryDate ?? '-'),
+                            ),
+                          ],
+                        ),
+                        pw.SizedBox(height: 10),
+
+                        // Row 2: Personal info
+                        pw.Row(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Expanded(
+                              child: _buildPdfInfoField(
+                                  'Date of Birth', dateOfBirth ?? '-'),
+                            ),
+                            pw.SizedBox(width: 16),
+                            pw.Expanded(
+                              child: _buildPdfInfoField('Sex', sex ?? '-'),
+                            ),
+                            pw.SizedBox(width: 16),
+                            pw.Expanded(
+                              child: _buildPdfInfoField('Place of Birth',
+                                  placeOfBirth ?? countryOfBirth ?? '-'),
+                            ),
+                          ],
+                        ),
+                        pw.SizedBox(height: 10),
+
+                        // Row 3: Residence info (if available)
+                        if (address != null ||
+                            residenceCity != null ||
+                            residenceCountry != null)
+                          pw.Row(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Expanded(
+                                flex: 2,
+                                child: _buildPdfInfoField(
+                                  'Residence',
+                                  [address, residenceCity, residenceCountry]
+                                      .where((e) => e != null && e.isNotEmpty)
+                                      .join(', '),
+                                ),
+                              ),
+                              pw.SizedBox(width: 16),
+                              pw.Expanded(
+                                child: _buildPdfInfoField(
+                                    'Issuing Country', issuingCountry ?? '-'),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          // Empty state
+          if (guestData.isEmpty)
+            pw.Container(
+              padding: const pw.EdgeInsets.all(32),
+              child: pw.Center(
+                child: pw.Text(
+                  'No guest data available',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontStyle: pw.FontStyle.italic,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
 
     await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  }
+
+  /// Helper: Extract guest name from various field formats
+  static String _extractGuestName(Map<String, dynamic> guest) {
+    // Try firstName + lastName first
+    final firstName = guest['firstName']?.toString().trim() ?? '';
+    final lastName = guest['lastName']?.toString().trim() ?? '';
+
+    if (firstName.isNotEmpty || lastName.isNotEmpty) {
+      return '$firstName $lastName'.trim();
+    }
+
+    // Fallback to 'name' field
+    final name = guest['name']?.toString().trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+
+    // Fallback to 'fullName' field
+    final fullName = guest['fullName']?.toString().trim();
+    if (fullName != null && fullName.isNotEmpty) {
+      return fullName;
+    }
+
+    return 'Unknown Guest';
+  }
+
+  /// Helper: Get field value trying multiple possible field names
+  static String? _getField(
+      Map<String, dynamic> data, List<String> possibleKeys) {
+    for (final key in possibleKeys) {
+      final value = data[key]?.toString().trim();
+      if (value != null && value.isNotEmpty && value != 'null') {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  /// Helper: Build info field widget for PDF
+  static pw.Widget _buildPdfInfoField(String label, String value) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          label.toUpperCase(),
+          style: const pw.TextStyle(
+            fontSize: 8,
+            color: PdfColors.grey600,
+          ),
+        ),
+        pw.SizedBox(height: 2),
+        pw.Text(
+          value.isEmpty ? '-' : value,
+          style: const pw.TextStyle(fontSize: 10),
+        ),
+      ],
+    );
   }
 
   static Future<void> printHouseRules(
@@ -781,7 +1093,7 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('📜 HOUSE RULES',
+            pw.Text('HOUSE RULES',
                 style:
                     pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
@@ -830,7 +1142,7 @@ class PdfService {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('🧹 CLEANING LOG',
+            pw.Text('CLEANING LOG',
                 style:
                     pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
@@ -903,7 +1215,7 @@ class PdfService {
         margin: const pw.EdgeInsets.all(32),
         build: (context) {
           return [
-            pw.Text('📅 FULL SEASON SCHEDULE',
+            pw.Text('FULL SEASON SCHEDULE',
                 style:
                     pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 8),
