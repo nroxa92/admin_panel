@@ -1,6 +1,6 @@
 // FILE: lib/screens/super_admin_screen.dart
-// VERSION: 5.0 - Multi-tier Admin with Brand Support
-// DATE: 2026-01-10
+// VERSION: 5.1 - Auto-initialization for Master Admin
+// DATE: 2026-01-11
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -49,6 +49,9 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
   List<Tab> _tabs = [];
   List<Widget> _tabViews = [];
 
+  // Master admin email (hardcoded for bootstrap)
+  static const String _masterAdminEmail = 'vestaluminasystem@gmail.com';
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +64,81 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
       _tabController.dispose();
     }
     super.dispose();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AUTO-INITIALIZATION (creates required documents if missing)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Future<void> _ensureDefaultDocuments() async {
+    // 1. Create default brand if missing
+    final brandDoc =
+        await _firestore.collection('brands').doc('vesta-lumina').get();
+    if (!brandDoc.exists) {
+      await _firestore.collection('brands').doc('vesta-lumina').set({
+        'id': 'vesta-lumina',
+        'name': 'Vesta Lumina',
+        'domain': 'vestalumina.com',
+        'type': 'retail',
+        'isLocked': true,
+        'primaryColor': '#D4AF37',
+        'secondaryColor': '#1E1E1E',
+        'accentColor': '#FFFFFF',
+        'appName': 'Vesta Lumina',
+        'tagline': 'Smart Property Management',
+        'supportEmail': 'support@vestalumina.com',
+        'websiteUrl': 'https://vestalumina.com',
+        'logoUrl': '',
+        'logoLightUrl': '',
+        'faviconUrl': '',
+        'splashImageUrl': '',
+        'clientCount': 0,
+        'totalUnits': 0,
+        'totalBookings': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('✅ Created default brand: vesta-lumina');
+    }
+
+    // 2. Create master admin document if missing
+    final adminDoc = await _firestore
+        .collection('super_admins')
+        .doc(_masterAdminEmail)
+        .get();
+    if (!adminDoc.exists) {
+      await _firestore.collection('super_admins').doc(_masterAdminEmail).set({
+        'email': _masterAdminEmail,
+        'level': 3,
+        'brandId': null,
+        'active': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'createdBy': 'system',
+      });
+      debugPrint('✅ Created master admin: $_masterAdminEmail');
+    }
+
+    // 3. Create exit_config if missing
+    final exitDoc =
+        await _firestore.collection('exit_config').doc('settings').get();
+    if (!exitDoc.exists) {
+      await _firestore.collection('exit_config').doc('settings').set({
+        'retailMonthlyBase': 29.99,
+        'retailPerUnit': 4.99,
+        'retailSetupFee': 199.0,
+        'whiteLabelMonthlyBase': 99.99,
+        'whiteLabelPerUnit': 2.99,
+        'whiteLabelSetupFee': 499.0,
+        'firebaseMonthlyCost': 50.0,
+        'maintenanceHourlyRate': 50.0,
+        'maintenanceHoursMonthly': 10.0,
+        'multiplierLow': 3.0,
+        'multiplierMid': 7.0,
+        'multiplierHigh': 12.0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('✅ Created exit_config: settings');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -77,13 +155,29 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
 
       _adminEmail = user.email?.toLowerCase() ?? '';
 
+      // ═══════════════════════════════════════════════════════════════════════
+      // MASTER ADMIN AUTO-INITIALIZATION
+      // If this is the master admin, ensure all required documents exist
+      // ═══════════════════════════════════════════════════════════════════════
+      if (_adminEmail == _masterAdminEmail) {
+        await _ensureDefaultDocuments();
+      }
+
       // Check super_admins collection
       final adminDoc =
           await _firestore.collection('super_admins').doc(_adminEmail).get();
 
       if (!adminDoc.exists) {
         // Not a super admin, shouldn't be here
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You do not have Super Admin access'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          Navigator.of(context).pop();
+        }
         return;
       }
 
@@ -106,7 +200,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
       }
 
       // Determine admin level
-      if (level >= 3 || _adminEmail == 'vestaluminasystem@gmail.com') {
+      if (level >= 3 || _adminEmail == _masterAdminEmail) {
         _adminLevel = AdminLevel.masterMaster;
         _adminBrandId = null; // Can see all brands
       } else {
