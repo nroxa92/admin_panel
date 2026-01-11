@@ -1,7 +1,7 @@
 // =====================================================
-// VLS Cloud Functions - PHASE 4 COMPLETE (20 FUNCTIONS)
-// Version: 6.0 - Email Notifications + Calendar + Revenue
-// Date: 2026-01-09
+// VLS Cloud Functions - PHASE 5 (24 FUNCTIONS)
+// Version: 7.0 - Multi-tier Admin + Brand Support
+// Date: 2026-01-10
 // =====================================================
 
 const {onCall, onRequest} = require('firebase-functions/v2/https');
@@ -19,12 +19,19 @@ const smtpPass = defineSecret('SMTP_PASS');
 admin.initializeApp();
 
 // =====================================================
-// HELPER: CHECK SUPER ADMIN (Firestore-based)
+// HELPER: CHECK SUPER ADMIN (Multi-level)
+// Returns: { isAdmin, level, brandId }
+// Level 2 = Brand Admin, Level 3 = Master Master
 // =====================================================
 async function isSuperAdmin(email) {
-  if (!email) return false;
+  if (!email) return { isAdmin: false, level: 0, brandId: null };
   
   const normalizedEmail = email.toLowerCase();
+  
+  // Master Master always has full access
+  if (normalizedEmail === 'vestaluminasystem@gmail.com') {
+    return { isAdmin: true, level: 3, brandId: null };
+  }
   
   const superAdminDoc = await admin.firestore()
     .collection('super_admins')
@@ -32,14 +39,47 @@ async function isSuperAdmin(email) {
     .get();
   
   if (superAdminDoc.exists && superAdminDoc.data().active === true) {
-    return true;
+    const data = superAdminDoc.data();
+    return {
+      isAdmin: true,
+      level: data.level || 2,
+      brandId: data.brandId || null,
+    };
   }
   
-  if (normalizedEmail === 'vestaluminasystem@gmail.com') {
-    return true;
+  return { isAdmin: false, level: 0, brandId: null };
+}
+
+// Helper: Check if admin can access specific brand
+function canAccessBrand(adminInfo, brandId) {
+  if (!adminInfo.isAdmin) return false;
+  if (adminInfo.level >= 3) return true; // Master can access all
+  return adminInfo.brandId === brandId;
+}
+
+// Helper: Check if Master Master
+function isMasterMaster(adminInfo) {
+  return adminInfo.isAdmin && adminInfo.level >= 3;
+}
+
+// Helper: Generate tenant ID (8 chars)
+function generateTenantId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  
-  return false;
+  return result;
+}
+
+// Helper: Generate temporary password (12 chars)
+function generateTempPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  let result = '';
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 // =====================================================
@@ -95,54 +135,202 @@ async function getOwnerEmailSettings(ownerId) {
 }
 
 // =====================================================
+// HELPER: UPDATE BRAND STATISTICS
+// =====================================================
+async function updateBrandStats(brandId) {
+  try {
+    const clientsSnap = await admin.firestore()
+      .collection('tenant_links')
+      .where('brandId', '==', brandId)
+      .get();
+    
+    const clientIds = clientsSnap.docs.map(d => d.id);
+    let totalUnits = 0;
+    let totalBookings = 0;
+
+    for (const clientId of clientIds) {
+      const unitsSnap = await admin.firestore()
+        .collection('units')
+        .where('ownerId', '==', clientId)
+        .get();
+      totalUnits += unitsSnap.size;
+
+      const bookingsSnap = await admin.firestore()
+        .collection('bookings')
+        .where('ownerId', '==', clientId)
+        .get();
+      totalBookings += bookingsSnap.size;
+    }
+
+    await admin.firestore().collection('brands').doc(brandId).update({
+      clientCount: clientIds.length,
+      totalUnits: totalUnits,
+      totalBookings: totalBookings,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`✅ Updated stats for brand: ${brandId}`);
+  } catch (error) {
+    console.error(`❌ Error updating brand stats: ${error}`);
+  }
+}
+
+// =====================================================
+// HELPER: ENSURE DEFAULT DOCUMENTS EXIST
+// Auto-creates brands/vesta-lumina and exit_config/settings
+// =====================================================
+async function ensureDefaultDocuments() {
+  const db = admin.firestore();
+  
+  // 1. Ensure default brand exists
+  const brandDoc = await db.collection('brands').doc('vesta-lumina').get();
+  if (!brandDoc.exists) {
+    await db.collection('brands').doc('vesta-lumina').set({
+      id: 'vesta-lumina',
+      name: 'Vesta Lumina',
+      domain: 'vestalumina.com',
+      type: 'retail',
+      isLocked: true,
+      primaryColor: '#D4AF37',
+      secondaryColor: '#1E1E1E',
+      accentColor: '#FFFFFF',
+      appName: 'Vesta Lumina',
+      tagline: 'Smart Property Management',
+      supportEmail: 'support@vestalumina.com',
+      websiteUrl: 'https://vestalumina.com',
+      logoUrl: '',
+      logoLightUrl: '',
+      faviconUrl: '',
+      splashImageUrl: '',
+      clientCount: 0,
+      totalUnits: 0,
+      totalBookings: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    console.log('✅ Created default brand: vesta-lumina');
+  }
+  
+  // 2. Ensure exit_config exists
+  const exitDoc = await db.collection('exit_config').doc('settings').get();
+  if (!exitDoc.exists) {
+    await db.collection('exit_config').doc('settings').set({
+      retailMonthlyBase: 29.99,
+      retailPerUnit: 4.99,
+      retailSetupFee: 199,
+      whiteLabelMonthlyBase: 99.99,
+      whiteLabelPerUnit: 2.99,
+      whiteLabelSetupFee: 499,
+      firebaseMonthlyCost: 50,
+      maintenanceHourlyRate: 50,
+      maintenanceHoursMonthly: 10,
+      multiplierLow: 3,
+      multiplierMid: 7,
+      multiplierHigh: 12,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    console.log('✅ Created exit_config/settings');
+  }
+  
+  // 3. Ensure master admin exists
+  const masterDoc = await db.collection('super_admins').doc('vestaluminasystem@gmail.com').get();
+  if (!masterDoc.exists) {
+    await db.collection('super_admins').doc('vestaluminasystem@gmail.com').set({
+      email: 'vestaluminasystem@gmail.com',
+      level: 3,
+      brandId: null,
+      active: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: 'system',
+    });
+    console.log('✅ Created master admin document');
+  } else if (!masterDoc.data().level) {
+    // Update existing doc with level if missing
+    await db.collection('super_admins').doc('vestaluminasystem@gmail.com').update({
+      level: 3,
+      brandId: null,
+    });
+    console.log('✅ Updated master admin with level');
+  }
+}
+
+// =====================================================
 // FUNKCIJA 1: Kreiranje Vlasnika (Super Admin)
+// UPDATED: Brand support + Auto-generate tenant ID & password
 // =====================================================
 exports.createOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
-    const {email, password, tenantId, displayName} = request.data;
+    // Ensure default documents exist
+    await ensureDefaultDocuments();
 
-    if (!email || !password || !tenantId) {
-      throw new Error('Missing required fields: email, password, tenantId');
+    const {email, displayName, brandId, type} = request.data;
+
+    if (!email || !displayName) {
+      throw new Error('Missing required fields: email, displayName');
     }
 
-    if (!/^[A-Z0-9]{6,12}$/.test(tenantId)) {
-      throw new Error('Invalid tenant ID format (use 6-12 uppercase letters/numbers)');
+    // Determine brand - Level 2 can only create for their brand
+    const targetBrandId = brandId || adminInfo.brandId || 'vesta-lumina';
+    const targetType = type || 'retail';
+
+    // Check brand access for Level 2 admins
+    if (adminInfo.level < 3 && adminInfo.brandId && adminInfo.brandId !== targetBrandId) {
+      throw new Error('You can only create owners for your assigned brand');
     }
+
+    // Auto-generate tenant ID and password
+    let tenantId = generateTenantId();
+    const tempPassword = generateTempPassword();
 
     try {
-      const existingTenant = await admin.firestore()
+      // Verify tenant ID is unique (very unlikely to collide)
+      let existingTenant = await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
         .get();
 
       if (existingTenant.exists) {
-        throw new Error(`Tenant ID "${tenantId}" already exists`);
+        // Try once more with new ID
+        tenantId = generateTenantId();
+        existingTenant = await admin.firestore()
+          .collection('tenant_links')
+          .doc(tenantId)
+          .get();
+        if (existingTenant.exists) {
+          throw new Error('Failed to generate unique tenant ID, please try again');
+        }
       }
 
+      // Create Firebase Auth user
       const userRecord = await admin.auth().createUser({
         email: email,
-        password: password,
+        password: tempPassword,
         emailVerified: true,
       });
 
+      // Create tenant_links document with brand info
       await admin.firestore().collection('tenant_links').doc(tenantId).set({
         tenantId: tenantId,
         firebaseUid: userRecord.uid,
         email: email,
-        displayName: displayName || email.split('@')[0],
+        displayName: displayName,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         createdBy: adminEmail,
         linkedAt: null,
         status: 'pending',
+        brandId: targetBrandId,
+        type: targetType,
       });
 
+      // Create settings document
       await admin.firestore().collection('settings').doc(tenantId).set({
         ownerId: tenantId,
         cleanerPin: '0000',
@@ -151,7 +339,7 @@ exports.createOwner = onCall(
         themeMode: 'dark1',
         appLanguage: 'en',
         houseRulesTranslations: {'en': 'No smoking.'},
-        welcomeMessageTranslations: {'en': 'Welcome to our Villa!'},
+        welcomeMessageTranslations: {'en': 'Welcome!'},
         cleanerChecklist: ['Check bedsheets', 'Clean bathroom'],
         aiConcierge: '',
         aiHousekeeper: '',
@@ -162,9 +350,15 @@ exports.createOwner = onCall(
         emailNotifications: true,
       });
 
+      // Update brand stats
+      await updateBrandStats(targetBrandId);
+
+      // Log action
       await logAdminAction(adminEmail, 'CREATE_OWNER', {
         tenantId: tenantId,
         ownerEmail: email,
+        brandId: targetBrandId,
+        type: targetType,
       });
 
       return {
@@ -172,7 +366,9 @@ exports.createOwner = onCall(
         tenantId: String(tenantId),
         firebaseUid: String(userRecord.uid),
         email: String(email),
-        message: 'Owner created. They must login and enter tenant ID to activate.',
+        tempPassword: String(tempPassword),
+        brandId: String(targetBrandId),
+        message: 'Owner created successfully.',
       };
     } catch (error) {
       console.error('❌ Error creating owner:', error);
@@ -246,18 +442,27 @@ exports.linkTenantId = onCall(
 
 // =====================================================
 // FUNKCIJA 3: Lista Vlasnika (Super Admin)
+// UPDATED: Filter by brand for Level 2
 // =====================================================
 exports.listOwners = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
     try {
-      const snapshot = await admin.firestore().collection('tenant_links').get();
+      let query = admin.firestore().collection('tenant_links');
+      
+      // Level 2 admins only see their brand's owners
+      if (adminInfo.level < 3 && adminInfo.brandId) {
+        query = query.where('brandId', '==', adminInfo.brandId);
+      }
+
+      const snapshot = await query.get();
 
       const owners = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -267,6 +472,8 @@ exports.listOwners = onCall(
           displayName: String(data.displayName || ''),
           firebaseUid: String(data.firebaseUid || ''),
           status: String(data.status || 'pending'),
+          brandId: String(data.brandId || 'vesta-lumina'),
+          type: String(data.type || 'retail'),
           createdAt: data.createdAt?.toDate?.().toISOString() || null,
           createdBy: data.createdBy || null,
           linkedAt: data.linkedAt?.toDate?.().toISOString() || null,
@@ -288,8 +495,9 @@ exports.deleteOwner = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -309,8 +517,16 @@ exports.deleteOwner = onCall(
         throw new Error('Tenant not found');
       }
 
-      const firebaseUid = tenantDoc.data().firebaseUid;
-      const ownerEmail = tenantDoc.data().email;
+      const tenantData = tenantDoc.data();
+      
+      // Level 2 can only delete owners from their brand
+      if (adminInfo.level < 3 && adminInfo.brandId !== tenantData.brandId) {
+        throw new Error('You can only delete owners from your assigned brand');
+      }
+
+      const firebaseUid = tenantData.firebaseUid;
+      const ownerEmail = tenantData.email;
+      const brandId = tenantData.brandId || 'vesta-lumina';
 
       if (firebaseUid) {
         await admin.auth().deleteUser(firebaseUid);
@@ -319,9 +535,13 @@ exports.deleteOwner = onCall(
       await admin.firestore().collection('tenant_links').doc(tenantId).delete();
       await admin.firestore().collection('settings').doc(tenantId).delete();
 
+      // Update brand stats
+      await updateBrandStats(brandId);
+
       await logAdminAction(adminEmail, 'DELETE_OWNER', {
         tenantId: tenantId,
         ownerEmail: ownerEmail,
+        brandId: brandId,
       });
 
       return {
@@ -338,20 +558,22 @@ exports.deleteOwner = onCall(
 
 // =====================================================
 // FUNKCIJA 5: Reset Lozinke
+// UPDATED: Returns generated password
 // =====================================================
 exports.resetOwnerPassword = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
-    const {tenantId, newPassword} = request.data;
+    const {tenantId} = request.data;
 
-    if (!tenantId || !newPassword || newPassword.length < 6) {
-      throw new Error('Invalid parameters');
+    if (!tenantId) {
+      throw new Error('Tenant ID is required');
     }
 
     try {
@@ -364,7 +586,15 @@ exports.resetOwnerPassword = onCall(
         throw new Error('Tenant not found');
       }
 
-      const firebaseUid = tenantDoc.data().firebaseUid;
+      const tenantData = tenantDoc.data();
+      
+      // Level 2 can only reset for their brand
+      if (adminInfo.level < 3 && adminInfo.brandId !== tenantData.brandId) {
+        throw new Error('You can only reset passwords for owners in your brand');
+      }
+
+      const firebaseUid = tenantData.firebaseUid;
+      const newPassword = generateTempPassword();
 
       await admin.auth().updateUser(firebaseUid, {password: newPassword});
 
@@ -376,6 +606,7 @@ exports.resetOwnerPassword = onCall(
         success: true,
         message: 'Password reset successfully',
         tenantId: String(tenantId),
+        newPassword: String(newPassword),
       };
     } catch (error) {
       console.error('❌ Error resetting password:', error);
@@ -391,26 +622,39 @@ exports.toggleOwnerStatus = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
-    const {tenantId, status} = request.data;
+    const {tenantId, newStatus} = request.data;
+    const status = newStatus || request.data.status;
 
     if (!tenantId || !['active', 'suspended'].includes(status)) {
       throw new Error('Invalid parameters');
     }
 
     try {
-      await admin.firestore().collection('tenant_links').doc(tenantId).update({status});
-
       const tenantDoc = await admin.firestore()
         .collection('tenant_links')
         .doc(tenantId)
         .get();
 
-      const firebaseUid = tenantDoc.data().firebaseUid;
+      if (!tenantDoc.exists) {
+        throw new Error('Tenant not found');
+      }
+
+      const tenantData = tenantDoc.data();
+      
+      // Level 2 can only toggle for their brand
+      if (adminInfo.level < 3 && adminInfo.brandId !== tenantData.brandId) {
+        throw new Error('You can only manage owners in your brand');
+      }
+
+      await admin.firestore().collection('tenant_links').doc(tenantId).update({status});
+
+      const firebaseUid = tenantData.firebaseUid;
 
       if (firebaseUid) {
         await admin.auth().updateUser(firebaseUid, {
@@ -542,7 +786,7 @@ exports.registerTablet = onCall(
         registeredAt: admin.firestore.FieldValue.serverTimestamp(),
         lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
         appVersion: '1.0.0',
-        pendingUpdate: false,
+        pendingUpdate: null,
       });
 
       const customToken = await admin.auth().createCustomToken(userRecord.uid, {
@@ -599,18 +843,19 @@ exports.tabletHeartbeat = onCall(
         if (isCharging !== undefined) updateData.isCharging = isCharging;
         if (updateStatus) {
           updateData.updateStatus = updateStatus;
-          if (updateStatus === 'installed') updateData.pendingUpdate = false;
+          if (updateStatus === 'installed') updateData.pendingUpdate = null;
           if (updateStatus === 'failed' && updateError) updateData.updateError = updateError;
         }
         
         await tabletRef.update(updateData);
 
+        const pending = tabletData.pendingUpdate;
         return {
           success: true,
-          pendingUpdate: tabletData.pendingUpdate || false,
-          pendingVersion: tabletData.pendingVersion || '',
-          pendingApkUrl: tabletData.pendingApkUrl || '',
-          forceUpdate: tabletData.forceUpdate || false,
+          pendingUpdate: pending ? true : false,
+          pendingVersion: pending?.version || '',
+          pendingApkUrl: pending?.downloadUrl || '',
+          forceUpdate: pending?.forceUpdate || false,
         };
       }
 
@@ -631,8 +876,9 @@ exports.translateNotification = onCall(
   },
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -666,41 +912,83 @@ exports.translateNotification = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 11: ADD SUPER ADMIN
+// FUNKCIJA 11: ADD SUPER ADMIN (Master Only)
+// UPDATED: Multi-level support
 // =====================================================
 exports.addSuperAdmin = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
-    
-    if (!adminEmail || adminEmail.toLowerCase() !== 'vestaluminasystem@gmail.com') {
-      throw new Error('Unauthorized - Primary Admin only');
+    const adminInfo = await isSuperAdmin(adminEmail);
+
+    // Only Master Master can add super admins
+    if (!request.auth || !isMasterMaster(adminInfo)) {
+      throw new Error('Unauthorized - Master Admin only');
     }
 
-    const {email, displayName} = request.data;
+    // Ensure default documents exist
+    await ensureDefaultDocuments();
+
+    const {email, level, brandId, displayName} = request.data;
 
     if (!email) {
       throw new Error('Email is required');
     }
 
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = email.toLowerCase().trim();
+    const adminLevel = level || 2;
+
+    // Level 2 requires brandId
+    if (adminLevel === 2 && !brandId) {
+      throw new Error('Brand ID is required for Level 2 admin');
+    }
+
+    // Verify brand exists for Level 2
+    if (adminLevel === 2 && brandId) {
+      const brandDoc = await admin.firestore()
+        .collection('brands')
+        .doc(brandId)
+        .get();
+      
+      if (!brandDoc.exists) {
+        throw new Error(`Brand "${brandId}" does not exist`);
+      }
+    }
 
     try {
+      // Check if already exists
+      const existingDoc = await admin.firestore()
+        .collection('super_admins')
+        .doc(normalizedEmail)
+        .get();
+
+      if (existingDoc.exists) {
+        throw new Error('This email is already a super admin');
+      }
+
+      // Create super admin document
       await admin.firestore().collection('super_admins').doc(normalizedEmail).set({
         email: normalizedEmail,
         displayName: displayName || email.split('@')[0],
+        level: adminLevel,
+        brandId: adminLevel === 2 ? brandId : null,
         active: true,
-        addedAt: admin.firestore.FieldValue.serverTimestamp(),
-        addedBy: adminEmail,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: adminEmail,
       });
 
       await logAdminAction(adminEmail, 'ADD_SUPER_ADMIN', {
         newAdminEmail: normalizedEmail,
+        level: adminLevel,
+        brandId: brandId || null,
       });
 
       return {
         success: true,
-        message: `Super Admin ${normalizedEmail} added successfully`,
+        email: normalizedEmail,
+        level: adminLevel,
+        brandId: brandId || null,
+        message: `Super Admin (Level ${adminLevel}) added successfully`,
       };
     } catch (error) {
       console.error('❌ Error adding super admin:', error);
@@ -710,15 +998,16 @@ exports.addSuperAdmin = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 12: REMOVE SUPER ADMIN
+// FUNKCIJA 12: REMOVE SUPER ADMIN (Master Only)
 // =====================================================
 exports.removeSuperAdmin = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
-    
-    if (!adminEmail || adminEmail.toLowerCase() !== 'vestaluminasystem@gmail.com') {
-      throw new Error('Unauthorized - Primary Admin only');
+    const adminInfo = await isSuperAdmin(adminEmail);
+
+    if (!request.auth || !isMasterMaster(adminInfo)) {
+      throw new Error('Unauthorized - Master Admin only');
     }
 
     const {email} = request.data;
@@ -758,8 +1047,9 @@ exports.listSuperAdmins = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -771,20 +1061,25 @@ exports.listSuperAdmins = onCall(
         return {
           email: String(doc.id),
           displayName: String(data.displayName || ''),
+          level: data.level || 2,
+          brandId: data.brandId || null,
           active: Boolean(data.active),
-          addedAt: data.addedAt?.toDate?.().toISOString() || null,
-          addedBy: data.addedBy || null,
+          createdAt: data.createdAt?.toDate?.().toISOString() || data.addedAt?.toDate?.().toISOString() || null,
+          createdBy: data.createdBy || data.addedBy || null,
         };
       });
 
+      // Ensure primary admin is in list
       const hasPrimary = admins.some(a => a.email === 'vestaluminasystem@gmail.com');
       if (!hasPrimary) {
         admins.unshift({
           email: 'vestaluminasystem@gmail.com',
-          displayName: 'Primary Admin',
+          displayName: 'Master Admin',
+          level: 3,
+          brandId: null,
           active: true,
-          addedAt: null,
-          addedBy: 'system',
+          createdAt: null,
+          createdBy: 'system',
         });
       }
 
@@ -819,6 +1114,8 @@ exports.scheduledBackup = onSchedule(
         'bookings',
         'tablets',
         'super_admins',
+        'brands',
+        'exit_config',
       ];
 
       const backupData = {};
@@ -891,8 +1188,9 @@ exports.manualBackup = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -907,6 +1205,8 @@ exports.manualBackup = onCall(
         'bookings',
         'tablets',
         'super_admins',
+        'brands',
+        'exit_config',
       ];
 
       const backupData = {};
@@ -963,8 +1263,9 @@ exports.getAdminLogs = onCall(
   {region: 'europe-west3'},
   async (request) => {
     const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
     
-    if (!request.auth || !(await isSuperAdmin(adminEmail))) {
+    if (!request.auth || !adminInfo.isAdmin) {
       throw new Error('Unauthorized - Super Admin only');
     }
 
@@ -997,7 +1298,7 @@ exports.getAdminLogs = onCall(
 );
 
 // =====================================================
-// FUNKCIJA 17: SEND EMAIL NOTIFICATION (Phase 4)
+// FUNKCIJA 17: SEND EMAIL NOTIFICATION
 // =====================================================
 exports.sendEmailNotification = onCall(
   {
@@ -1072,21 +1373,14 @@ exports.onBookingCreated = onDocumentCreated(
           </div>
           <div style="padding: 30px; background: #f9f9f9;">
             <p>Dear ${booking.guestName},</p>
-            <p>Your booking has been confirmed. Here are the details:</p>
-            
+            <p>Your booking has been confirmed.</p>
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Property:</strong> ${booking.unitName}</p>
-              <p><strong>Check-in:</strong> ${checkIn.toLocaleDateString('en-GB')} at ${ownerSettings.checkInTime || '15:00'}</p>
-              <p><strong>Check-out:</strong> ${checkOut.toLocaleDateString('en-GB')} at ${ownerSettings.checkOutTime || '10:00'}</p>
+              <p><strong>Check-in:</strong> ${checkIn.toLocaleDateString('en-GB')}</p>
+              <p><strong>Check-out:</strong> ${checkOut.toLocaleDateString('en-GB')}</p>
               <p><strong>Guests:</strong> ${booking.guestCount}</p>
-              <p><strong>Booking ID:</strong> ${bookingId}</p>
             </div>
-            
-            <p>If you have any questions, please contact us.</p>
             <p>Best regards,<br>${ownerSettings.ownerName || 'The Host'}</p>
-          </div>
-          <div style="padding: 15px; background: #333; color: #999; text-align: center; font-size: 12px;">
-            Powered by VLS Admin Panel
           </div>
         </div>
       `;
@@ -1102,7 +1396,6 @@ exports.onBookingCreated = onDocumentCreated(
 
       console.log(`✅ Confirmation email sent for booking ${bookingId}`);
       
-      // Log email sent
       await admin.firestore().collection('email_logs').add({
         bookingId: bookingId,
         to: booking.guestEmail,
@@ -1113,15 +1406,6 @@ exports.onBookingCreated = onDocumentCreated(
 
     } catch (error) {
       console.error('❌ Failed to send confirmation email:', error);
-      
-      await admin.firestore().collection('email_logs').add({
-        bookingId: bookingId,
-        to: booking.guestEmail,
-        type: 'booking_confirmation',
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: 'failed',
-        error: error.message,
-      });
     }
   }
 );
@@ -1131,7 +1415,7 @@ exports.onBookingCreated = onDocumentCreated(
 // =====================================================
 exports.sendCheckInReminders = onSchedule(
   {
-    schedule: '0 9 * * *', // Every day at 9 AM
+    schedule: '0 9 * * *',
     region: 'europe-west3',
     timeZone: 'Europe/Zagreb',
     secrets: [smtpHost, smtpUser, smtpPass],
@@ -1153,64 +1437,28 @@ exports.sendCheckInReminders = onSchedule(
         .where('checkIn', '<', dayAfter)
         .get();
 
-      console.log(`Found ${bookingsSnapshot.size} bookings for tomorrow`);
-
       let sentCount = 0;
       
       for (const doc of bookingsSnapshot.docs) {
         const booking = doc.data();
-        
         if (!booking.guestEmail) continue;
 
         try {
           const ownerSettings = await getOwnerEmailSettings(booking.ownerId);
-          
           if (!ownerSettings || !ownerSettings.emailNotifications) continue;
-
-          const checkIn = booking.checkIn.toDate();
-          
-          const html = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #4CAF50, #2E7D32); padding: 20px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Check-in Tomorrow!</h1>
-              </div>
-              <div style="padding: 30px; background: #f9f9f9;">
-                <p>Dear ${booking.guestName},</p>
-                <p>This is a friendly reminder that your check-in at <strong>${booking.unitName}</strong> is tomorrow!</p>
-                
-                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p><strong>Check-in Date:</strong> ${checkIn.toLocaleDateString('en-GB')}</p>
-                  <p><strong>Check-in Time:</strong> ${ownerSettings.checkInTime || '15:00'}</p>
-                  <p><strong>Property:</strong> ${booking.unitName}</p>
-                </div>
-                
-                <p>We look forward to welcoming you!</p>
-                <p>Best regards,<br>${ownerSettings.ownerName || 'The Host'}</p>
-              </div>
-            </div>
-          `;
 
           const transporter = createTransporter();
           
           await transporter.sendMail({
-            from: `"${ownerSettings.companyName || ownerSettings.ownerName}" <${smtpUser.value()}>`,
+            from: `"${ownerSettings.companyName || 'VLS'}" <${smtpUser.value()}>`,
             to: booking.guestEmail,
             subject: `Check-in Reminder - ${booking.unitName}`,
-            html: html,
+            html: `<p>Your check-in at ${booking.unitName} is tomorrow!</p>`,
           });
 
           sentCount++;
-          
-          await admin.firestore().collection('email_logs').add({
-            bookingId: doc.id,
-            to: booking.guestEmail,
-            type: 'checkin_reminder',
-            sentAt: admin.firestore.FieldValue.serverTimestamp(),
-            status: 'sent',
-          });
-
         } catch (error) {
-          console.error(`Failed to send reminder for booking ${doc.id}:`, error);
+          console.error(`Failed to send reminder for ${doc.id}:`, error);
         }
       }
 
@@ -1261,6 +1509,281 @@ exports.updateEmailSettings = onCall(
     } catch (error) {
       console.error('❌ Error updating email settings:', error);
       throw new Error(error.message || 'Failed to update settings');
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 21: DISTRIBUTE APK UPDATE (Master Only)
+// =====================================================
+exports.distributeApkUpdate = onCall(
+  {region: 'europe-west3'},
+  async (request) => {
+    const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
+
+    if (!request.auth || !isMasterMaster(adminInfo)) {
+      throw new Error('Unauthorized - Master Admin only');
+    }
+
+    const {versionId} = request.data;
+
+    if (!versionId) {
+      throw new Error('Version ID is required');
+    }
+
+    try {
+      const versionDoc = await admin.firestore()
+        .collection('apk_versions')
+        .doc(versionId)
+        .get();
+
+      if (!versionDoc.exists) {
+        throw new Error('APK version not found');
+      }
+
+      const versionData = versionDoc.data();
+
+      const tabletsSnap = await admin.firestore()
+        .collection('tablets')
+        .where('status', '==', 'active')
+        .get();
+
+      const tabletCount = tabletsSnap.size;
+
+      const batch = admin.firestore().batch();
+      
+      tabletsSnap.docs.forEach((doc) => {
+        batch.update(doc.ref, {
+          pendingUpdate: {
+            version: versionData.version,
+            versionCode: versionData.versionCode,
+            downloadUrl: versionData.downloadUrl,
+            releaseNotes: versionData.releaseNotes || '',
+            notifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        });
+      });
+
+      await batch.commit();
+
+      await admin.firestore().collection('apk_versions').doc(versionId).update({
+        distributedAt: admin.firestore.FieldValue.serverTimestamp(),
+        distributedCount: tabletCount,
+      });
+
+      await logAdminAction(adminEmail, 'DISTRIBUTE_APK', {
+        version: versionData.version,
+        tabletCount: tabletCount,
+      });
+
+      return {
+        success: true,
+        version: versionData.version,
+        tabletCount: tabletCount,
+        message: `APK distributed to ${tabletCount} tablets`,
+      };
+    } catch (error) {
+      console.error('❌ Error distributing APK:', error);
+      throw new Error(error.message || 'Failed to distribute APK');
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 22: SEND SYSTEM NOTIFICATION
+// =====================================================
+exports.sendSystemNotification = onCall(
+  {region: 'europe-west3'},
+  async (request) => {
+    const adminEmail = request.auth?.token?.email;
+    const adminInfo = await isSuperAdmin(adminEmail);
+
+    if (!request.auth || !adminInfo.isAdmin) {
+      throw new Error('Unauthorized - Super Admin only');
+    }
+
+    const {title, message, type, sendToAll, recipients, brandId} = request.data;
+
+    if (!title || !message) {
+      throw new Error('Title and message are required');
+    }
+
+    try {
+      let targetRecipients = [];
+
+      if (sendToAll) {
+        let query = admin.firestore().collection('tenant_links');
+        
+        if (adminInfo.level < 3 && adminInfo.brandId) {
+          query = query.where('brandId', '==', adminInfo.brandId);
+        } else if (brandId) {
+          query = query.where('brandId', '==', brandId);
+        }
+
+        const ownersSnap = await query.get();
+        targetRecipients = ownersSnap.docs.map(d => d.id);
+      } else {
+        targetRecipients = recipients || [];
+      }
+
+      const notificationRef = await admin.firestore().collection('system_notifications').add({
+        title: title,
+        message: message,
+        type: type || 'info',
+        recipientCount: targetRecipients.length,
+        recipients: targetRecipients,
+        brandId: brandId || adminInfo.brandId || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: adminEmail,
+      });
+
+      await logAdminAction(adminEmail, 'SEND_NOTIFICATION', {
+        title: title,
+        recipientCount: targetRecipients.length,
+      });
+
+      return {
+        success: true,
+        notificationId: notificationRef.id,
+        recipientCount: targetRecipients.length,
+        message: `Notification sent to ${targetRecipients.length} recipients`,
+      };
+    } catch (error) {
+      console.error('❌ Error sending notification:', error);
+      throw new Error(error.message || 'Failed to send notification');
+    }
+  }
+);
+
+// =====================================================
+// FUNKCIJA 23: GET BRAND INFO (For Tablet App)
+// =====================================================
+exports.getBrandInfo = onCall(
+  {region: 'europe-west3'},
+  async (request) => {
+    const {ownerId} = request.data;
+
+    if (!ownerId) {
+      throw new Error('Owner ID is required');
+    }
+
+    await ensureDefaultDocuments();
+
+    try {
+      const tenantDoc = await admin.firestore()
+        .collection('tenant_links')
+        .doc(ownerId)
+        .get();
+
+      let brandId = 'vesta-lumina';
+      
+      if (tenantDoc.exists) {
+        brandId = tenantDoc.data().brandId || 'vesta-lumina';
+      }
+
+      const brandDoc = await admin.firestore()
+        .collection('brands')
+        .doc(brandId)
+        .get();
+
+      if (!brandDoc.exists) {
+        return getDefaultBrandResponse();
+      }
+
+      const brand = brandDoc.data();
+
+      return {
+        success: true,
+        brand: {
+          id: brand.id || brandId,
+          name: brand.name || 'Vesta Lumina',
+          appName: brand.appName || brand.name || 'Vesta Lumina',
+          logoUrl: brand.logoUrl || '',
+          logoLightUrl: brand.logoLightUrl || '',
+          splashImageUrl: brand.splashImageUrl || '',
+          primaryColor: brand.primaryColor || '#D4AF37',
+          secondaryColor: brand.secondaryColor || '#1E1E1E',
+          accentColor: brand.accentColor || '#FFFFFF',
+          tagline: brand.tagline || 'Smart Property Management',
+          supportEmail: brand.supportEmail || 'support@vestalumina.com',
+        },
+      };
+    } catch (error) {
+      console.error('❌ Error getting brand info:', error);
+      return getDefaultBrandResponse();
+    }
+  }
+);
+
+function getDefaultBrandResponse() {
+  return {
+    success: true,
+    brand: {
+      id: 'vesta-lumina',
+      name: 'Vesta Lumina',
+      appName: 'Vesta Lumina',
+      logoUrl: '',
+      logoLightUrl: '',
+      splashImageUrl: '',
+      primaryColor: '#D4AF37',
+      secondaryColor: '#1E1E1E',
+      accentColor: '#FFFFFF',
+      tagline: 'Smart Property Management',
+      supportEmail: 'support@vestalumina.com',
+    },
+  };
+}
+
+// =====================================================
+// FUNKCIJA 24: INITIALIZE SYSTEM (One-time setup)
+// =====================================================
+exports.initializeSystem = onCall(
+  {region: 'europe-west3'},
+  async (request) => {
+    const adminEmail = request.auth?.token?.email;
+    
+    if (!adminEmail || adminEmail.toLowerCase() !== 'vestaluminasystem@gmail.com') {
+      throw new Error('Unauthorized - Master Admin only');
+    }
+
+    try {
+      await ensureDefaultDocuments();
+
+      const tenantsSnap = await admin.firestore().collection('tenant_links').get();
+      
+      const batch = admin.firestore().batch();
+      let updatedCount = 0;
+      
+      tenantsSnap.docs.forEach(doc => {
+        const data = doc.data();
+        if (!data.brandId) {
+          batch.update(doc.ref, {
+            brandId: 'vesta-lumina',
+            type: 'retail',
+          });
+          updatedCount++;
+        }
+      });
+      
+      if (updatedCount > 0) {
+        await batch.commit();
+      }
+
+      await updateBrandStats('vesta-lumina');
+
+      await logAdminAction(adminEmail, 'INITIALIZE_SYSTEM', {
+        tenantsUpdated: updatedCount,
+      });
+
+      return {
+        success: true,
+        message: 'System initialized successfully',
+        tenantsUpdated: updatedCount,
+      };
+    } catch (error) {
+      console.error('❌ Error initializing system:', error);
+      throw new Error(error.message || 'Failed to initialize system');
     }
   }
 );
