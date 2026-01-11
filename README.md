@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/platform-Web-orange.svg)](https://flutter.dev/web)
 [![Flutter](https://img.shields.io/badge/Flutter-3.32+-02569B.svg)](https://flutter.dev)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-138%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](test/)
 
 > **Enterprise Property Management System for Short-Term Rental Owners**
 
@@ -35,11 +35,21 @@ Contact: nevenroksa@gmail.com | GitHub: @nroxa92
 
 ---
 
-## Sažetak
+## 📋 Sažetak
 
-Admin Panel je web aplikacija za upravljanje kratkoročnim iznajmljivanjem nekretnina. Omogućuje vlasnicima smještaja upravljanje rezervacijama, gostima, kućnim redom, čišćenjem i tablet terminalima. Sustav podržava multi-tenant arhitekturu s različitim razinama pristupa (Super Admin, Brand Admin, Vlasnik, Čistač).
+Admin Panel je web aplikacija (Flutter Web) za upravljanje kratkoročnim iznajmljivanjem nekretnina. Omogućuje vlasnicima potpunu kontrolu nad:
 
-## Pregled Sustava
+- 📅 **Booking management** s drag-and-drop kalendarom
+- 🏠 **Unit management** (smještajne jedinice)
+- 📊 **Analytics & Revenue tracking**
+- 🧹 **Cleaning logs** iz Tablet Terminala
+- 📄 **PDF export** za eVisitor prijave
+- 📆 **iCal sync** s Airbnb/Booking.com
+- 🎨 **White-label** multi-tenant arhitektura
+
+---
+
+## 🏗️ Arhitektura Sustava
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -51,7 +61,12 @@ Admin Panel je web aplikacija za upravljanje kratkoročnim iznajmljivanjem nekre
 │  │                                                                     │ │
 │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  │ │
 │  │  │Dashboard│  │Bookings │  │  Units  │  │Cleaning │  │Settings │  │ │
-│  │  │         │  │Calendar │  │ Manager │  │  Logs   │  │& Config │  │ │
+│  │  │Analytics│  │Calendar │  │ Manager │  │  Logs   │  │& Config │  │ │
+│  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘  │ │
+│  │                                                                     │ │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  │ │
+│  │  │ Digital │  │ Gallery │  │  iCal   │  │   PDF   │  │  Super  │  │ │
+│  │  │  Book   │  │  View   │  │ Export  │  │ Export  │  │  Admin  │  │ │
 │  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘  │ │
 │  │                                                                     │ │
 │  └────────────────────────────────────────────────────────────────────┘ │
@@ -70,367 +85,593 @@ Admin Panel je web aplikacija za upravljanje kratkoročnim iznajmljivanjem nekre
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Multi-Tenant Arhitektura
+---
+
+## 🎭 Multi-Tenant Arhitektura
 
 | Razina | Uloga | Pristup |
 |--------|-------|---------|
-| **Super Admin** | Sistemski administrator | Svi vlasnici, sva podešavanja, statistike platforme |
-| **Brand Admin** | Partner administrator | Vlastiti brendirani vlasnici, ograničena podešavanja |
-| **Owner** | Vlasnik smještaja | Vlastite jedinice, rezervacije, gosti, čišćenje |
-| **Cleaner** | Čistač | PIN pristup, check-liste čišćenja, prijavljivanje problema |
-
-## Upute za Korištenje
-
-### Za Vlasnike Smještaja
-
-1. **Prijava u Sustav**
-   - Otvorite web aplikaciju na https://app.vestalumina.com
-   - Prijavite se s email adresom i lozinkom
-   - Dvostruka autentifikacija (2FA) je opcijska ali preporučena
-
-2. **Dodavanje Smještajnih Jedinica**
-   - Idite na "Jedinice" → "Nova Jedinica"
-   - Unesite naziv, adresu, kapacitet
-   - Postavite WiFi podatke i pristupni kod tableta
-
-3. **Upravljanje Rezervacijama**
-   - Koristite drag-and-drop kalendar za unos rezervacija
-   - Povežite s booking platformama (Airbnb, Booking.com) putem iCal
-   - Pregledavajte status check-in-a u realnom vremenu
-
-4. **Konfiguracija Kućnog Reda**
-   - Definirajte pravila za svaku jedinicu
-   - Dodajte prijevode na podržane jezike
-   - Postavite obavezne stavke koje gost mora prihvatiti
-
-5. **AI Asistent**
-   - Dodajte pitanja i odgovore u bazu znanja
-   - Konfigurirajte ton i stil komunikacije
-   - Pregledavajte transkripte razgovora gostiju
-
-### Za Super Admine
-
-1. **Upravljanje Vlasnicima**
-   - Kreirajte nove vlasnike i dodijelite im pristup
-   - Postavite limite (broj jedinica, funkcionalnosti)
-   - Blokirajte/deblokirajte pristup
-
-2. **Brendiranje**
-   - Konfigurirajte white-label partnere
-   - Prilagodite logo, boje, domenu
-   - Upravljajte pretplatama i licencama
+| **Super Admin** | Sistemski administrator | • Svi vlasnici<br>• White-label konfiguracija<br>• System settings<br>• Tablet management<br>• Notifications<br>• Retail settings |
+| **Brand Admin** | Partner administrator | • Vlastiti brendirani vlasnici<br>• Ograničene postavke |
+| **Owner** | Vlasnik smještaja | • Vlastite jedinice<br>• Bookings<br>• Cleaning logs<br>• Analytics |
+| **Cleaner** | Čistač | • PIN pristup preko Tablet Terminala<br>• Task checklist<br>• Problem reporting |
 
 ---
 
-## Technical Documentation
+## 🚀 Glavni Features
 
-### Project Statistics
+### 1. 📅 Booking Management
 
-| Metric | Value |
-|--------|-------|
-| **Total Code** | 32,767+ lines |
-| **Dart Code** | 27,352 lines |
-| **JavaScript (Functions)** | 1,507 lines |
-| **Test Code** | 3,908 lines |
-| **Total Files** | 75+ |
-| **Screens** | 25+ |
-| **Cloud Functions** | 24 |
-| **Tests** | 138 |
-| **Localization Keys** | 178 × 11 languages |
+**Booking Calendar**
+- Interactive drag-and-drop kalendar
+- Multi-unit prikaz
+- Booking creation/editing
+- Check-in/out status tracking
+- Guest count tracking
 
-### Project Structure
+**Booking Details**
+- Guest name, email, phone
+- Check-in/out dates i vremena
+- Number of guests
+- Booking status (pending, confirmed, checked-in, completed, cancelled)
+- Notes
+- Connection to guest data from Tablet Terminal
+
+**iCal Integration**
+- **Export**: Generate iCal URL za svaku jedinicu
+- **Import**: Parse iCal podataka iz Airbnb/Booking.com
+- Format: VCALENDAR s VEVENT-ima
+- Timezone support: Europe/Zagreb
+- Auto-sync capabilities
+
+### 2. 🏠 Unit Management
+
+- Unit CRUD operations
+- Configuration:
+  - Unit name, address
+  - WiFi SSID & password
+  - Check-in/out times
+  - Capacity
+  - House rules content
+  - AI knowledge base
+  - Cleaner checklist
+  - Screensaver images
+
+### 3. 📄 PDF Export
+
+**eVisitor Forms**
+```dart
+printEvisitorForm(
+  unitName: String,
+  guestData: List<Map<String, dynamic>>
+)
+```
+
+**Extracted fields from MRZ:**
+- Guest name (firstName + lastName)
+- Date of birth
+- Nationality
+- Document type & number
+- Sex
+- Place of birth & country
+- Issuing country
+- Expiry date
+- Address, residence city/country
+
+**Booking Schedules**
+- Text list (full / anonymous)
+- Graphic calendar
+- Cleaning schedule
+- Multi-page PDF generation
+- Professional formatting
+
+### 4. 📊 Analytics & Revenue
+
+**Dashboard KPIs:**
+- Total revenue
+- Occupancy rate
+- Average booking value
+- Number of bookings
+
+**Analytics Screen:**
+- Revenue over time (charts)
+- Booking trends
+- Occupancy heatmap
+- Unit performance comparison
+
+**Revenue Service:**
+- Revenue calculation per unit
+- Period-based filtering
+- Revenue projections
+
+### 5. 🧹 Cleaning Management
+
+**Cleaning Logs** (from Tablet Terminal):
+- Timestamp
+- Unit name
+- Cleaner name
+- Completed tasks
+- Notes
+- Photo documentation (optional)
+- Connection to booking
+
+**Checklist Configuration:**
+- Define custom tasks per owner
+- Default task list fallback
+- Translation support
+
+### 6. 🎨 White-Label System
+
+**Super Admin Controls:**
+```dart
+super_admin_white_label.dart:
+- Create/edit Brand Admins
+- Configure branding (logo, colors, domain)
+- Manage licenses
+- Set feature limits per brand
+```
+
+**Brand Hierarchy:**
+```
+Super Admin
+  └─ Brand Admin 1
+      ├─ Owner A
+      ├─ Owner B
+      └─ Owner C
+  └─ Brand Admin 2
+      ├─ Owner D
+      └─ Owner E
+```
+
+### 7. 🔧 Super Admin Features
+
+**Super Admin Screens:**
+- `super_admin_screen.dart` - Overview
+- `super_admin_settings.dart` - Global settings
+- `super_admin_tablets.dart` - Tablet management
+- `super_admin_white_label.dart` - Brand management
+- `super_admin_retail.dart` - Retail configuration
+- `super_admin_notifications.dart` - System notifications
+- `super_admin_exit.dart` - Exit dialog
+
+**Capabilities:**
+- View all owners
+- Platform statistics
+- System health monitoring
+- Tablet monitoring
+- Notification broadcasting
+
+---
+
+## 📁 Project Structure
 
 ```
 admin_panel/
 ├── lib/
-│   ├── main.dart                    # Application entry point
-│   ├── firebase_options.dart        # Firebase configuration
-│   ├── app/
-│   │   ├── app.dart                 # Root widget
-│   │   ├── router.dart              # Navigation configuration
-│   │   └── theme/                   # Theme definitions
-│   │       ├── app_theme.dart
-│   │       ├── colors.dart
-│   │       └── typography.dart
-│   ├── features/
-│   │   ├── auth/                    # Authentication
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── widgets/
-│   │   ├── dashboard/               # Main dashboard
-│   │   │   ├── screens/
-│   │   │   ├── widgets/
-│   │   │   └── controllers/
-│   │   ├── bookings/                # Booking management
-│   │   │   ├── screens/
-│   │   │   │   ├── bookings_screen.dart
-│   │   │   │   ├── booking_detail_screen.dart
-│   │   │   │   └── calendar_screen.dart
-│   │   │   ├── services/
-│   │   │   ├── models/
-│   │   │   └── widgets/
-│   │   ├── units/                   # Property units
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── models/
-│   │   ├── guests/                  # Guest management
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── models/
-│   │   ├── cleaning/                # Cleaning management
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── models/
-│   │   ├── house_rules/             # House rules editor
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── models/
-│   │   ├── ai_assistant/            # AI configuration
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── models/
-│   │   ├── settings/                # Settings & config
-│   │   │   ├── screens/
-│   │   │   └── widgets/
-│   │   ├── reports/                 # Analytics & reports
-│   │   │   ├── screens/
-│   │   │   ├── services/
-│   │   │   └── widgets/
-│   │   └── super_admin/             # Super admin features
-│   │       ├── screens/
-│   │       ├── services/
-│   │       └── widgets/
-│   ├── shared/
-│   │   ├── models/                  # Shared data models
-│   │   ├── services/                # Shared services
-│   │   ├── widgets/                 # Reusable widgets
-│   │   ├── utils/                   # Utilities
-│   │   └── constants/               # Constants
-│   └── l10n/                        # Localization (11 languages)
-│       ├── app_en.arb
-│       ├── app_hr.arb
-│       └── ... (9 more)
-├── functions/                       # Firebase Cloud Functions
-│   ├── src/
-│   │   ├── index.ts                 # Function exports
-│   │   ├── auth/                    # Auth triggers
-│   │   ├── bookings/                # Booking functions
-│   │   ├── notifications/           # Push notifications
-│   │   ├── pdf/                     # PDF generation
-│   │   ├── integrations/            # External APIs
-│   │   └── scheduled/               # Cron jobs
-│   ├── package.json
-│   └── tsconfig.json
-├── test/                            # Test suite (138 tests)
-│   ├── services/
+│   ├── main.dart              # Application entry point
+│   ├── firebase_options.dart  # Firebase configuration
+│   │
+│   ├── config/                # Configuration
+│   │   ├── app_config.dart           # App constants
+│   │   ├── firestore_fields.dart     # Field name constants
+│   │   ├── theme.dart                # App theme
+│   │   └── translations/             # i18n (11 languages)
+│   │       ├── translations.dart
+│   │       ├── lang_en.dart          # English
+│   │       ├── lang_hr.dart          # Croatian
+│   │       ├── lang_de.dart          # German
+│   │       ├── lang_it.dart          # Italian
+│   │       ├── lang_sl.dart          # Slovenian
+│   │       ├── lang_fr.dart          # French
+│   │       ├── lang_es.dart          # Spanish
+│   │       ├── lang_pl.dart          # Polish
+│   │       ├── lang_cs.dart          # Czech
+│   │       ├── lang_sk.dart          # Slovak
+│   │       └── lang_hu.dart          # Hungarian
+│   │
+│   ├── models/                # Data models
+│   │   ├── booking_model.dart        # Booking data
+│   │   ├── unit_model.dart           # Unit data
+│   │   ├── cleaning_log_model.dart   # Cleaning log
+│   │   └── settings_model.dart       # Settings
+│   │
+│   ├── repositories/          # Data layer
+│   │   ├── base_repository.dart      # Base repository class
+│   │   ├── booking_repository.dart   # Booking CRUD
+│   │   └── units_repository.dart     # Units CRUD
+│   │
+│   ├── services/              # Business logic
+│   │   ├── auth_service.dart              # Authentication
+│   │   ├── booking_service.dart           # Booking operations
+│   │   ├── units_service.dart             # Unit operations
+│   │   ├── cleaning_service.dart          # Cleaning logs
+│   │   ├── calendar_service.dart          # iCal export/import
+│   │   ├── pdf_service.dart               # PDF generation
+│   │   ├── analytics_service.dart         # Analytics
+│   │   ├── revenue_service.dart           # Revenue calculation
+│   │   ├── settings_service.dart          # Settings
+│   │   ├── super_admin_service.dart       # Super admin ops
+│   │   ├── brand_service.dart             # White-label
+│   │   ├── onboarding_service.dart        # User onboarding
+│   │   ├── offline_queue_service.dart     # Offline sync
+│   │   ├── connectivity_service.dart      # Network status
+│   │   ├── cache_service.dart             # Caching
+│   │   ├── security_service.dart          # Security
+│   │   ├── health_service.dart            # System health
+│   │   ├── error_service.dart             # Error handling
+│   │   ├── app_check_service.dart         # Firebase App Check
+│   │   └── performance_service.dart       # Performance
+│   │
+│   ├── providers/             # State management
+│   │   └── app_provider.dart
+│   │
+│   ├── screens/               # UI screens
+│   │   ├── login_screen.dart             # Login
+│   │   ├── tenant_setup_screen.dart      # Initial setup
+│   │   ├── dashboard_screen.dart         # Dashboard
+│   │   ├── booking_screen.dart           # Bookings & calendar
+│   │   ├── digital_book_screen.dart      # Digital book
+│   │   ├── gallery_screen.dart           # Image gallery
+│   │   ├── settings_screen.dart          # Settings
+│   │   ├── analytics_screen.dart         # Analytics overview
+│   │   ├── analytics/
+│   │   │   ├── analytics_screen.dart     # Detailed analytics
+│   │   │   └── revenue_screen.dart       # Revenue analytics
+│   │   └── super_admin_*.dart            # Super admin screens
+│   │
+│   ├── widgets/               # Reusable widgets
+│   │   ├── booking_calendar.dart
+│   │   ├── system_notification_banner.dart
+│   │   ├── unit_widgets.dart
+│   │   └── analytics/
+│   │       ├── booking_chart.dart
+│   │       ├── occupancy_chart.dart
+│   │       ├── stat_card.dart
+│   │       └── upcoming_bookings_card.dart
+│   │
+│   └── utils/
+│       └── performance_utils.dart
+│
+├── test/                      # Unit & integration tests
+│   ├── all_tests.dart
+│   ├── config/
+│   │   └── app_config_test.dart
 │   ├── models/
+│   │   ├── booking_model_test.dart
+│   │   └── unit_model_test.dart
 │   ├── repositories/
-│   └── widgets/
-├── web/                             # Web-specific assets
-├── firebase.json                    # Firebase configuration
-├── firestore.rules                  # Security rules (235 lines)
-├── storage.rules                    # Storage security (93 lines)
-└── pubspec.yaml                     # Dependencies
+│   │   └── booking_repository_test.dart
+│   ├── services/
+│   │   ├── auth_service_test.dart
+│   │   ├── cache_service_test.dart
+│   │   ├── revenue_service_test.dart
+│   │   └── security_service_test.dart
+│   ├── widgets/
+│   │   └── login_screen_test.dart
+│   ├── integration/
+│   │   └── auth_flow_test.dart
+│   └── helpers/
+│       └── test_helpers.dart
+│
+├── web/                       # Web-specific files
+│   ├── index.html
+│   ├── manifest.json
+│   └── favicon.png
+│
+├── assets/                    # Assets
+│   └── icon/
+│       └── icon.png          # Web app icon
+│
+├── pubspec.yaml              # Dependencies
+├── analysis_options.yaml     # Linting rules
+├── firebase.json             # Firebase hosting config
+├── firestore.rules           # Firestore security rules
+├── firestore.indexes.json    # Firestore indexes
+├── storage.rules             # Storage security rules
+├── .firebaserc               # Firebase project config
+└── LICENSE                   # Proprietary license
 ```
 
-### Cloud Functions API Reference
+---
 
-| Function | Trigger | Description |
-|----------|---------|-------------|
-| `onUserCreate` | Auth onCreate | Initialize new owner document |
-| `onUserDelete` | Auth onDelete | Cleanup owner data |
-| `onBookingCreate` | Firestore onCreate | Send confirmation notification |
-| `onBookingUpdate` | Firestore onUpdate | Handle status changes |
-| `onBookingDelete` | Firestore onDelete | Cleanup related data |
-| `onGuestCheckin` | Firestore onUpdate | Generate eVisitor report |
-| `onCleaningComplete` | Firestore onCreate | Notify owner |
-| `generatePDF` | HTTP callable | Generate various PDF documents |
-| `syncIcal` | HTTP callable | Import iCal bookings |
-| `processOCR` | HTTP callable | Process scanned documents |
-| `sendPushNotification` | HTTP callable | Send FCM notification |
-| `generateReport` | HTTP callable | Generate analytics report |
-| `exportGuestData` | HTTP callable | GDPR data export |
-| `deleteGuestData` | HTTP callable | GDPR data deletion |
-| `dailyCleanup` | Scheduled (daily) | Auto-delete expired data |
-| `weeklyReport` | Scheduled (weekly) | Send weekly summary |
-| `monthlyBilling` | Scheduled (monthly) | Process subscriptions |
-| `icalSync` | Scheduled (hourly) | Auto-sync calendars |
-| `backupFirestore` | Scheduled (daily) | Database backup |
-| `cleanupStorage` | Scheduled (weekly) | Remove orphaned files |
-| `validateBookings` | HTTP callable | Check booking conflicts |
-| `generateAccessCode` | HTTP callable | Create tablet pairing code |
-| `revokeAccess` | HTTP callable | Revoke tablet access |
-| `chatbotWebhook` | HTTP endpoint | AI chatbot integration |
+## 🛠️ Technology Stack
+
+| Kategorija | Tehnologija | Verzija |
+|-----------|-------------|---------|
+| **Framework** | Flutter Web | 3.32+ |
+| **Language** | Dart | 3.5+ |
+| **State Management** | Provider | 6.1+ |
+| **Navigation** | GoRouter | 14.6+ |
+| **UI Libraries** | Google Fonts, Animate Do, Flutter Markdown | Latest |
+| **Backend** | Firebase Suite | Latest |
+| **PDF Generation** | pdf + printing | 3.10+ / 5.11+ |
+| **File Handling** | file_picker, image_network | Latest |
+| **Networking** | http | 1.2+ |
+| **Local Storage** | Shared Preferences | 2.2+ |
+| **Monitoring** | Sentry Flutter | 8.0+ |
+| **Connectivity** | Connectivity Plus | 6.0+ |
+
+---
+
+## 🔧 Firebase Integration
 
 ### Firestore Collections
 
 ```
-firestore/
-├── owners/                          # Owner accounts
-│   └── {ownerId}/
-│       ├── settings                 # Owner settings document
-│       ├── units/                   # Property units collection
-│       │   └── {unitId}/
-│       │       ├── bookings/        # Bookings subcollection
-│       │       │   └── {bookingId}/
-│       │       │       └── guests[] # Guest array (not subcollection)
-│       │       ├── house_rules      # Rules document
-│       │       ├── ai_knowledge     # AI knowledge base
-│       │       ├── screensaver      # Screensaver config
-│       │       └── wifi             # WiFi credentials
-│       ├── cleaning_logs/           # Cleaning records
-│       ├── terminals/               # Paired tablets
-│       ├── notifications/           # Push notifications
-│       └── reports/                 # Generated reports
-├── super_admin/                     # Platform administration
-│   ├── config                       # Global configuration
-│   ├── brands/                      # White-label brands
-│   └── statistics                   # Platform statistics
-├── subscriptions/                   # Billing records
-└── audit_log/                       # Security audit trail
+owners/{ownerId}/
+  ├── units/{unitId}/
+  │   ├── bookings/{bookingId}/
+  │   │   ├── guestName: string
+  │   │   ├── startDate: timestamp
+  │   │   ├── endDate: timestamp
+  │   │   ├── guestCount: number
+  │   │   ├── status: string
+  │   │   ├── guests: Array<Guest>  // From tablet OCR
+  │   │   └── ...
+  │   │
+  │   ├── house_rules/
+  │   │   └── content: Map<lang, string>
+  │   │
+  │   └── ai_knowledge/
+  │       └── qa_pairs: Array<{q, a}>
+  │
+  ├── cleaning_logs/{logId}/
+  │   ├── timestamp: timestamp
+  │   ├── unitId: string
+  │   ├── cleanerName: string
+  │   ├── tasks: Map<task, bool>
+  │   ├── notes: string
+  │   └── bookingId: string
+  │
+  └── settings/
+      ├── cleanerChecklist: Array<string>
+      ├── wifiSSID: string
+      ├── wifiPassword: string
+      └── ...
+
+brands/{brandId}/
+  ├── name: string
+  ├── logo: string
+  ├── colors: Map
+  ├── domain: string
+  └── owners: Array<ownerId>
+
+settings/
+  └── {ownerId}/
+      └── ...
+
+app_config/
+  └── api_keys/
+      ├── gemini_api_key: string
+      ├── Maps_api_key: string
+      └── gemini_model: string
 ```
 
-### PDF Document Types
+### Firebase Storage
 
-| Document | Description | Languages |
-|----------|-------------|-----------|
-| **Booking Confirmation** | Reservation details for guest | 11 |
-| **House Rules** | Property rules document | 11 |
-| **Guest Registration** | eVisitor report format | 11 |
-| **Cleaning Checklist** | Cleaner task list | 11 |
-| **Invoice** | Payment invoice | 11 |
-| **Receipt** | Payment receipt | 11 |
-| **Key Handover** | Key collection form | 11 |
-| **Damage Report** | Property damage documentation | 11 |
-| **Monthly Report** | Owner analytics summary | 11 |
-| **GDPR Export** | Guest data export | 11 |
+```
+owners/{ownerId}/
+  ├── signatures/{bookingId}_{guestIndex}.png
+  ├── screensaver/{image}.jpg
+  └── cleaning_photos/{logId}_{index}.jpg
+```
 
-### Theme System
+### Firebase Functions
 
-| Theme | Description |
-|-------|-------------|
-| Ocean Blue | Default blue theme |
-| Forest Green | Nature-inspired green |
-| Sunset Orange | Warm orange tones |
-| Midnight Purple | Dark purple theme |
-| Ruby Red | Bold red theme |
-| Golden Yellow | Bright yellow theme |
-| Teal Breeze | Fresh teal colors |
-| Rose Pink | Soft pink theme |
-| Slate Gray | Professional gray |
-| Custom | User-defined colors |
+```
+functions/
+  └── (Server-side logic as needed)
+```
 
-**Background Tones:** Light, Dark, System (auto), High Contrast, Sepia, Blue Light Filter
+---
 
-### Technology Stack
+## 🌐 Supported Languages
 
-| Category | Technology |
-|----------|------------|
-| **Framework** | Flutter 3.32+ (Web) |
-| **Language** | Dart 3.5+ |
-| **Backend** | Firebase Suite |
-| **Functions** | Node.js 18 + TypeScript |
-| **PDF** | pdf package + printing |
-| **Charts** | fl_chart |
-| **Calendar** | table_calendar (drag-drop) |
-| **State** | Riverpod 2.0 |
-| **Routing** | go_router |
-| **Testing** | flutter_test, mockito |
+| Language | Code | Status |
+|----------|------|--------|
+| English | `en` | ✅ Complete |
+| Croatian | `hr` | ✅ Complete |
+| German | `de` | ✅ Complete |
+| Italian | `it` | ✅ Complete |
+| Slovenian | `sl` | ✅ Complete |
+| French | `fr` | ✅ Complete |
+| Spanish | `es` | ✅ Complete |
+| Polish | `pl` | ✅ Complete |
+| Czech | `cs` | ✅ Complete |
+| Slovak | `sk` | ✅ Complete |
+| Hungarian | `hu` | ✅ Complete |
 
-### Test Suite
+---
 
-| Category | Tests | Coverage |
-|----------|-------|----------|
-| **Services** | 45 | Core business logic |
-| **Models** | 32 | Data serialization |
-| **Repositories** | 28 | Data access layer |
-| **Widgets** | 33 | UI components |
-| **Total** | **138** | **3,908 lines** |
+## 📊 Data Flow
 
-### Security Implementation
+### Tablet Terminal → Admin Panel (Upstream)
 
-#### Firestore Rules (235 lines)
+Tablet šalje u Firestore:
+- Scanned guest data (OCR results)
+- Digital signatures (Firebase Storage)
+- Cleaning completion logs
+- Guest check-in status updates
+- Error reports (Sentry)
+
+Admin Panel čita iz Firestore:
+- `owners/{ownerId}/units/{unitId}/bookings/{bookingId}/guests`
+- `owners/{ownerId}/cleaning_logs/{logId}`
+- `owners/{ownerId}/units/{unitId}/bookings/{bookingId}/status`
+
+### Admin Panel → Tablet Terminal (Downstream)
+
+Admin Panel piše u Firestore:
+- House rules content
+- AI knowledge base
+- Cleaner checklist
+- WiFi credentials
+- Screensaver images
+- Booking data
+
+Tablet čita iz Firestore:
+- `owners/{ownerId}/units/{unitId}/house_rules`
+- `owners/{ownerId}/units/{unitId}/ai_knowledge`
+- `settings/{ownerId}/cleanerChecklist`
+- `owners/{ownerId}/units/{unitId}/bookings/{bookingId}`
+
+---
+
+## 🔒 Security
+
+| Layer | Implementation |
+|-------|----------------|
+| **Authentication** | Firebase Auth (email/password) |
+| **Authorization** | Firestore Security Rules (role-based) |
+| **Data Encryption** | TLS 1.3 in transit, AES-256 at rest |
+| **App Check** | Optional (can be enabled) |
+| **Security Service** | Input validation, XSS prevention |
+| **GDPR Compliance** | Data retention policies |
+
+### Firestore Security Rules
+
 ```javascript
-// Example rule structure
+// firestore.rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Owner isolation
+    // Owner data - only accessible by owner
     match /owners/{ownerId}/{document=**} {
-      allow read, write: if request.auth != null 
-        && request.auth.token.ownerId == ownerId;
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == ownerId;
     }
     
-    // Super admin access
+    // Super admin - full access
     match /{document=**} {
-      allow read, write: if request.auth.token.role == 'super_admin';
+      allow read, write: if request.auth != null && 
+                            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
     }
   }
 }
 ```
 
-#### Authentication Levels
-| Level | Method | Access |
-|-------|--------|--------|
-| 3 | Email + 2FA | Super Admin |
-| 2 | Email + Password | Brand Admin / Owner |
-| 1 | PIN Code | Cleaner |
-| 0 | Booking Reference | Guest (tablet only) |
+---
 
-### GDPR Compliance
+## 🐛 Error Handling & Monitoring
 
-| Feature | Implementation |
-|---------|----------------|
-| **Data Minimization** | Collect only necessary guest data |
-| **Right to Access** | One-click data export (PDF) |
-| **Right to Erasure** | Auto-delete after checkout + manual |
-| **Data Portability** | JSON/CSV export available |
-| **Consent Management** | Digital signature on house rules |
-| **Audit Trail** | Full activity logging |
-| **Data Location** | europe-west3 (Frankfurt) |
-
-### Localization
-
-| Language | Code | Keys | Status |
-|----------|------|------|--------|
-| English | `en` | 178 | ✅ Complete |
-| Croatian | `hr` | 178 | ✅ Complete |
-| German | `de` | 178 | ✅ Complete |
-| Italian | `it` | 178 | ✅ Complete |
-| Slovenian | `sl` | 178 | ✅ Complete |
-| French | `fr` | 178 | ✅ Complete |
-| Spanish | `es` | 178 | ✅ Complete |
-| Portuguese | `pt` | 178 | ✅ Complete |
-| Dutch | `nl` | 178 | ✅ Complete |
-| Polish | `pl` | 178 | ✅ Complete |
-| Czech | `cs` | 178 | ✅ Complete |
-
-**Total Translations:** 178 keys × 11 languages = **1,958 translations**
+- **Sentry**: Crash reporting i error tracking
+- **Error Service**: Centralized error handling
+- **Health Service**: System health monitoring
+- **Performance Service**: Performance tracking
+- **Connectivity Service**: Network status monitoring
+- **Offline Queue**: Offline operation queueing
 
 ---
 
-## Version History
+## 🧪 Testing
+
+```
+test/
+├── Unit Tests
+│   ├── Models
+│   ├── Repositories
+│   └── Services
+│
+├── Widget Tests
+│   └── Screens
+│
+├── Integration Tests
+│   └── User flows
+│
+└── Test Helpers
+```
+
+**Test Coverage:**
+- 138+ passing tests
+- Models, repositories, services
+- Widget tests for key screens
+- Integration tests for critical flows
+
+---
+
+## 📦 Installation & Deployment
+
+### Local Development
+
+```bash
+# Install dependencies
+flutter pub get
+
+# Run web app
+flutter run -d chrome
+
+# Build for production
+flutter build web --release
+```
+
+### Firebase Deployment
+
+```bash
+# Deploy to Firebase Hosting
+firebase deploy --only hosting
+
+# Deploy Firestore rules
+firebase deploy --only firestore:rules
+
+# Deploy Storage rules
+firebase deploy --only storage
+```
+
+### Environment Setup
+
+1. Create Firebase project
+2. Enable Firestore, Auth, Storage
+3. Configure `firebase.json`, `.firebaserc`
+4. Add `firebase_options.dart` (via FlutterFire CLI)
+5. Set up Firestore security rules
+6. Create initial admin user
+
+---
+
+## 🔄 Workflows
+
+### Owner Workflow
+
+1. **Login** → Dashboard
+2. **Manage Units** → Add/edit units
+3. **Manage Bookings** → Drag-and-drop calendar
+4. **Configure** → House rules, AI knowledge, cleaner checklist
+5. **Export** → iCal for Airbnb/Booking.com
+6. **View Analytics** → Revenue, occupancy
+7. **Review Cleaning Logs** → From Tablet Terminal
+
+### Super Admin Workflow
+
+1. **Login** → Super Admin Dashboard
+2. **Manage Brands** → White-label configuration
+3. **View All Owners** → System overview
+4. **Monitor Tablets** → Health status
+5. **System Settings** → Global configuration
+6. **Notifications** → Broadcast to owners
+
+---
+
+## 📝 Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.1.0 | 2026-01 | Enhanced analytics, new PDF types |
-| 2.0.0 | 2025-11 | Super admin panel, white-label support |
-| 1.8.0 | 2025-09 | Drag-drop calendar, iCal sync |
-| 1.5.0 | 2025-07 | AI assistant configuration |
-| 1.0.0 | 2025-05 | Initial release |
+| 2.1.0 | 2026-01 | Enhanced eVisitor PDF, MRZ support, testing |
+| 2.0.0 | 2025-11 | White-label system, Super Admin features |
+| 1.5.0 | 2025-09 | Analytics, revenue tracking |
+| 1.0.0 | 2025-07 | Initial release |
 
 ---
 
-## Related Components
+## 🔗 Related Components
 
 | Component | Repository | Description |
 |-----------|------------|-------------|
-| **Tablet Terminal** | [tablet_terminal](https://github.com/nroxa92/tablet_terminal) | Guest self-service kiosk |
+| **Tablet Terminal** | [tablet_terminal](https://github.com/nroxa92/tablet_terminal) | Android kiosk app for guests (Slave) |
 | **Documentation** | This README | Technical documentation |
 
 ---
 
-## Contact
+## 👨‍💻 Contact
 
 **Developer:** Neven Roksa  
 **Email:** nevenroksa@gmail.com  
@@ -440,6 +681,6 @@ service cloud.firestore {
 
 <p align="center">
   <strong>Vesta Lumina System</strong><br>
-  <em>Enterprise Property Management Platform</em><br><br>
+  <em>Enterprise Property Management for Short-Term Rentals</em><br><br>
   © 2024-2026 Neven Roksa. All Rights Reserved.
 </p>
