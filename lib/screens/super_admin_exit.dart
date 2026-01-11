@@ -4,6 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EXIT TAB - Financial Dashboard, Pricing & Projections
@@ -237,6 +239,8 @@ class _SuperAdminExitTabState extends State<SuperAdminExitTab>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _saveConfig() async {
+    final t = context.read<AppProvider>().translate;
+
     try {
       final updatedConfig = {
         'retailMonthlyBase':
@@ -270,8 +274,8 @@ class _SuperAdminExitTabState extends State<SuperAdminExitTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pricing config saved!'),
+          SnackBar(
+            content: Text(t('pricing_saved')),
             backgroundColor: Colors.green,
           ),
         );
@@ -292,6 +296,8 @@ class _SuperAdminExitTabState extends State<SuperAdminExitTab>
 
   @override
   Widget build(BuildContext context) {
+    final t = context.read<AppProvider>().translate;
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
@@ -579,6 +585,8 @@ class _SuperAdminExitTabState extends State<SuperAdminExitTab>
   }
 
   Widget _buildPricingConfig() {
+    final t = context.read<AppProvider>().translate;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -600,7 +608,7 @@ class _SuperAdminExitTabState extends State<SuperAdminExitTab>
               ElevatedButton.icon(
                 onPressed: _saveConfig,
                 icon: const Icon(Icons.save, size: 18),
-                label: const Text('Save'),
+                label: Text(t('btn_save')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black,

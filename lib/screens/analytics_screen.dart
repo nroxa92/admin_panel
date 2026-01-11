@@ -746,7 +746,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
                 child: const Icon(Icons.calendar_month, color: Colors.blue),
               ),
-              title: const Text('Google Calendar'),
+              title: Text(t('google_calendar_instructions')),
               subtitle: Text(t('open_in_browser')),
               onTap: () {
                 Navigator.pop(context);
@@ -762,7 +762,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
                 child: const Icon(Icons.mail, color: Colors.orange),
               ),
-              title: const Text('Outlook'),
+              title: Text(t('outlook_instructions')),
               subtitle: Text(t('open_in_browser')),
               onTap: () {
                 Navigator.pop(context);

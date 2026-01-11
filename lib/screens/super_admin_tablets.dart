@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 // =============================================================================
 // TABLETS TAB
@@ -138,6 +140,8 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.read<AppProvider>().translate;
+
     return RefreshIndicator(
       onRefresh: _loadTablets,
       color: const Color(0xFFD4AF37),
@@ -361,7 +365,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
             ],
           ),
           const SizedBox(height: 8),
-          Text('v${t['appVersion']}',
+          Text('v${t('appVersion')}',
               style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 11)),
           Text(t['model'],
               style: const TextStyle(color: Colors.grey, fontSize: 10)),
@@ -446,7 +450,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
             ),
             if (t['pendingVersion'] != null &&
                 (t['pendingVersion'] as String).isNotEmpty)
-              Text('→ v${t['pendingVersion']}',
+              Text('→ v${t('pendingVersion')}',
                   style: const TextStyle(color: Colors.orange, fontSize: 9)),
             if (updateError.isNotEmpty)
               Text(updateError,
@@ -499,16 +503,19 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
   }
 
   Widget _emptyState() {
+    final t = context.read<AppProvider>().translate;
+
     return Container(
       padding: const EdgeInsets.all(60),
       decoration: BoxDecoration(
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12)),
-      child: const Center(
+      child: Center(
           child: Column(children: [
-        Icon(Icons.tablet_android, color: Colors.grey, size: 60),
-        SizedBox(height: 16),
-        Text('No tablets registered', style: TextStyle(color: Colors.grey)),
+        const Icon(Icons.tablet_android, color: Colors.grey, size: 60),
+        const SizedBox(height: 16),
+        Text(t('no_tablets_registered'),
+            style: const TextStyle(color: Colors.grey)),
       ])),
     );
   }
@@ -517,6 +524,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
 
   Future<void> _toggleKioskMode(
       Map<String, dynamic> tablet, bool enable) async {
+    final t = context.read<AppProvider>().translate;
     final deviceId = tablet['deviceId'] as String;
     final unitName = tablet['unitName'] as String;
 
@@ -526,11 +534,12 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.lock_open, color: Colors.cyan),
-              SizedBox(width: 12),
-              Text('Unlock Tablet?', style: TextStyle(color: Colors.white)),
+              const Icon(Icons.lock_open, color: Colors.cyan),
+              const SizedBox(width: 12),
+              Text(t('unlock_tablet_confirm'),
+                  style: const TextStyle(color: Colors.white)),
             ],
           ),
           content: Text(
@@ -541,13 +550,14 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: Text(t('btn_cancel'),
+                  style: const TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
-              child:
-                  const Text('Unlock', style: TextStyle(color: Colors.white)),
+              child: Text(t('btn_unlock'),
+                  style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -589,6 +599,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
   }
 
   Future<void> _showEditTabletDialog(Map<String, dynamic> tablet) async {
+    final t = context.read<AppProvider>().translate;
     final deviceId = tablet['deviceId'] as String;
     final unitName = tablet['unitName'] as String;
     final kioskEnabled = tablet['kioskModeEnabled'] == true;
@@ -610,8 +621,9 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Edit Tablet',
-                        style: TextStyle(color: Colors.white, fontSize: 18)),
+                    Text(t('edit_tablet'),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 18)),
                     Text(unitName,
                         style:
                             const TextStyle(color: Colors.grey, fontSize: 12)),
@@ -709,7 +721,7 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
                 const SizedBox(height: 16),
 
                 // Exit PIN
-                const Text('Exit PIN (6 digits)',
+                Text(t('exit_pin_label'),
                     style: TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 8),
                 TextField(
@@ -748,15 +760,16 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, null),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: Text(t('btn_cancel'),
+                  style: const TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
                 if (pinController.text.isNotEmpty &&
                     pinController.text.length != 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('PIN must be exactly 6 digits'),
+                    SnackBar(
+                      content: Text(t('pin_6_digits_required')),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -772,7 +785,8 @@ class _SuperAdminTabletsTabState extends State<SuperAdminTabletsTab> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
               ),
-              child: const Text('Save', style: TextStyle(color: Colors.black)),
+              child: Text(t('btn_save'),
+                  style: const TextStyle(color: Colors.black)),
             ),
           ],
         ),
@@ -891,6 +905,7 @@ class _SuperAdminApkTabState extends State<SuperAdminApkTab> {
   }
 
   Future<void> _showDeployDialog() async {
+    final t = context.read<AppProvider>().translate;
     final versionCtrl = TextEditingController(text: _currentVersion);
     final urlCtrl = TextEditingController(text: _currentUrl);
     bool forceUpdate = false;
@@ -1061,8 +1076,8 @@ class _SuperAdminApkTabState extends State<SuperAdminApkTab> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, null),
-                child:
-                    const Text('Cancel', style: TextStyle(color: Colors.grey))),
+                child: Text(t('btn_cancel'),
+                    style: const TextStyle(color: Colors.grey))),
             ElevatedButton.icon(
               onPressed: () {
                 if (versionCtrl.text.isEmpty || urlCtrl.text.isEmpty) {
@@ -1085,7 +1100,7 @@ class _SuperAdminApkTabState extends State<SuperAdminApkTab> {
                 });
               },
               icon: const Icon(Icons.cloud_upload, size: 18),
-              label: const Text('DEPLOY'),
+              label: Text(t('btn_send')),
               style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black),
@@ -1194,6 +1209,8 @@ class _SuperAdminApkTabState extends State<SuperAdminApkTab> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.read<AppProvider>().translate;
+
     return RefreshIndicator(
       onRefresh: _loadData,
       color: const Color(0xFFD4AF37),

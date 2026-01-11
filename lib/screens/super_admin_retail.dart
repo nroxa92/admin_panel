@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 import 'super_admin_tablets.dart';
 import 'super_admin_notifications.dart';
@@ -197,6 +199,7 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _createOwner() async {
+    final t = context.read<AppProvider>().translate;
     final emailController = TextEditingController();
     final nameController = TextEditingController();
 
@@ -204,12 +207,12 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.person_add, color: Color(0xFFD4AF37)),
-            SizedBox(width: 12),
-            Text('Create New Owner',
-                style: TextStyle(color: Colors.white, fontSize: 18)),
+            const Icon(Icons.person_add, color: Color(0xFFD4AF37)),
+            const SizedBox(width: 12),
+            Text(t('create_new_owner'),
+                style: const TextStyle(color: Colors.white, fontSize: 18)),
           ],
         ),
         content: SizedBox(
@@ -221,7 +224,7 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
                 controller: emailController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Email *',
+                  labelText: '${t('email')} *',
                   labelStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.email, color: Colors.grey),
                   filled: true,
@@ -237,7 +240,7 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
                 controller: nameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Display Name *',
+                  labelText: '${t('name')} *',
                   labelStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.person, color: Colors.grey),
                   filled: true,
@@ -278,14 +281,15 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(t('btn_cancel'),
+                style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
               if (emailController.text.isEmpty || nameController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill all required fields'),
+                  SnackBar(
+                    content: Text(t('msg_required_fields')),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -299,7 +303,8 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD4AF37),
             ),
-            child: const Text('Create', style: TextStyle(color: Colors.black)),
+            child: Text(t('btn_create'),
+                style: const TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -320,8 +325,8 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
         final data = response.data as Map<String, dynamic>;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Owner created! Temp password: ${data['tempPassword']}'),
+            content: Text(
+                '${t('owner_created')} ${t('temp_password')}: ${data['tempPassword']}'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 10),
           ),
@@ -368,15 +373,18 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
   }
 
   Future<void> _deleteOwner(Map<String, dynamic> owner) async {
+    final t = context.read<AppProvider>().translate;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: Colors.red),
-            SizedBox(width: 12),
-            Text('Delete Owner?', style: TextStyle(color: Colors.white)),
+            const Icon(Icons.warning, color: Colors.red),
+            const SizedBox(width: 12),
+            Text(t('delete_owner_confirm'),
+                style: const TextStyle(color: Colors.white)),
           ],
         ),
         content: Text(
@@ -386,12 +394,14 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(t('btn_cancel'),
+                style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: Text(t('btn_delete'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -405,8 +415,8 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Owner deleted'),
+          SnackBar(
+            content: Text(t('owner_deleted')),
             backgroundColor: Colors.green,
           ),
         );
@@ -537,7 +547,7 @@ class _SuperAdminRetailTabState extends State<SuperAdminRetailTab>
               ElevatedButton.icon(
                 onPressed: _createOwner,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('New Owner'),
+                label: Text(context.read<AppProvider>().translate('new_owner')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black,

@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SUPER ADMIN NOTIFICATIONS TAB
@@ -114,10 +116,12 @@ class _SuperAdminNotificationsTabState
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _sendNotification() async {
+    final t = context.read<AppProvider>().translate;
+
     if (_titleController.text.isEmpty || _messageController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Title and message are required'),
+        SnackBar(
+          content: Text(t('title_required')),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,8 +141,8 @@ class _SuperAdminNotificationsTabState
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notification sent!'),
+          SnackBar(
+            content: Text(t('notification_sent')),
             backgroundColor: Colors.green,
           ),
         );
@@ -164,13 +168,15 @@ class _SuperAdminNotificationsTabState
   }
 
   Future<void> _deleteNotification(String id) async {
+    final t = context.read<AppProvider>().translate;
+
     try {
       await _firestore.collection('system_notifications').doc(id).delete();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notification deleted'),
+          SnackBar(
+            content: Text(t('notification_deleted')),
             backgroundColor: Colors.green,
           ),
         );
@@ -254,6 +260,7 @@ class _SuperAdminNotificationsTabState
   }
 
   Widget _buildNewNotificationForm() {
+    final t = context.read<AppProvider>().translate;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -320,7 +327,7 @@ class _SuperAdminNotificationsTabState
               const Text('Recipients: ', style: TextStyle(color: Colors.grey)),
               const SizedBox(width: 12),
               FilterChip(
-                label: const Text('All Owners'),
+                label: Text(t('all_owners')),
                 selected: _sendToAll,
                 onSelected: (v) => setState(() => _sendToAll = v),
                 selectedColor: const Color(0xFFD4AF37).withValues(alpha: 0.3),
@@ -331,7 +338,7 @@ class _SuperAdminNotificationsTabState
               ),
               const SizedBox(width: 8),
               FilterChip(
-                label: const Text('Select Specific'),
+                label: Text(t('select_specific')),
                 selected: !_sendToAll,
                 onSelected: (v) => setState(() => _sendToAll = !v),
                 selectedColor: Colors.blue.withValues(alpha: 0.3),
@@ -399,7 +406,7 @@ class _SuperAdminNotificationsTabState
             child: ElevatedButton.icon(
               onPressed: _sendNotification,
               icon: const Icon(Icons.send, size: 18),
-              label: const Text('Send Notification'),
+              label: Text(t('send_notification')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
                 foregroundColor: Colors.black,

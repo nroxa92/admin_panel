@@ -471,15 +471,18 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   // ==================== LOCK ALL TABLETS ====================
   Future<void> _lockAllTablets() async {
+    final t = context.read<AppProvider>().translate;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.lock, color: Colors.orange),
-            SizedBox(width: 12),
-            Text('Lock All Tablets?', style: TextStyle(color: Colors.white)),
+            const Icon(Icons.lock, color: Colors.orange),
+            const SizedBox(width: 12),
+            Text(t('lock_all_tablets_confirm'),
+                style: const TextStyle(color: Colors.white)),
           ],
         ),
         content: const Text(
@@ -491,13 +494,14 @@ class _SettingsScreenState extends State<SettingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(t('btn_cancel'),
+                style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child:
-                const Text('Lock All', style: TextStyle(color: Colors.white)),
+            child: Text(t('lock_all_tablets'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

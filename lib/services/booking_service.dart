@@ -1,6 +1,6 @@
 // FILE: lib/services/booking_service.dart
-// VERSION: 2.0 - camelCase Migration
-// DATE: 2026-01-09
+// VERSION: 3.0 - Added source/guests/scannedAt/updatedAt support
+// DATE: 2026-01-11
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -262,11 +262,16 @@ class BookingService {
       startDate: startWithTime,
       endDate: endWithTime,
       status: booking.status,
+      source: booking.source, // v3.0
       note: booking.note,
       isScanned: booking.isScanned,
       guestCount: booking.guestCount,
+      scannedGuestCount: booking.scannedGuestCount, // v3.0
       checkInTime: booking.checkInTime,
       checkOutTime: booking.checkOutTime,
+      guests: booking.guests, // v3.0
+      scannedAt: booking.scannedAt, // v3.0
+      updatedAt: DateTime.now(), // v3.0
     );
 
     debugPrint('🔍 addBooking - Step 4: saving to Firestore...');
@@ -308,11 +313,16 @@ class BookingService {
       startDate: startWithTime,
       endDate: endWithTime,
       status: booking.status,
+      source: booking.source, // v3.0
       note: booking.note,
       isScanned: booking.isScanned,
       guestCount: booking.guestCount,
+      scannedGuestCount: booking.scannedGuestCount, // v3.0
       checkInTime: booking.checkInTime,
       checkOutTime: booking.checkOutTime,
+      guests: booking.guests, // v3.0
+      scannedAt: booking.scannedAt, // v3.0
+      updatedAt: DateTime.now(), // v3.0
     );
 
     await _bookingRef.doc(booking.id).update(bookingToSave.toMap());

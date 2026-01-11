@@ -1277,20 +1277,25 @@ class _BookingScreenState extends State<BookingScreen> {
                             value: status,
                             isExpanded: true,
                             isDense: true,
-                            items: const [
+                            items: [
                               DropdownMenuItem(
-                                  value: 'confirmed', child: Text('Confirmed')),
+                                  value: 'confirmed',
+                                  child: Text(t('status_confirmed'))),
                               DropdownMenuItem(
                                   value: 'booking.com',
-                                  child: Text('Booking.com')),
+                                  child: Text(t('source_booking'))),
                               DropdownMenuItem(
-                                  value: 'airbnb', child: Text('Airbnb')),
+                                  value: 'airbnb',
+                                  child: Text(t('source_airbnb'))),
                               DropdownMenuItem(
-                                  value: 'private', child: Text('Private')),
+                                  value: 'private',
+                                  child: Text(t('source_private'))),
                               DropdownMenuItem(
-                                  value: 'blocked', child: Text('Blocked')),
+                                  value: 'blocked',
+                                  child: Text(t('status_blocked'))),
                               DropdownMenuItem(
-                                  value: 'other', child: Text('Other')),
+                                  value: 'other',
+                                  child: Text(t('source_other'))),
                             ],
                             onChanged: (v) => setState(() => status = v!),
                           ),

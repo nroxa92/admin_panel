@@ -4,6 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../services/brand_service.dart';
@@ -143,6 +145,7 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _createBrand() async {
+    final t = context.read<AppProvider>().translate;
     final nameController = TextEditingController();
     final domainController = TextEditingController();
     final taglineController = TextEditingController();
@@ -153,12 +156,12 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.add_business, color: Color(0xFFD4AF37)),
-              SizedBox(width: 12),
-              Text('Create New Brand',
-                  style: TextStyle(color: Colors.white, fontSize: 18)),
+              const Icon(Icons.add_business, color: Color(0xFFD4AF37)),
+              const SizedBox(width: 12),
+              Text(t('create_new_brand'),
+                  style: const TextStyle(color: Colors.white)),
             ],
           ),
           content: SizedBox(
@@ -216,8 +219,8 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
                   const SizedBox(height: 16),
 
                   // Primary Color
-                  const Text('Primary Color',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(t('primary_color'),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -270,8 +273,10 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
                 if (nameController.text.isEmpty ||
                     domainController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Name and Domain are required'),
+                    SnackBar(
+                      content: Text(context
+                          .read<AppProvider>()
+                          .translate('name_domain_required')),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -308,8 +313,9 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Brand created successfully!'),
+          SnackBar(
+            content:
+                Text(context.read<AppProvider>().translate('brand_created')),
             backgroundColor: Colors.green,
           ),
         );
@@ -325,6 +331,7 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
   }
 
   Future<void> _editBrand(Brand brand) async {
+    final t = context.read<AppProvider>().translate;
     final nameController = TextEditingController(text: brand.name);
     final taglineController = TextEditingController(text: brand.tagline);
     final supportEmailController =
@@ -345,7 +352,7 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Edit Brand',
+                    Text(t('edit_brand'),
                         style: TextStyle(color: Colors.white, fontSize: 18)),
                     Text(brand.domain,
                         style:
@@ -409,8 +416,8 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
                   const SizedBox(height: 16),
 
                   // Primary Color
-                  const Text('Primary Color',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(t('primary_color'),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -486,8 +493,9 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Brand updated!'),
+          SnackBar(
+            content:
+                Text(context.read<AppProvider>().translate('brand_updated')),
             backgroundColor: Colors.green,
           ),
         );
@@ -505,8 +513,9 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
   Future<void> _deleteBrand(Brand brand) async {
     if (brand.clientCount > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot delete brand with existing clients'),
+        SnackBar(
+          content: Text(
+              context.read<AppProvider>().translate('cannot_delete_brand')),
           backgroundColor: Colors.red,
         ),
       );
@@ -549,8 +558,9 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Brand deleted'),
+          SnackBar(
+            content:
+                Text(context.read<AppProvider>().translate('brand_deleted')),
             backgroundColor: Colors.green,
           ),
         );
@@ -722,6 +732,8 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
 
   @override
   Widget build(BuildContext context) {
+    final t = context.read<AppProvider>().translate;
+
     return Column(
       children: [
         // Sub-tabs
@@ -756,6 +768,8 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
   }
 
   Widget _buildBrandsTab() {
+    final t = context.read<AppProvider>().translate;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -778,7 +792,7 @@ class _SuperAdminWhiteLabelTabState extends State<SuperAdminWhiteLabelTab>
               ElevatedButton.icon(
                 onPressed: _createBrand,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('New Brand'),
+                label: Text(t('create_new_brand')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black,

@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 import '../services/brand_service.dart';
 
@@ -142,6 +144,7 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _addSuperAdmin() async {
+    final t = context.read<AppProvider>().translate;
     final emailController = TextEditingController();
     String selectedBrandId = '';
     int selectedLevel = 2;
@@ -156,12 +159,12 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.admin_panel_settings, color: Color(0xFFD4AF37)),
-              SizedBox(width: 12),
-              Text('Add Super Admin',
-                  style: TextStyle(color: Colors.white, fontSize: 18)),
+              const Icon(Icons.admin_panel_settings, color: Color(0xFFD4AF37)),
+              const SizedBox(width: 12),
+              Text(t('add_super_admin'),
+                  style: const TextStyle(color: Colors.white, fontSize: 18)),
             ],
           ),
           content: SizedBox(
@@ -174,13 +177,13 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
                 TextField(
                   controller: emailController,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Email *', Icons.email),
+                  decoration: _inputDecoration('${t('email')} *', Icons.email),
                 ),
                 const SizedBox(height: 16),
 
                 // Level
-                const Text('Admin Level',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(t('admin_level'),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -209,8 +212,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
 
                 // Brand (only for Level 2)
                 if (selectedLevel == 2) ...[
-                  const Text('Assigned Brand',
-                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(t('assigned_brand'),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -220,8 +223,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
                     ),
                     child: DropdownButton<String>(
                       value: selectedBrandId.isEmpty ? null : selectedBrandId,
-                      hint: const Text('Select brand',
-                          style: TextStyle(color: Colors.grey)),
+                      hint: Text(t('select_brand'),
+                          style: const TextStyle(color: Colors.grey)),
                       dropdownColor: const Color(0xFF2A2A2A),
                       isExpanded: true,
                       underline: const SizedBox(),
@@ -243,14 +246,15 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: Text(t('btn_cancel'),
+                  style: const TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
                 if (emailController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Email is required'),
+                    SnackBar(
+                      content: Text(t('msg_email_required')),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -258,8 +262,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
                 }
                 if (selectedLevel == 2 && selectedBrandId.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please select a brand for Level 2 admin'),
+                    SnackBar(
+                      content: Text(t('select_brand_required')),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -274,7 +278,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD4AF37),
               ),
-              child: const Text('Add', style: TextStyle(color: Colors.black)),
+              child: Text(t('btn_add'),
+                  style: const TextStyle(color: Colors.black)),
             ),
           ],
         ),
@@ -289,8 +294,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Super Admin added!'),
+          SnackBar(
+            content: Text(t('super_admin_added')),
             backgroundColor: Colors.green,
           ),
         );
@@ -362,10 +367,12 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
   }
 
   Future<void> _toggleAdminStatus(Map<String, dynamic> admin) async {
+    final t = context.read<AppProvider>().translate;
+
     if (admin['email'] == 'vestaluminasystem@gmail.com') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot modify Master Master account'),
+        SnackBar(
+          content: Text(t('cannot_modify_master')),
           backgroundColor: Colors.red,
         ),
       );
@@ -383,7 +390,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Admin ${newStatus ? 'activated' : 'deactivated'}'),
+            content: Text(
+                newStatus ? t('admin_activated') : t('admin_deactivated')),
             backgroundColor: Colors.green,
           ),
         );
@@ -399,10 +407,12 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
   }
 
   Future<void> _removeAdmin(Map<String, dynamic> admin) async {
+    final t = context.read<AppProvider>().translate;
+
     if (admin['email'] == 'vestaluminasystem@gmail.com') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot remove Master Master account'),
+        SnackBar(
+          content: Text(t('cannot_remove_master')),
           backgroundColor: Colors.red,
         ),
       );
@@ -413,8 +423,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
-        title:
-            const Text('Remove Admin?', style: TextStyle(color: Colors.white)),
+        title: Text(t('remove_admin_confirm'),
+            style: const TextStyle(color: Colors.white)),
         content: Text(
           'Remove ${admin['email']} from Super Admins?',
           style: const TextStyle(color: Colors.grey),
@@ -422,12 +432,14 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(t('btn_cancel'),
+                style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove', style: TextStyle(color: Colors.white)),
+            child: Text(t('btn_remove'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -441,8 +453,8 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Admin removed'),
+          SnackBar(
+            content: Text(t('admin_removed')),
             backgroundColor: Colors.green,
           ),
         );
@@ -596,7 +608,7 @@ class _SuperAdminSettingsTabState extends State<SuperAdminSettingsTab>
               ElevatedButton.icon(
                 onPressed: _addSuperAdmin,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Admin'),
+                label: Text(context.read<AppProvider>().translate('add_admin')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black,

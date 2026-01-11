@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
 
 import 'super_admin_retail.dart';
 import 'super_admin_white_label.dart';
@@ -171,8 +173,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
         // Not a super admin, shouldn't be here
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You do not have Super Admin access'),
+            SnackBar(
+              content: Text(context
+                  .read<AppProvider>()
+                  .translate('super_admin_access_denied')),
               backgroundColor: Colors.red,
             ),
           );
@@ -189,8 +193,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
       if (!isActive) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Your admin access has been deactivated'),
+            SnackBar(
+              content: Text(context
+                  .read<AppProvider>()
+                  .translate('super_admin_deactivated')),
               backgroundColor: Colors.red,
             ),
           );

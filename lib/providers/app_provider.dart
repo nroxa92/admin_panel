@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import '../models/settings_model.dart';
 import '../services/settings_service.dart';
-import '../config/translations.dart';
+import '../config/translations/translations.dart';
 
 class AppProvider with ChangeNotifier {
   final SettingsService _settingsService = SettingsService();
